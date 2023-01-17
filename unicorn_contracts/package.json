@@ -7,6 +7,7 @@
   "author": "SAM CLI",
   "license": "MIT",
   "dependencies": {
+    "esbuild": "^0.14.14",
     "@aws-lambda-powertools/logger": "^1.1.1",
     "@aws-lambda-powertools/metrics": "^1.1.1",
     "@aws-lambda-powertools/tracer": "^1.1.1",
@@ -28,7 +29,6 @@
     "@typescript-eslint/eslint-plugin": "^5.10.2",
     "@typescript-eslint/parser": "^5.10.2",
     "aws-sdk-client-mock": "^0.6.2",
-    "esbuild": "^0.14.14",
     "esbuild-jest": "^0.5.0",
     "eslint": "^8.8.0",
     "eslint-config-prettier": "^8.3.0",
