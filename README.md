@@ -1,6 +1,6 @@
 ![AWS Serverless Developer Experience Workshop Reference Architecture](/docs/workshop_logo.png)
 
-# AWS Serverless Developer Experience workshop reference architecture (Python)
+# AWS Serverless Developer Experience workshop reference architecture (Typescript)
 
 This repository contains the reference architecture for the AWS Serverless Developer Experience workshop.
 
