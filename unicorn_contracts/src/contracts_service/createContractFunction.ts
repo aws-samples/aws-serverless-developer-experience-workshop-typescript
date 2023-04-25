@@ -37,7 +37,7 @@ class CreateContractFunction implements LambdaInterface {
         try {
             data = this.validateEvent(event);
         } catch (error) {
-            logger.error('Error during validation', error as Error);
+            logger.error('Error during request validation', error as Error);
             tracer.addErrorAsMetadata(error as Error);
 
             return {
@@ -61,7 +61,7 @@ class CreateContractFunction implements LambdaInterface {
         try {
             // Save the entry.
             await this.createContract(dbEntry, contractId);
-            tracer.putAnnotation('ContractStatus', JSON.stringify(dbEntry));
+            tracer.putMetadata('ContractStatus', dbEntry);
         } catch (error) {
             tracer.addErrorAsMetadata(error as Error);
             logger.error('Error during DDB PUT', error as Error);
