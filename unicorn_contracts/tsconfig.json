@@ -18,6 +18,5 @@
       "forceConsistentCasingInFileNames": true,
       "experimentalDecorators": true  
     },
-    "typeAcquisition": { "include": ["jest"] },
     "exclude": ["node_modules"]
   }
