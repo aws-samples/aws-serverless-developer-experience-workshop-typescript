@@ -10,11 +10,11 @@
     "@aws-lambda-powertools/logger": "^1.8.0",
     "@aws-lambda-powertools/metrics": "^1.8.0",
     "@aws-lambda-powertools/tracer": "^1.8.0",
-    "@aws-sdk/client-dynamodb": "^3.87.0",
-    "@aws-sdk/client-eventbridge": "^3.92.0",
-    "@aws-sdk/util-dynamodb": "^3.92.0",
+    "@aws-sdk/client-dynamodb": "^3.319.0",
+    "@aws-sdk/client-eventbridge": "^3.319.0",
+    "@aws-sdk/util-dynamodb": "^3.319.0",
     "aws-lambda": "^1.0.7",
-    "esbuild": "^0.14.14"
+    "esbuild": "^0.17.18"
   },
   "scripts": {
     "unit": "jest --config=jest.config.test.unit.ts",
@@ -25,7 +25,7 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.114",
     "@types/jest": "^29.5.1",
-    "@types/node": "^18.16.0",
+    "@types/node": "^18.16.1",
     "@typescript-eslint/eslint-plugin": "^5.59.1",
     "@typescript-eslint/parser": "^5.59.1",
     "aws-sdk-client-mock": "^2.1.1",
