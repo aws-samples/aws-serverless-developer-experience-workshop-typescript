@@ -7,20 +7,20 @@
   "author": "SAM CLI",
   "license": "MIT",
   "dependencies": {
-    "esbuild": "^0.14.14",
-    "@aws-lambda-powertools/logger": "^1.1.1",
-    "@aws-lambda-powertools/metrics": "^1.1.1",
-    "@aws-lambda-powertools/tracer": "^1.1.1",
+    "@aws-lambda-powertools/logger": "^1.8.0",
+    "@aws-lambda-powertools/metrics": "^1.8.0",
+    "@aws-lambda-powertools/tracer": "^1.8.0",
     "@aws-sdk/client-dynamodb": "^3.87.0",
     "@aws-sdk/client-eventbridge": "^3.92.0",
     "@aws-sdk/util-dynamodb": "^3.92.0",
-    "aws-lambda": "^1.0.7"
+    "aws-lambda": "^1.0.7",
+    "esbuild": "^0.14.14"
   },
   "scripts": {
     "unit": "jest --config=jest.config.test.unit.ts",
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
-    "test": "npm run lint && npm run compile && npm run unit"
+    "test": "jest"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.92",
