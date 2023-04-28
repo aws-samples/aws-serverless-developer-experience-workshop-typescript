@@ -4,7 +4,7 @@
   "description": "Contracts Module for Serverless Developer Experience Reference Architecture - Node",
   "main": "app.js",
   "repository": "https://github.com/awslabs/aws-sam-cli/tree/develop/samcli/local/init/templates/cookiecutter-aws-sam-hello-nodejs",
-  "author": "SAM CLI",
+  "author": "Amazon.com, Inc.",
   "license": "MIT",
   "dependencies": {
     "esbuild": "^0.17.18",
@@ -22,7 +22,7 @@
     "unit": "jest --config=jest.config.test.unit.ts",
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
-    "test": "npm run compile && npm run unit"
+    "test": "jest"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.114",
