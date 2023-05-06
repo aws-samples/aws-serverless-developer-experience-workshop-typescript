@@ -1,0 +1,39 @@
+name: Build .NET
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'unicorn_contracts/**'
+      - 'unicorn_properties/**'
+      - 'unicorn_web/**'
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'unicorn_contracts/**'
+      - 'unicorn_properties/**'
+      - 'unicorn_web/**'
+defaults:
+  run:
+    working-directory: ./
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run build --if-present
+    - run: npm test

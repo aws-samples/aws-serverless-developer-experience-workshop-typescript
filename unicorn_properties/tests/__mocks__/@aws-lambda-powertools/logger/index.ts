@@ -1,29 +1,32 @@
-import { LoggerOptions, LogItemExtraInput, LogItemMessage } from "@aws-lambda-powertools/logger/lib/types/Logger";
+import {
+  LogItemExtraInput,
+  LogItemMessage,
+} from "@aws-lambda-powertools/logger/lib/types/Logger";
 
 /**
  * Stub for Powertools Logger
  */
 export class Logger {
-    constructor(options?: LoggerOptions) {
-        // Leave it empty for now.
-    }
+  constructor() {
+    // Leave it empty for now.
+  }
 
-    injectLambdaContext(input: any) {
-        // Do nothing.
-    }
+  injectLambdaContext(input: any) {
+    // Do nothing.
+  }
 
-    info(input: LogItemMessage, ...extraInput: LogItemExtraInput): void {
-        // Just log to console.
-        console.log(input);
-    }
+  info(input: LogItemMessage, ...extraInput: LogItemExtraInput): void {
+    // Just log to console.
+    console.log(input);
+  }
 
-    warn(input: LogItemMessage, ...extraInput: LogItemExtraInput): void {
-        // Just log to console.
-        console.log(input);
-    }
+  warn(input: LogItemMessage, ...extraInput: LogItemExtraInput): void {
+    // Just log to console.
+    console.log(input);
+  }
 
-    error(input: LogItemMessage, ...extraInput: LogItemExtraInput): void {
-        // Just log to console.
-        console.log(input);
-    }
-};
+  error(input: LogItemMessage, ...extraInput: LogItemExtraInput): void {
+    // Just log to console.
+    console.log(input);
+  }
+}
