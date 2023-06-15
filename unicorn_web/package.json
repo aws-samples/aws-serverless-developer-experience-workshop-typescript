@@ -22,7 +22,7 @@
     "unit": "jest --config=jest.config.test.unit.ts",
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.114",
