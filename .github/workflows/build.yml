@@ -27,6 +27,7 @@ jobs:
     - uses: actions/setup-node@v3
       with:
         node-version: 16.x
+        cache-dependency-path: ${{ matrix.folder }}/package-lock.json
         cache: 'npm'
     - run: |
         npm ci 
