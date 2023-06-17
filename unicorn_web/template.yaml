@@ -151,7 +151,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
-      Handler: PublicationApprovedEventHandler.lambdaHandler
+      Handler: publicationApprovedEventHandler.lambdaHandler
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref WebTable
