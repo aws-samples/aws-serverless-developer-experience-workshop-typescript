@@ -129,7 +129,7 @@ Resources:
   PropertiesApprovalSyncFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: publicationApprovedEventHandler.lambdaHandler
+      Handler: propertiesApprovalSyncFunction.lambdaHandler
       Policies:
         - DynamoDBStreamReadPolicy:
             TableName: !Ref ContractStatusTable
@@ -168,7 +168,7 @@ Resources:
         Target: "es2020"
         Sourcemap: true
         EntryPoints: 
-          - src/properties_service/publicationApprovedEventHandler.ts
+          - src/properties_service/propertiesApprovalSyncFunction.ts
 
   ContractExistsCheckerFunction:
       Type: AWS::Serverless::Function
