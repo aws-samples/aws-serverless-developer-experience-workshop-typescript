@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 import { Context } from "aws-lambda";
 import { randomUUID } from "crypto";
-import { lambdaHandler } from "../../src/properties_service/validateContentIntegrityFunction";
+import { lambdaHandler } from "../../src/properties_service/contentIntegrityValidatorFunction";
 
 describe("Unit tests for contract status checking", function () {
   type eventType = {

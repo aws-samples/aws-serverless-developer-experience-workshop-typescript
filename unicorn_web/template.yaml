@@ -151,7 +151,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
-      Handler: publicationApprovedFunction.lambdaHandler
+      Handler: PublicationApprovedEventHandler.lambdaHandler
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref WebTable
@@ -178,7 +178,7 @@ Resources:
         Target: "es2020"
         Sourcemap: true
         EntryPoints: 
-          - src/approvals_service/publicationApprovedFunction.ts
+          - src/approvals_service/publicationApprovedEventHandler.ts
 
   ######################################
   # DLQs

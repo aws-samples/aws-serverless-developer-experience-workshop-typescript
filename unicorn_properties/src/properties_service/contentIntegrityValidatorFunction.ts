@@ -11,7 +11,7 @@ export type StepFunctionsResponse = {
   error?: string;
 };
 
-class ValidateContentIntegrityFunction implements LambdaInterface {
+class ContentIntegrityValidatorFunction implements LambdaInterface {
   /**
    * Handle the validation of content integrity.
    * @param {Object} event - EventBridge Event Input Format
@@ -59,5 +59,5 @@ class ValidateContentIntegrityFunction implements LambdaInterface {
   }
 }
 
-export const myFunction = new ValidateContentIntegrityFunction();
+export const myFunction = new ContentIntegrityValidatorFunction();
 export const lambdaHandler = myFunction.handler.bind(myFunction);

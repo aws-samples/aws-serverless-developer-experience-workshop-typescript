@@ -25,7 +25,7 @@ export type ContractStatus = {
   sfn_wait_approved_task_token?: string;
 };
 
-class PropertiesApprovalSyncFunction implements LambdaInterface {
+class PublicationApprovedEventHandler implements LambdaInterface {
   /**
    * Handle the contract update stream from the dynamodb table.
    * @param {Object} event - EventBridge Event Input Format
@@ -140,5 +140,5 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
   }
 }
 
-export const myFunction = new PropertiesApprovalSyncFunction();
+export const myFunction = new PublicationApprovedEventHandler();
 export const lambdaHandler = myFunction.handler.bind(myFunction);
