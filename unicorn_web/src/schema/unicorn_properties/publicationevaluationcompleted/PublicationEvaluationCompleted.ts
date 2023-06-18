@@ -1,4 +1,4 @@
-Íexport class PublicationEvaluationCompleted {
+export class PublicationEvaluationCompleted {
   "evaluationResult": string;
   "propertyId": string;
 
