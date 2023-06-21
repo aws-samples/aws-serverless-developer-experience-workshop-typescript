@@ -54,7 +54,7 @@ Mappings:
 ######################################
 Globals:
   Function:
-    Runtime: nodejs16.x
+    Runtime: nodejs18.x
     MemorySize: 128
     Timeout: 120
     Tracing: Active

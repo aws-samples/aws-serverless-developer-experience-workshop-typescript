@@ -56,7 +56,7 @@ Globals:
   Api:
     OpenApiVersion: 3.0.1
   Function:
-    Runtime: nodejs16.x
+    Runtime: nodejs18.x
     MemorySize: 128
     Timeout: 3
     Tracing: Active
