@@ -162,7 +162,7 @@ Resources:
           "response-latency":"$context.responseLatency",
           "status":"$context.status"}
       DefinitionBody:
-        !Transform
+        "Fn::Transform":
           Name: 'AWS::Include'
           Parameters:
             Location: './api.yaml'

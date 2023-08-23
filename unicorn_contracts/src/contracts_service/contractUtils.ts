@@ -12,21 +12,10 @@ import {
   UpdateItemCommandInput,
   UpdateItemCommandOutput,
 } from "@aws-sdk/client-dynamodb";
-import {
-  EventBridgeClient,
-  PutEventsCommand,
-  PutEventsCommandInput,
-  PutEventsCommandOutput,
-  PutEventsRequestEntry,
-} from "@aws-sdk/client-eventbridge";
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
 const DDB_TABLE = process.env.DYNAMODB_TABLE;
-
-// Empty configuration for EventBridge
-const eventsClient = new EventBridgeClient({});
-const EVENT_BUS = process.env.EVENT_BUS;
 
 // Internal data model
 const fields: string[] = ["address", "property_id", "seller_name"];
@@ -163,50 +152,6 @@ export async function saveEntryToDB(
   let response: ContractResponse = {
     propertyId: dbEntry.property_id,
     metadata: ddbPutCommandOutput.$metadata,
-  };
-  return response;
-}
-
-export async function fireContractEvent(
-  eventDetail: ContractStatusChangedEvent,
-  source: string,
-  detailType: string
-): Promise<ContractResponse> {
-  const propertyId = eventDetail.property_id;
-
-  // Build the Command objects
-  const eventsPutEventsCommandInputEntry: PutEventsRequestEntry = {
-    EventBusName: EVENT_BUS,
-    Time: new Date(),
-    Source: source,
-    DetailType: detailType,
-    Detail: JSON.stringify(eventDetail),
-  };
-  const eventsPutEventsCommandInput: PutEventsCommandInput = {
-    Entries: [eventsPutEventsCommandInputEntry],
-  };
-  const eventsPutEventsCommand = new PutEventsCommand(
-    eventsPutEventsCommandInput
-  );
-
-  // Send the command
-  const eventsPutEventsCommandOutput: PutEventsCommandOutput =
-    await eventsClient.send(eventsPutEventsCommand);
-
-  if (eventsPutEventsCommandOutput.$metadata.httpStatusCode != 200) {
-    let error: ContractError = {
-      propertyId: propertyId,
-      name: "ContractEventsError",
-      message:
-        "Response invalid: " +
-        eventsPutEventsCommandOutput.$metadata.httpStatusCode,
-      object: eventsPutEventsCommandOutput.$metadata,
-    };
-    throw error;
-  }
-  let response: ContractResponse = {
-    propertyId: propertyId,
-    metadata: eventsPutEventsCommandOutput.$metadata,
   };
   return response;
 }
