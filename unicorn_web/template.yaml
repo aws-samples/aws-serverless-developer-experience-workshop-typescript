@@ -54,7 +54,7 @@ Mappings:
 ######################################
 Globals:
   Function:
-    Runtime: nodejs16.x
+    Runtime: nodejs18.x
     MemorySize: 128
     Timeout: 120
     Tracing: Active
@@ -151,7 +151,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
-      Handler: publicationApprovedFunction.lambdaHandler
+      Handler: publicationApprovedEventHandler.lambdaHandler
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref WebTable
@@ -178,7 +178,7 @@ Resources:
         Target: "es2020"
         Sourcemap: true
         EntryPoints: 
-          - src/approvals_service/publicationApprovedFunction.ts
+          - src/approvals_service/publicationApprovedEventHandler.ts
 
   ######################################
   # DLQs
@@ -188,6 +188,7 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
+      SqsManagedSseEnabled: true
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
       Tags:
         - Key: project

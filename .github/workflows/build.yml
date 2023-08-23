@@ -1,0 +1,40 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - '.github/workflows/*'
+      - 'unicorn_contracts/**'
+      - 'unicorn_properties/**'
+      - 'unicorn_web/**'
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - './github/workflows/*'
+      - 'unicorn_contracts/**'
+      - 'unicorn_properties/**'
+      - 'unicorn_web/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        folder: [unicorn_contracts, unicorn_properties, unicorn_web]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+        cache-dependency-path: ${{ matrix.folder }}/package-lock.json
+        cache: 'npm'
+    - uses: aws-actions/setup-sam@v2
+      with: 
+        use-installer: true
+    - run: |
+        npm ci 
+        npm run build  --if-present
+        npm test
+        sam build --use-container
+      working-directory: ${{ matrix.folder }}

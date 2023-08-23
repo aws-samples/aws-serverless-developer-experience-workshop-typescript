@@ -59,7 +59,7 @@ Globals:
   Function: 
     Tracing: Active
     Timeout: 15
-    Runtime: nodejs16.x
+    Runtime: nodejs18.x
     MemorySize: 128
     Architectures:
       - x86_64
@@ -90,7 +90,7 @@ Resources:
   ContractStatusChangedHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: contractStatusChangedFunction.lambdaHandler
+      Handler: contractStatusChangedEventHandler.lambdaHandler
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref ContractStatusTable
@@ -124,7 +124,7 @@ Resources:
         Target: "es2020"
         Sourcemap: true
         EntryPoints: 
-          - src/properties_service/contractStatusChangedFunction.ts
+          - src/properties_service/contractStatusChangedEventHandler.ts
 
   PropertiesApprovalSyncFunction:
     Type: AWS::Serverless::Function
@@ -189,7 +189,7 @@ Resources:
   ContentIntegrityValidatorFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: validateContentIntegrityFunction.lambdaHandler
+      Handler: contentIntegrityValidatorFunction.lambdaHandler
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
@@ -197,7 +197,7 @@ Resources:
         Target: "es2020"
         Sourcemap: true
         EntryPoints: 
-          - src/properties_service/validateContentIntegrityFunction.ts
+          - src/properties_service/contentIntegrityValidatorFunction.ts
 
   WaitForContractApprovalFunction:
     Type: AWS::Serverless::Function
@@ -223,6 +223,7 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
+      SqsManagedSseEnabled: true
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
       Tags:
         - Key: project
@@ -237,6 +238,7 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
+      SqsManagedSseEnabled: true
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
       Tags:
         - Key: project
