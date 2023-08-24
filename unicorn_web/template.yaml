@@ -476,35 +476,35 @@ Resources:
       RetentionInDays: 3
 
   # Permissions to allow EventBridge to send logs to CloudWatch
-  EventBridgeCloudWatchLogGroupPolicy:
-    Type: AWS::Logs::ResourcePolicy
-    Properties:
-      PolicyName: !Sub EventBridgeToCWLogsPolicy-${Stage}
-      # Note: PolicyDocument has to be established this way. See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-resourcepolicy.html#cfn-logs-resourcepolicy-policydocument
-      PolicyDocument: !Sub
-        - |
-          {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Effect": "Allow",
-                "Principal": {
-                  "Service": [
-                    "delivery.logs.amazonaws.com",
-                    "events.amazonaws.com"
-                  ]
-                },
-                "Action": [
-                  "logs:CreateLogStream",
-                  "logs:PutLogEvents"
-                ],
-                "Resource": [
-                  "${logGroup}"
-                ]
-              }
-            ]
-          }
-        - { logGroup: UnicornWebCatchAllLogGroup.Arn }
+  # EventBridgeCloudWatchLogGroupPolicy:
+  #   Type: AWS::Logs::ResourcePolicy
+  #   Properties:
+  #     PolicyName: !Sub EventBridgeToCWLogsPolicy-${Stage}
+  #     # Note: PolicyDocument has to be established this way. See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-resourcepolicy.html#cfn-logs-resourcepolicy-policydocument
+  #     PolicyDocument: !Sub
+  #       - |
+  #         {
+  #           "Version": "2012-10-17",
+  #           "Statement": [
+  #             {
+  #               "Effect": "Allow",
+  #               "Principal": {
+  #                 "Service": [
+  #                   "delivery.logs.amazonaws.com",
+  #                   "events.amazonaws.com"
+  #                 ]
+  #               },
+  #               "Action": [
+  #                 "logs:CreateLogStream",
+  #                 "logs:PutLogEvents"
+  #               ],
+  #               "Resource": [
+  #                 "${logGroup}"
+  #               ]
+  #             }
+  #           ]
+  #         }
+  #       - { logGroup: UnicornWebCatchAllLogGroup.Arn }
 
   ##### DLQs
   UnicornWebEventBusDLQ:
