@@ -287,17 +287,6 @@ Resources:
         - >-
           arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
 
-  # API GW Cloudwatch Log Group
-  UnicornWebApiLogGroup:
-    Type: AWS::Logs::LogGroup
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-    Properties:
-      RetentionInDays: !FindInMap
-        - LogsRetentionPeriodMap
-        - !Ref Stage
-        - Days
-
   # API GW IAM roles 
   UnicornWebApiIntegrationRole:
     Type: AWS::IAM::Role
@@ -326,6 +315,17 @@ Resources:
                 Action:
                   - 'lambda:InvokeFunction'
                 Resource: !GetAtt SearchFunction.Arn
+
+  # API GW Cloudwatch Log Group
+  UnicornWebApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      RetentionInDays: !FindInMap
+        - LogsRetentionPeriodMap
+        - !Ref Stage
+        - Days
 
   #### INGEST QUEUES
   UnicornWebIngestQueue:
