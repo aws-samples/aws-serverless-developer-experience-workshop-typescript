@@ -1,39 +1,13 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 AWSTemplateFormatVersion: 2010-09-09
-Transform: AWS::Serverless-2016-10-31
+Transform: 
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
 Description: >
   Unicorn Properties Services - web interface. Add, list and get details for Unicorn Properties.
 
-######################################
-# PARAMETERS
-######################################
-Parameters:
-  Stage:
-    Type: String
-    Default: Dev
-    AllowedValues:
-      - Dev
-      - Prod
-      - Local
-  WebServiceNamespace:
-    Type: String
-    Default: "unicorn.web"
-    AllowedValues:
-      - "unicorn.web"
-
-
-######################################
-# CONDITIONS
-######################################   
-Conditions:
-  IsProd: !Equals 
-    - !Ref Stage
-    - Prod
-
-######################################
-# METADATA
-######################################
+#### METADATA
 Metadata:
   cfn-lint:
     config:
@@ -42,9 +16,17 @@ Metadata:
         - ES6000
         - I3042
 
-######################################
-# MAPPINGS
-######################################   
+#### PARAMETERS
+Parameters:
+  Stage:
+    Type: String
+    Default: Local
+    AllowedValues:
+      - Local
+      - Dev
+      - Prod
+
+#### MAPPINGS
 Mappings:
   LogsRetentionPeriodMap:
     Local:
@@ -53,45 +35,75 @@ Mappings:
       Days: 3
     Prod:
       Days: 14
+  Constants:
+    ServiceNamespace:
+      Value: "unicorn.web"
+    ProjectName:
+      Value: "AWS Serverless Developer Experience"
 
-######################################
-# GLOBALS
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
-######################################
+#### CONDITIONS
+Conditions:
+  IsProd: !Equals
+    - !Ref Stage
+    - Prod
+
+#### GLOBALS
 Globals:
   Function:
-    Runtime: nodejs18.x
-    MemorySize: 128
-    Timeout: 120
+    Runtime: dotnet6
+    MemorySize: 512
+    Timeout: 15
     Tracing: Active
     Architectures:
       - x86_64
     Environment:
       Variables:
         DYNAMODB_TABLE: !Ref WebTable
-        SERVICE_NAMESPACE: !Ref WebServiceNamespace
-        POWERTOOLS_SERVICE_NAME: !Ref WebServiceNamespace
-        POWERTOOLS_TRACE_DISABLED: "false"                                                            # Explicitly disables tracing, default
-        POWERTOOLS_LOGGER_LOG_EVENT: !If [IsProd, "false", "true"]                                    # Logs incoming event, default
-        POWERTOOLS_LOGGER_SAMPLE_RATE: !If [IsProd, "0.1", "0"]                                       # Debug log sampling percentage, default
-        POWERTOOLS_METRICS_NAMESPACE: !Ref WebServiceNamespace
+        EVENT_BUS: !FindInMap [Constants, ServiceNamespace, Value]
+        SERVICE_NAMESPACE: !FindInMap [Constants, ServiceNamespace, Value]
+        POWERTOOLS_SERVICE_NAME: !FindInMap [Constants, ServiceNamespace, Value]
+        POWERTOOLS_TRACE_DISABLED: "false" # Explicitly disables tracing, default
+        POWERTOOLS_LOGGER_LOG_EVENT: !If [IsProd, "false", "true"] # Logs incoming event, default
+        POWERTOOLS_LOGGER_SAMPLE_RATE: !If [IsProd, "0.1", "0"] # Debug log sampling percentage, default
+        POWERTOOLS_METRICS_NAMESPACE: !FindInMap [Constants, ServiceNamespace, Value]
+        POWERTOOLS_LOG_LEVEL: INFO # Log level for Logger (INFO, DEBUG, etc.), default
     Tags:
       stage: !Ref Stage
-      project: AWS Serverless Developer Experience
-      service: Unicorn Web Service
+      project: !FindInMap [Constants, ProjectName, Value]
+      namespace: !FindInMap [Constants, ServiceNamespace, Value]
 
-######################################
-# RESOURCES
-######################################
+##### RESOURCES
 Resources:
-  ######################################
-  # LAMBDA FUNCTIONS
-  ######################################
+  #### SSM PARAMETERS
+  # Services own and share their namespace
+  UnicornWebNamespaceParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub /UniProp/${Stage}/UnicornWebNamespace
+      Value: !FindInMap [Constants, ServiceNamespace, Value]
+
+  # Services share their event bus name and arn
+  UnicornWebEventBusParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub /UniProp/${Stage}/UnicornWebEventBus
+      Value: !GetAtt UnicornWebEventBus.Name
+
+  UnicornWebEventBusArnParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub /UniProp/${Stage}/UnicornWebEventBusArn
+      Value: !GetAtt UnicornWebEventBus.Arn
+
+  ##### LAMBDA FUNCTIONS
   SearchFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
-      Handler: propertySearchFunction.lambdaHandler
+      CodeUri: ./SearchService
+      Handler: Unicorn.Web.SearchService::Unicorn.Web.SearchService.PropertySearchFunction::FunctionHandler
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref WebTable
@@ -101,33 +113,39 @@ Resources:
           Properties:
             Path: /search/{country}/{city}
             Method: get
-            RestApiId: !Ref WebApi
+            RestApiId:
+              Ref: UnicornWebApi
         ListPropertiesByStreet:
           Type: Api
           Properties:
             Path: /search/{country}/{city}/{street}
             Method: get
-            RestApiId: !Ref WebApi
+            RestApiId:
+              Ref: UnicornWebApi
         PropertyDetails:
           Type: Api
           Properties:
             Path: /properties/{country}/{city}/{street}/{number}
             Method: get
-            RestApiId: !Ref WebApi
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints: 
-          - src/search_service/propertySearchFunction.ts
+            RestApiId:
+              Ref: UnicornWebApi
+
+  SearchFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${SearchFunction}"
+      RetentionInDays: !FindInMap
+        - LogsRetentionPeriodMap
+        - !Ref Stage
+        - Days
 
   RequestApprovalFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
-      Handler: requestApprovalFunction.lambdaHandler
+      CodeUri: ./ApprovalService
+      Handler: Unicorn.Web.ApprovalService::Unicorn.Web.ApprovalService.RequestApprovalFunction::FunctionHandler
       Policies:
         - EventBridgePutEventsPolicy:
             EventBusName: !Ref UnicornWebEventBus
@@ -141,72 +159,62 @@ Resources:
           Properties:
             Path: /request_approval
             Method: post
-            RestApiId: !Ref WebApi
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints: 
-          - src/approvals_service/requestApprovalFunction.ts
+            RestApiId:
+              Ref: UnicornWebApi
+
+  RequestApprovalFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${RequestApprovalFunction}"
+      RetentionInDays: !FindInMap
+        - LogsRetentionPeriodMap
+        - !Ref Stage
+        - Days
 
   PublicationApprovedFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .
-      Handler: publicationApprovedEventHandler.lambdaHandler
+      CodeUri: ./ApprovalService
+      Handler: Unicorn.Web.ApprovalService::Unicorn.Web.ApprovalService.PublicationApprovedEventHandler::FunctionHandler
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref WebTable
         - DynamoDBWritePolicy:
             TableName: !Ref WebTable
       Events:
         ApprovalEvent:
           Type: EventBridgeRule
           Properties:
-            RuleName: web.publication_approved-properties.pub_eval_completed
+            RuleName: web.publicationapproved-properties.pubevalcompleted
             EventBusName: !Ref UnicornWebEventBus
             Pattern:
               source:
-                - !Sub "TODO"
+                - !Ref UnicornWebEventBus
               detail-type:
                 - PublicationEvaluationCompleted
             RetryPolicy:
               MaximumRetryAttempts: 5
               MaximumEventAgeInSeconds: 900
             DeadLetterConfig:
-              Arn: !GetAtt WebEventBusRuleDLQ.Arn
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints: 
-          - src/approvals_service/publicationApprovedEventHandler.ts
+              Arn: !GetAtt UnicornWebEventBusDLQ.Arn
 
-  ######################################
-  # DLQs
-  ######################################
-  WebEventBusRuleDLQ:
-    Type: AWS::SQS::Queue
+  PublicationApprovedFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
-      SqsManagedSseEnabled: true
-      MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
-      Tags:
-        - Key: project
-          Value: AWS Serverless Developer Experience
-        - Key: service
-          Value: !Ref WebServiceNamespace
-        - Key: stage
-          Value: !Ref Stage
+      LogGroupName: !Sub "/aws/lambda/${PublicationApprovedFunction}"
+      RetentionInDays: !FindInMap
+        - LogsRetentionPeriodMap
+        - !Ref Stage
+        - Days
 
-  ######################################
-  # API
-  ######################################
-  WebApi:
+  #### API GATEWAY REST API
+  UnicornWebApi:
     Type: AWS::Serverless::Api
+    DependsOn: UnicornWebApiGwAccountConfig
     Properties:
       StageName: !Ref Stage
       EndpointConfiguration:
@@ -215,35 +223,57 @@ Resources:
       MethodSettings:
         - MetricsEnabled: true
           ResourcePath: /*
-          HttpMethod: '*'
-          LoggingLevel: !If 
+          HttpMethod: "*"
+          LoggingLevel: !If
             - IsProd
             - ERROR
             - INFO
           ThrottlingBurstLimit: 10
           ThrottlingRateLimit: 100
       AccessLogSetting:
-        DestinationArn: !GetAtt WebApiLogGroup.Arn
-        Format: >
-          {"requestId":"$context.requestId",
-          "integration-error":"$context.integration.error",
-          "integration-status":"$context.integration.status",
-          "integration-latency":"$context.integration.latency",
-          "integration-requestId":"$context.integration.requestId",
-          "integration-integrationStatus":"$context.integration.integrationStatus",
-          "response-latency":"$context.responseLatency",
-          "status":"$context.status"}
-      DefinitionBody:
-        "Fn::Transform":
-          Name: 'AWS::Include'
-          Parameters:
-            Location: './api.yaml'
+        DestinationArn: !GetAtt UnicornWebApiLogGroup.Arn
+        Format: !ToJsonString
+          requestId: $context.requestId
+          integration-error: $context.integration.error
+          integration-status: $context.integration.status
+          integration-latency: $context.integration.latency
+          integration-requestId: $context.integration.requestId
+          integration-integrationStatus: $context.integration.integrationStatus
+          response-latency: $context.responseLatency
+          status: $context.status
+      DefinitionBody: !Transform
+        Name: "AWS::Include"
+        Parameters:
+          Location: "./api.yaml"
       Tags:
         stage: !Ref Stage
-        project: AWS Serverless Developer Experience
-        service: Unicorn Web Service
+        project: !FindInMap [Constants, ProjectName, Value]
+        namespace: Unicorn Web Service
+
+  UnicornWebApiGwAccountConfig:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt UnicornWebApiGwAccountConfigRole.Arn
+
+  # API GW IAM roles
+  UnicornWebApiGwAccountConfigRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action: "sts:AssumeRole"
+      Path: /
+      ManagedPolicyArns:
+        - >-
+          arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+
   # API GW Cloudwatch Log Group
-  WebApiLogGroup:
+  UnicornWebApiLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
@@ -253,66 +283,44 @@ Resources:
         - !Ref Stage
         - Days
 
-  # API GW IAM roles 
-  WebApiIntegrationRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          Effect: Allow
-          Action: sts:AssumeRole
-          Principal:
-            Service: apigateway.amazonaws.com
-      Policies:
-        - PolicyName: AllowSqsIntegration
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - 'sqs:SendMessage'
-                  - 'sqs:GetQueueUrl'
-                Resource: !GetAtt WebServiceIngestQueue.Arn
-
   #### INGEST QUEUES
-  WebServiceIngestQueue:
+  UnicornWebIngestQueue:
     Type: AWS::SQS::Queue
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
       SqsManagedSseEnabled: true
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
-      QueueName: !Sub WebServiceIngestQueue-${Stage}
+      QueueName: !Sub UnicornWebIngestQueue-${Stage}
       RedrivePolicy:
-        deadLetterTargetArn: !GetAtt WebServiceIngestDLQ.Arn
+        deadLetterTargetArn: !GetAtt UnicornWebIngestDLQ.Arn
         maxReceiveCount: 1
       VisibilityTimeout: 20
       Tags:
         - Key: stage
           Value: !Ref Stage
         - Key: project
-          Value: AWS Serverless Developer Experience
+          Value: !FindInMap [Constants, ProjectName, Value]
         - Key: namespace
-          Value: !Ref WebServiceNamespace
-  WebServiceIngestDLQ:
+          Value: !FindInMap [Constants, ServiceNamespace, Value]
+
+  UnicornWebIngestDLQ:
     Type: AWS::SQS::Queue
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
       SqsManagedSseEnabled: true
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
-      QueueName: !Sub WebServiceIngestDLQ-${Stage}
+      QueueName: !Sub UnicornWebIngestDLQ-${Stage}
       Tags:
         - Key: stage
           Value: !Ref Stage
         - Key: project
-          Value: AWS Serverless Developer Experience
+          Value: !FindInMap [Constants, ProjectName, Value]
         - Key: namespace
-          Value: !Ref WebServiceNamespace
-  
-  ######################################
-  # DYNAMODB TABLE
-  ######################################
+          Value: !FindInMap [Constants, ServiceNamespace, Value]
+
+  ##### DYNAMODB
   WebTable:
     Type: AWS::DynamoDB::Table
     UpdateReplacePolicy: Delete
@@ -329,16 +337,23 @@ Resources:
         - AttributeName: "SK"
           KeyType: "RANGE"
       BillingMode: PAY_PER_REQUEST
-
+      Tags:
+        - Key: project
+          Value: !FindInMap [Constants, ProjectName, Value]
+        - Key: namespace
+          Value: !FindInMap [Constants, ServiceNamespace, Value]
+        - Key: stage
+          Value: !Ref Stage
   #### EVENT BUS
-  # Event bus for Web Service used to publish and consume events
+
+  # Event bus for Properties Web used to publish and consume events
   UnicornWebEventBus:
     Type: AWS::Events::EventBus
     Properties:
       Name: !Sub UnicornWebBus-${Stage}
 
-  # Event bus policy to restrict who can publish events (should only be services from WebsServiceNamespace)
-  WebEventsBusPublishPolicy:
+  # Event bus policy to restrict who can publish events (should only be services from WebServiceNamespace)
+  UnicornWebEventBusPublishPolicy:
     Type: AWS::Events::EventBusPolicy
     Properties:
       EventBusName: !Ref UnicornWebEventBus
@@ -353,90 +368,149 @@ Resources:
         Condition:
           StringEquals:
             events:source:
-              - !Ref WebServiceNamespace
+              - !FindInMap [Constants, ServiceNamespace, Value]
 
+  # Event bus policy to restrict who can create rules on the event bus to subscribe to events published by the Contracts Service.
+  # Update this policy as you get new subscribers by adding their namespace to events:source
+  # PropertiesServiceRulePolicy:
+  #   Type: "AWS::Events::EventBusPolicy"
+  #   Properties:
+  #     EventBusName: !Ref UnicornWebEventBus
+  #     StatementId: !Sub CreateRulePolicy-${Stage}
+  #     Statement:
+  #       Effect: Allow
+  #       Principal:
+  #         AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+  #       Action:
+  #         - "events:PutRule"
+  #         - "events:DeleteRule"
+  #         - "events:DescribeRule"
+  #         - "events:DisableRule"
+  #         - "events:EnableRule"
+  #         - "events:PutTargets"
+  #         - "events:RemoveTargets"
+  #       Resource:
+  #         - !Sub >-
+  #           arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${UnicornWebEventBus.Name}/*
+  #       Condition:
+  #         StringEqualsIfExists:
+  #           "events:creatorAccount": "${aws:PrincipalAccount}"
+  #         StringEquals:
+  #           "events:source":
+  #             - !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesNamespace}}"
+  #         "Null":
+  #           "events:source": "false"
 
-  ######################################
-  # CLOUDWATCH LOG GROUPS
-  ######################################
-  WebApiLogGroup:
+  # Catchall rule used for development purposes.
+
+  UnicornWebCatchAllRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: contracts.catchall
+      Description: Catch all events published by the web service.
+      EventBusName: !Ref UnicornWebEventBus
+      EventPattern:
+        account:
+          - !Ref AWS::AccountId
+        source:
+          - !FindInMap [Constants, ServiceNamespace, Value]
+      State: ENABLED #You may want to disable this rule in production
+      Targets:
+        - Arn: !GetAtt UnicornWebCatchAllLogGroup.Arn
+          Id: !Sub UnicornContractsCatchAllLogGroupTarget-${Stage}
+
+  # CloudWatch log group used to catch all events
+  UnicornWebCatchAllLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
-      RetentionInDays: !FindInMap 
-        - LogsRetentionPeriodMap
-        - !Ref Stage
-        - Days
+      LogGroupName: !Sub
+        - "/aws/events/${Stage}/${NS}-catchall"
+        - Stage: !Ref Stage
+          NS: !FindInMap [Constants, ServiceNamespace, Value]
+      RetentionInDays: 3
 
-  SearchFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
+  # Permissions to allow EventBridge to send logs to CloudWatch
+  EventBridgeCloudWatchLogGroupPolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: !Sub EventBridgeToCWLogsPolicy-${Stage}
+      # Note: PolicyDocument has to be established this way. See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-resourcepolicy.html#cfn-logs-resourcepolicy-policydocument
+      PolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": [
+                    "delivery.logs.amazonaws.com",
+                    "events.amazonaws.com"
+                  ]
+                },
+                "Action": [
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents"
+                ],
+                "Resource": [
+                  "${contractsServiceLogGroup}"
+                ]
+              }
+            ]
+          }
+        - { contractsServiceLogGroup: UnicornWebCatchAllLogGroup.Arn }
+
+  ##### DLQs
+  UnicornWebEventBusDLQ:
+    Type: AWS::SQS::Queue
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${SearchFunction}"
-      RetentionInDays: !FindInMap 
-        - LogsRetentionPeriodMap
-        - !Ref Stage
-        - Days
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
+      Tags:
+        - Key: project
+          Value: !FindInMap [Constants, ProjectName, Value]
+        - Key: namespace
+          Value: !FindInMap [Constants, ServiceNamespace, Value]
+        - Key: stage
+          Value: !Ref Stage
 
-  RequestApprovalFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${RequestApprovalFunction}"
-      RetentionInDays: !FindInMap 
-        - LogsRetentionPeriodMap
-        - !Ref Stage
-        - Days
-
-  PublicationApprovedFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${PublicationApprovedFunction}"
-      RetentionInDays: !FindInMap 
-        - LogsRetentionPeriodMap
-        - !Ref Stage
-        - Days
-
-######################################
-# OUTPUTS
-######################################
+#### OUTPUTS
 Outputs:
-  SearchPropertiesByCity:
-    Description: "GET request to list all properties in a given city"
-    Value: !Sub "https://${WebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}"
+  ApiUrl:
+    Description: Web service API endpoint
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/"
 
-  SearchPropertiesByStreet:
-    Description: "GET request to list all properties in a given street"
-    Value: !Sub "https://${WebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}/{street}"
-
-  PropertyApproval:
-    Description: "POST request to add a property to the database"
-    Value: !Sub "https://${WebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/request_approval"
-
-  PropertyDetails:
-    Description: "GET request to get the full details of a single property"
-    Value: !Sub "https://${WebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/properties/{country}/{city}/{street}/{number}"
-
-  IsProd:
-    Description: Is Production?
-    Value: !If 
-      - IsProd
-      - "true"
-      - "false"
+  BaseUrl:
+    Description: Web service API endpoint
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
 
   WebTableName:
     Description: Name of the DynamoDB Table for Unicorn Web
     Value: !Ref WebTable
 
-  ApiUrl:
-    Description: Web service API endpoint
-    Value: !Sub "https://${WebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/"
+  SearchPropertiesByCity:
+    Description: "GET request to list all properties in a given city"
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}"
 
-  BaseUrl:
-    Description: Web service API endpoint
-    Value: !Sub "https://${WebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
+  SearchPropertiesByStreet:
+    Description: "GET request to list all properties in a given street"
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}/{street}"
+
+  PropertyApproval:
+    Description: "POST request to add a property to the database"
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/request_approval"
+
+  PropertyDetails:
+    Description: "GET request to get the full details of a single property"
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/properties/{country}/{city}/{street}/{number}"
+
+  IsProd:
+    Description: Is Production?
+    Value: !If
+      - IsProd
+      - "true"
+      - "false"
