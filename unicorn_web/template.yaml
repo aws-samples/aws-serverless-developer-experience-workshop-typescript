@@ -61,7 +61,7 @@ Globals:
     Environment:
       Variables:
         DYNAMODB_TABLE: !Ref WebTable
-        EVENT_BUS: !FindInMap [Constants, ServiceNamespace, Value]
+        EVENT_BUS: !Ref UnicornWebEventBus
         SERVICE_NAMESPACE: !FindInMap [Constants, ServiceNamespace, Value]
         POWERTOOLS_SERVICE_NAME: !FindInMap [Constants, ServiceNamespace, Value]
         POWERTOOLS_TRACE_DISABLED: "false" # Explicitly disables tracing, default
@@ -130,14 +130,6 @@ Resources:
             Method: get
             RestApiId:
               Ref: UnicornWebApi
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints: 
-          - src/search_service/propertySearchFunction.ts
 
   SearchFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -334,6 +326,7 @@ Resources:
                 Action:
                   - 'lambda:InvokeFunction'
                 Resource: !GetAtt SearchFunction.Arn
+
   #### INGEST QUEUES
   UnicornWebIngestQueue:
     Type: AWS::SQS::Queue
@@ -482,7 +475,38 @@ Resources:
           NS: !FindInMap [Constants, ServiceNamespace, Value]
       RetentionInDays: 3
 
-   ##### DLQs
+  # Permissions to allow EventBridge to send logs to CloudWatch
+  EventBridgeCloudWatchLogGroupPolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: !Sub EventBridgeToCWLogsPolicy-${Stage}
+      # Note: PolicyDocument has to be established this way. See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-resourcepolicy.html#cfn-logs-resourcepolicy-policydocument
+      PolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": [
+                    "delivery.logs.amazonaws.com",
+                    "events.amazonaws.com"
+                  ]
+                },
+                "Action": [
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents"
+                ],
+                "Resource": [
+                  "${logGroup}"
+                ]
+              }
+            ]
+          }
+        - { logGroup: UnicornWebCatchAllLogGroup.Arn }
+
+  ##### DLQs
   UnicornWebEventBusDLQ:
     Type: AWS::SQS::Queue
     UpdateReplacePolicy: Delete
