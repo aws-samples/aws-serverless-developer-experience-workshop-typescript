@@ -18,16 +18,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SearchResponseModel"
+                $ref: "#/components/schemas/PublicationEvaluationResponseModel"
       x-amazon-apigateway-integration:
         credentials: 
           Fn::GetAtt: [WebApiIntegrationRole, Arn]
         httpMethod: "POST"
-        uri: {"Fn::Sub":"arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${WebServiceIngestQueue.QueueName}"}
+        uri: {"Fn::Sub":"arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${UnicornWebIngestQueue.QueueName}"}
         responses:
           default:
             statusCode: "200"
-        passthroughBehavior: "when_no_match"
+        requestParameters:
+          integration.request.header.Content-Type: "'application/x-www-form-urlencoded'"
+        requestTemplates:
+          application/json: "Action=SendMessage&MessageBody=$input.body&MessageAttribute.1.Name=HttpMethod&MessageAttribute.1.Value.StringValue=$context.httpMethod&MessageAttribute.1.Value.DataType=String"
+        passthroughBehavior: "never"
         type: "aws"
   /search/{country}/{city}:
     get:
@@ -72,41 +76,25 @@ paths:
         schema:
           type: "string"
       x-amazon-apigateway-integration:
+        credentials: 
+          Fn::GetAtt: [WebApiIntegrationRole, Arn]
         httpMethod: "POST"
         uri: {"Fn::Sub":"arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchFunction.Arn}/invocations"}
         passthroughBehavior: "when_no_match"
         type: "aws_proxy"
 components:
   schemas:
-    SearchResponseModel:
-      required:
-      - "city"
-      - "contract"
-      - "country"
-      - "currency"
-      - "listprice"
-      - "number"
-      - "street"
-      type: "object"
-      properties:
-        country:
-          type: "string"
-        city:
-          type: "string"
-        street:
-          type: "string"
-        number:
-          type: "integer"
-        contract:
-          type: "string"
-        listprice:
-          type: "integer"
-        currency:
-          type: "string"
     PublicationEvaluationRequestModel:
       required:
       - "property_id"
       type: "object"
       properties:
         property_id:
+          type: "string"
+    PublicationEvaluationResponseModel:
+      required:
+      - "result"
+      type: "object"
+      properties:
+        result:
           type: "string"
