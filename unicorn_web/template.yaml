@@ -299,7 +299,7 @@ Resources:
         - Days
 
   # API GW IAM roles 
-  WebApiIntegrationRole:
+  UnicornWebApiIntegrationRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
