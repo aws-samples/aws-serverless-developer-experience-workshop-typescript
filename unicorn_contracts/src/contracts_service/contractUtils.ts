@@ -17,20 +17,10 @@ import {
 const ddbClient = new DynamoDBClient({});
 const DDB_TABLE = process.env.DYNAMODB_TABLE;
 
-// Internal data model
-const fields: string[] = ["address", "property_id", "seller_name"];
-
 // External data types
 export const ContractCreatedMetric: string = "ContractCreated";
 export const ContractUpdatedMetric: string = "ContractUpdated";
-export const ContractEventMetric: string = "ContractEvent";
 
-export type ContractStatusChangedEvent = {
-  contract_last_modified_on: string;
-  contract_id: string;
-  property_id: string;
-  contract_status: ContractStatusEnum;
-};
 
 export type ContractDBType = {
   address?: string;
@@ -55,16 +45,6 @@ export interface ContractError extends Error {
 export interface ContractResponse {
   propertyId: string;
   metadata: any;
-}
-
-export function validData(data: any): boolean {
-  for (let i = 0; i < fields.length; i++) {
-    let field = fields[i];
-    if (!(field in data)) {
-      return false;
-    }
-  }
-  return true;
 }
 
 export async function getContractFor(

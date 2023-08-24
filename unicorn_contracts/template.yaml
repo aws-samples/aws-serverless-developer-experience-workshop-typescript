@@ -53,7 +53,7 @@ Globals:
   Function:
     Runtime: nodejs18.x
     MemorySize: 128
-    Timeout: 3
+    Timeout: 60
     Tracing: Active
     Architectures:
       - x86_64
@@ -118,6 +118,15 @@ Resources:
             Enabled: true
             ScalingConfig:
               MaximumConcurrency: 5
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints: 
+          - src/contracts_service/contractEventHandler.ts
+
   
   ContractEventHandlerFunctionLogGroup:
     Type: AWS::Logs::LogGroup
