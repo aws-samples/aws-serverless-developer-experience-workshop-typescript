@@ -1,0 +1,112 @@
+openapi: "3.0.1"
+info:
+  title: "Unicorn Web API"
+  version: "1.0.0"
+  description: Unicorn Properties Web Service API
+paths:
+  /request_approval:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicationEvaluationRequestModel"
+        required: true
+      responses:
+        "200":
+          description: "200 response"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResponseModel"
+      x-amazon-apigateway-integration:
+        credentials: 
+          Fn::GetAtt: [WebApiIntegrationRole, Arn]
+        httpMethod: "POST"
+        uri: {"Fn::Sub":"arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${WebServiceIngestQueue.QueueName}"}
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        type: "aws"
+  /search/{country}/{city}:
+    get:
+      parameters:
+      - name: "country"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "city"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      x-amazon-apigateway-integration:
+        credentials: 
+          Fn::GetAtt: [WebApiIntegrationRole, Arn]
+        httpMethod: "POST"
+        uri: {"Fn::Sub":"arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchFunction.Arn}/invocations"}
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "aws_proxy"
+  /search/{country}/{city}/{street}:
+    get:
+      parameters:
+      - name: "street"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "country"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "city"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        uri: {"Fn::Sub":"arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchFunction.Arn}/invocations"}
+        passthroughBehavior: "when_no_match"
+        type: "aws_proxy"
+components:
+  schemas:
+    SearchResponseModel:
+      required:
+      - "city"
+      - "contract"
+      - "country"
+      - "currency"
+      - "listprice"
+      - "number"
+      - "street"
+      type: "object"
+      properties:
+        country:
+          type: "string"
+        city:
+          type: "string"
+        street:
+          type: "string"
+        number:
+          type: "integer"
+        contract:
+          type: "string"
+        listprice:
+          type: "integer"
+        currency:
+          type: "string"
+    PublicationEvaluationRequestModel:
+      required:
+      - "property_id"
+      type: "object"
+      properties:
+        property_id:
+          type: "string"

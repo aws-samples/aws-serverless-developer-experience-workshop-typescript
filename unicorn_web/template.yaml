@@ -16,6 +16,12 @@ Parameters:
       - Dev
       - Prod
       - Local
+  WebServiceNamespace:
+    Type: String
+    Default: "unicorn.web"
+    AllowedValues:
+      - "unicorn.web"
+
 
 ######################################
 # CONDITIONS
@@ -63,14 +69,12 @@ Globals:
     Environment:
       Variables:
         DYNAMODB_TABLE: !Ref WebTable
-        EVENT_BUS: !Sub "{{resolve:ssm:/UniProp/${Stage}/EventBusName}}"
-        SERVICE_NAMESPACE: !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornWebNamespace}}"
-        POWERTOOLS_SERVICE_NAME: !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornWebNamespace}}"
+        SERVICE_NAMESPACE: !Ref WebServiceNamespace
+        POWERTOOLS_SERVICE_NAME: !Ref WebServiceNamespace
         POWERTOOLS_TRACE_DISABLED: "false"                                                            # Explicitly disables tracing, default
         POWERTOOLS_LOGGER_LOG_EVENT: !If [IsProd, "false", "true"]                                    # Logs incoming event, default
         POWERTOOLS_LOGGER_SAMPLE_RATE: !If [IsProd, "0.1", "0"]                                       # Debug log sampling percentage, default
-        POWERTOOLS_METRICS_NAMESPACE: !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornWebNamespace}}"
-        LOG_LEVEL: INFO
+        POWERTOOLS_METRICS_NAMESPACE: !Ref WebServiceNamespace
     Tags:
       stage: !Ref Stage
       project: AWS Serverless Developer Experience
@@ -126,7 +130,7 @@ Resources:
       Handler: requestApprovalFunction.lambdaHandler
       Policies:
         - EventBridgePutEventsPolicy:
-            EventBusName: !Sub "{{resolve:ssm:/UniProp/${Stage}/EventBusName}}"
+            EventBusName: !Ref UnicornWebEventBus
         - DynamoDBReadPolicy:
             TableName: !Ref WebTable
         - DynamoDBWritePolicy:
@@ -160,10 +164,10 @@ Resources:
           Type: EventBridgeRule
           Properties:
             RuleName: web.publication_approved-properties.pub_eval_completed
-            EventBusName: !Sub "{{resolve:ssm:/UniProp/${Stage}/EventBusName}}"
+            EventBusName: !Ref UnicornWebEventBus
             Pattern:
               source:
-                - !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesNamespace}}"
+                - !Sub "TODO"
               detail-type:
                 - PublicationEvaluationCompleted
             RetryPolicy:
@@ -194,7 +198,7 @@ Resources:
         - Key: project
           Value: AWS Serverless Developer Experience
         - Key: service
-          Value: !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornWebNamespace}}"
+          Value: !Ref WebServiceNamespace
         - Key: stage
           Value: !Ref Stage
 
@@ -229,11 +233,83 @@ Resources:
           "integration-integrationStatus":"$context.integration.integrationStatus",
           "response-latency":"$context.responseLatency",
           "status":"$context.status"}
+      DefinitionBody:
+        "Fn::Transform":
+          Name: 'AWS::Include'
+          Parameters:
+            Location: './api.yaml'
       Tags:
         stage: !Ref Stage
         project: AWS Serverless Developer Experience
         service: Unicorn Web Service
+  # API GW Cloudwatch Log Group
+  WebApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      RetentionInDays: !FindInMap
+        - LogsRetentionPeriodMap
+        - !Ref Stage
+        - Days
 
+  # API GW IAM roles 
+  WebApiIntegrationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          Effect: Allow
+          Action: sts:AssumeRole
+          Principal:
+            Service: apigateway.amazonaws.com
+      Policies:
+        - PolicyName: AllowSqsIntegration
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sqs:SendMessage'
+                  - 'sqs:GetQueueUrl'
+                Resource: !GetAtt WebServiceIngestQueue.Arn
+
+  #### INGEST QUEUES
+  WebServiceIngestQueue:
+    Type: AWS::SQS::Queue
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
+      QueueName: !Sub WebServiceIngestQueue-${Stage}
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt WebServiceIngestDLQ.Arn
+        maxReceiveCount: 1
+      VisibilityTimeout: 20
+      Tags:
+        - Key: stage
+          Value: !Ref Stage
+        - Key: project
+          Value: AWS Serverless Developer Experience
+        - Key: namespace
+          Value: !Ref WebServiceNamespace
+  WebServiceIngestDLQ:
+    Type: AWS::SQS::Queue
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
+      QueueName: !Sub WebServiceIngestDLQ-${Stage}
+      Tags:
+        - Key: stage
+          Value: !Ref Stage
+        - Key: project
+          Value: AWS Serverless Developer Experience
+        - Key: namespace
+          Value: !Ref WebServiceNamespace
+  
   ######################################
   # DYNAMODB TABLE
   ######################################
@@ -253,6 +329,32 @@ Resources:
         - AttributeName: "SK"
           KeyType: "RANGE"
       BillingMode: PAY_PER_REQUEST
+
+  #### EVENT BUS
+  # Event bus for Web Service used to publish and consume events
+  UnicornWebEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub UnicornWebBus-${Stage}
+
+  # Event bus policy to restrict who can publish events (should only be services from WebsServiceNamespace)
+  WebEventsBusPublishPolicy:
+    Type: AWS::Events::EventBusPolicy
+    Properties:
+      EventBusName: !Ref UnicornWebEventBus
+      StatementId: !Sub WebPublishEventsPolicy-${Stage}
+      Statement:
+        Effect: Allow
+        Principal:
+          AWS:
+            - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+        Action: events:PutEvents
+        Resource: !GetAtt UnicornWebEventBus.Arn
+        Condition:
+          StringEquals:
+            events:source:
+              - !Ref WebServiceNamespace
+
 
   ######################################
   # CLOUDWATCH LOG GROUPS
