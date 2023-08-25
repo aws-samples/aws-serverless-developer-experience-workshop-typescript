@@ -5,7 +5,7 @@ import { randomUUID } from "crypto";
 import type { LambdaInterface } from "@aws-lambda-powertools/commons";
 import { MetricUnits } from "@aws-lambda-powertools/metrics";
 import { logger, metrics, tracer } from "./powertools";
-import { saveEntryToDB, ContractDBType, ContractStatusEnum, updateEntryInDB, getContractFor } from "./contractUtils";
+import { saveEntryToDB, ContractDBType, ContractStatusEnum, updateEntryInDB, getContractsFor } from "./contractUtils";
 
 class ContractEventHandlerFunction implements LambdaInterface {
   @tracer.captureLambdaHandler()
@@ -33,9 +33,10 @@ class ContractEventHandlerFunction implements LambdaInterface {
         case "PUT":
           try {
             this.updateContract(contract);
+            tracer.putMetadata("ContractStatus", contract);
           } catch (error) {
             tracer.addErrorAsMetadata(error as Error);
-            logger.error("Error during EventBridge PUT:", error as Error);
+            logger.error("Error during DDB UPDATE", error as Error);
             return;
           }
           break;
@@ -54,9 +55,10 @@ class ContractEventHandlerFunction implements LambdaInterface {
   @tracer.captureMethod()
   private async updateContract(
     contract: ContractDBType): Promise<void> {
-
+      
+    tracer.putAnnotation("propertyId", contract.property_id);
     // Check for an existing record.
-    const existing_contract = await this.getExistingContract(contract.property_id);
+    const existing_contract = await this.getExistingContracts(contract.property_id);
     if (existing_contract === undefined) {
       logger.error(`No contract found for specified Property ID ${contract.property_id}`);
       tracer.getSegment()?.addErrorFlag();
@@ -71,6 +73,8 @@ class ContractEventHandlerFunction implements LambdaInterface {
       contract_status: ContractStatusEnum.APPROVED,
       contract_last_modified_on: new Date().toISOString(),
     };
+
+    // Update record into DDB
     logger.info("Record to update", { dbEntry });
     const response = await updateEntryInDB(dbEntry);
     logger.info("Updated record for contract", {
@@ -85,6 +89,21 @@ class ContractEventHandlerFunction implements LambdaInterface {
   private async createContract(
     contract: ContractDBType,
   ): Promise<void> {
+
+    tracer.putAnnotation("propertyId", contract.property_id);
+
+    // Check for an existing record.
+    const existing_contracts = await this.getExistingContracts(contract.property_id);
+    existing_contracts.forEach(contract => {
+      // Create only if no existing record
+      if (contract !== undefined) {
+        logger.error(`Contract already exists for specified Property ID ${contract.property_id}`);
+        tracer.getSegment()?.addErrorFlag();
+        return;
+      } 
+    });
+
+
     // Construct the DDB Table record
     logger.info("Constructing DB Entry from contract", { contract });
     const createDate = new Date();
@@ -98,6 +117,8 @@ class ContractEventHandlerFunction implements LambdaInterface {
       seller_name: contract["seller_name"],
       contract_status: ContractStatusEnum.DRAFT,
     };
+
+    // Insert record into DDB
     logger.info("Record to insert", { dbEntry });
     const response = await saveEntryToDB(dbEntry);
     logger.info("Inserted record for contract", {
@@ -127,11 +148,11 @@ class ContractEventHandlerFunction implements LambdaInterface {
  * @returns
  */
   @tracer.captureMethod()
-  private async getExistingContract(
+  private async getExistingContracts(
     propertyId: string
-  ): Promise<ContractDBType | undefined> {
+  ): Promise<Array<ContractDBType>> {
     logger.info(`Record to be retrieved", ${propertyId}`);
-    const response = await getContractFor(propertyId);
+    const response = await getContractsFor(propertyId);
     logger.info("Retrieved", { response });
     return response;
   }

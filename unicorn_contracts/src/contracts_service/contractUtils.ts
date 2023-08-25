@@ -3,14 +3,15 @@
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import {
   DynamoDBClient,
-  GetItemCommand,
-  GetItemCommandInput,
+  QueryCommand,
   PutItemCommand,
   PutItemCommandInput,
   PutItemCommandOutput,
   UpdateItemCommand,
   UpdateItemCommandInput,
   UpdateItemCommandOutput,
+  QueryCommandInput,
+  QueryCommandOutput,
 } from "@aws-sdk/client-dynamodb";
 
 // Empty configuration for DynamoDB
@@ -47,23 +48,25 @@ export interface ContractResponse {
   metadata: any;
 }
 
-export async function getContractFor(
+export async function getContractsFor(
   propertyId: string
-): Promise<ContractDBType | undefined> {
-  const getItemCommandInput: GetItemCommandInput = {
-    Key: { property_id: { S: propertyId } },
+): Promise<Array<ContractDBType>> {
+
+  const getItemCommandInput: QueryCommandInput = {
+    ExpressionAttributeValues: {
+      ':property_id' : {S: propertyId}
+    },
     ProjectionExpression:
       "contract_id, property_id, contract_status, address, seller_name, contract_created, contract_last_modified_on",
     TableName: DDB_TABLE,
   };
 
-  const data = await ddbClient.send(new GetItemCommand(getItemCommandInput));
-  if (data.Item === undefined) {
-    return undefined;
-  } else {
-    const result: ContractDBType = unmarshall(data.Item) as ContractDBType;
-    return result;
-  }
+  const data: QueryCommandOutput = await ddbClient.send(new QueryCommand(getItemCommandInput));
+  if (!data?.Items) {
+    return [];
+  } 
+  const contracts = data.Items.map(record => unmarshall(record) as ContractDBType);
+  return contracts;
 }
 
 export async function updateEntryInDB(
