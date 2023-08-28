@@ -8,7 +8,6 @@ resolve_s3 = true
 capabilities = "CAPABILITY_IAM"
 image_repositories = []
 parameter_overrides = "Stage=\"Local\" ContractsServiceNamespace=\"unicorn.contracts\""
-region = "ap-southeast-2"
 confirm_changeset = true
 
 [default.build.parameters]

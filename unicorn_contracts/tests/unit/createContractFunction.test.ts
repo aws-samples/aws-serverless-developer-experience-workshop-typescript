@@ -9,7 +9,7 @@ import {
   EventBridgeClient,
   PutEventsCommand,
 } from "@aws-sdk/client-eventbridge";
-import { ContractStatusEnum } from "../../src/contracts_service/contractUtils";
+import { ContractStatusEnum } from "../../src/contracts_service/Contract";
 
 describe("Unit tests for contract creation", function () {
   const ddbMock = mockClient(DynamoDBClient);

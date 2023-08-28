@@ -12,15 +12,15 @@ import {
   UpdateItemCommandOutput,
   QueryCommandInput,
   QueryCommandOutput,
+  ScanCommand,
+  ScanCommandInput
 } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { logger } from "./powertools";
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
 const DDB_TABLE = process.env.DYNAMODB_TABLE;
-
-// External data types
-export const ContractCreatedMetric: string = "ContractCreated";
-export const ContractUpdatedMetric: string = "ContractUpdated";
 
 
 export type ContractDBType = {
@@ -34,8 +34,11 @@ export type ContractDBType = {
 };
 
 export enum ContractStatusEnum {
-  DRAFT = "DRAFT",
   APPROVED = "APPROVED",
+  CANCELLED = "CANCELLED",
+  DRAFT = 'DRAFT',
+  CLOSED = "CLOSED",
+  EXPIRED = "EXPIRED"
 }
 
 export interface ContractError extends Error {
@@ -46,27 +49,6 @@ export interface ContractError extends Error {
 export interface ContractResponse {
   propertyId: string;
   metadata: any;
-}
-
-export async function getContractsFor(
-  propertyId: string
-): Promise<Array<ContractDBType>> {
-
-  const getItemCommandInput: QueryCommandInput = {
-    ExpressionAttributeValues: {
-      ':property_id' : {S: propertyId}
-    },
-    ProjectionExpression:
-      "contract_id, property_id, contract_status, address, seller_name, contract_created, contract_last_modified_on",
-    TableName: DDB_TABLE,
-  };
-
-  const data: QueryCommandOutput = await ddbClient.send(new QueryCommand(getItemCommandInput));
-  if (!data?.Items) {
-    return [];
-  } 
-  const contracts = data.Items.map(record => unmarshall(record) as ContractDBType);
-  return contracts;
 }
 
 export async function updateEntryInDB(
@@ -103,38 +85,6 @@ export async function updateEntryInDB(
   const response: ContractResponse = {
     propertyId: dbEntry.property_id,
     metadata: ddbUpdateCommandOutput.$metadata,
-  };
-  return response;
-}
-
-export async function saveEntryToDB(
-  dbEntry: ContractDBType
-): Promise<ContractResponse> {
-  // Build the Command objects
-  const ddbPutCommandInput: PutItemCommandInput = {
-    TableName: DDB_TABLE,
-    Item: marshall(dbEntry, { removeUndefinedValues: true }),
-  };
-  const ddbPutCommand = new PutItemCommand(ddbPutCommandInput);
-
-  // Send the command
-  const ddbPutCommandOutput: PutItemCommandOutput = await ddbClient.send(
-    ddbPutCommand
-  );
-  if (ddbPutCommandOutput.$metadata.httpStatusCode != 200) {
-    let error: ContractError = {
-      propertyId: dbEntry.property_id,
-      name: "ContractDBSaveError",
-      message:
-        "Response error code: " + ddbPutCommandOutput.$metadata.httpStatusCode,
-      object: ddbPutCommandOutput.$metadata,
-    };
-    throw error;
-  }
-
-  let response: ContractResponse = {
-    propertyId: dbEntry.property_id,
-    metadata: ddbPutCommandOutput.$metadata,
   };
   return response;
 }
