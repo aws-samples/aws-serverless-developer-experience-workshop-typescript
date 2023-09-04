@@ -1,8 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import { Context, SQSEvent, SQSRecord } from "aws-lambda";
-import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
-import { ContractDBType, ContractStatusEnum, updateEntryInDB, ContractError } from "./Contract";
+import { marshall } from "@aws-sdk/util-dynamodb";
+import { ContractDBType, ContractStatusEnum, ContractError } from "./Contract";
 import {
   DynamoDBClient, UpdateItemCommand, UpdateItemCommandInput, UpdateItemCommandOutput, PutItemCommandInput, PutItemCommandOutput, PutItemCommand
 } from "@aws-sdk/client-dynamodb";
