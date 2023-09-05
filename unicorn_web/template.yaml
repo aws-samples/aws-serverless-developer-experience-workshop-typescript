@@ -12,9 +12,11 @@ Metadata:
   cfn-lint:
     config:
       ignore_checks:
+        - I3042
+        - ES1001
         - ES1007
         - ES6000
-        - I3042
+        - WS2001
 
 #### PARAMETERS
 Parameters:
@@ -43,9 +45,7 @@ Mappings:
 
 #### CONDITIONS
 Conditions:
-  IsProd: !Equals
-    - !Ref Stage
-    - Prod
+  IsProd: !Equals [!Ref Stage, Prod]
 
 #### GLOBALS
 Globals:
@@ -104,32 +104,11 @@ Resources:
   SearchFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: propertySearchFunction.lambdaHandler
+      CodeUri: ./SearchService
+      Handler: Unicorn.Web.SearchService::Unicorn.Web.SearchService.PropertySearchFunction::FunctionHandler
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref WebTable
-      Events:
-        ListPropertiesByCity:
-          Type: Api
-          Properties:
-            Path: /search/{country}/{city}
-            Method: get
-            RestApiId:
-              Ref: UnicornWebApi
-        ListPropertiesByStreet:
-          Type: Api
-          Properties:
-            Path: /search/{country}/{city}/{street}
-            Method: get
-            RestApiId:
-              Ref: UnicornWebApi
-        PropertyDetails:
-          Type: Api
-          Properties:
-            Path: /properties/{country}/{city}/{street}/{number}
-            Method: get
-            RestApiId:
-              Ref: UnicornWebApi
 
   SearchFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -145,7 +124,8 @@ Resources:
   RequestApprovalFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: requestApprovalFunction.lambdaHandler
+      CodeUri: ./ApprovalService
+      Handler: Unicorn.Web.ApprovalService::Unicorn.Web.ApprovalService.RequestApprovalFunction::FunctionHandler
       Policies:
         - EventBridgePutEventsPolicy:
             EventBusName: !Ref UnicornWebEventBus
@@ -154,21 +134,14 @@ Resources:
         - DynamoDBWritePolicy:
             TableName: !Ref WebTable
       Events:
-        AddProperty:
-          Type: Api
+        IngestQueue:
+          Type: SQS
           Properties:
-            Path: /request_approval
-            Method: post
-            RestApiId:
-              Ref: UnicornWebApi
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints: 
-          - src/approvals_service/requestApprovalFunction.ts
+            Queue: !GetAtt UnicornWebIngestQueue.Arn
+            BatchSize: 1
+            Enabled: true
+            ScalingConfig:
+              MaximumConcurrency: 5
 
   RequestApprovalFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -259,7 +232,7 @@ Resources:
       DefinitionBody: !Transform
         Name: "AWS::Include"
         Parameters:
-          Location: "./api.yaml"
+          Location: "api.yaml"
       Tags:
         stage: !Ref Stage
         project: !FindInMap [Constants, ProjectName, Value]
@@ -275,19 +248,15 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
         Statement:
           - Effect: Allow
             Principal:
               Service:
                 - apigateway.amazonaws.com
-            Action: "sts:AssumeRole"
-      Path: /
+            Action: sts:AssumeRole
       ManagedPolicyArns:
-        - >-
-          arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
 
-  # API GW IAM roles 
   UnicornWebApiIntegrationRole:
     Type: AWS::IAM::Role
     Properties:
@@ -300,20 +269,18 @@ Resources:
       Policies:
         - PolicyName: AllowSqsIntegration
           PolicyDocument:
-            Version: 2012-10-17
             Statement:
               - Effect: Allow
                 Action:
-                  - 'sqs:SendMessage'
-                  - 'sqs:GetQueueUrl'
+                  - sqs:SendMessage
+                  - sqs:GetQueueUrl
                 Resource: !GetAtt UnicornWebIngestQueue.Arn
         - PolicyName: AllowLambdaInvocation
           PolicyDocument:
-            Version: 2012-10-17
             Statement:
               - Effect: Allow
                 Action:
-                  - 'lambda:InvokeFunction'
+                  - lambda:InvokeFunction
                 Resource: !GetAtt SearchFunction.Arn
 
   # API GW Cloudwatch Log Group
@@ -335,7 +302,6 @@ Resources:
     Properties:
       SqsManagedSseEnabled: true
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
-      QueueName: !Sub UnicornWebIngestQueue-${Stage}
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt UnicornWebIngestDLQ.Arn
         maxReceiveCount: 1
@@ -355,7 +321,6 @@ Resources:
     Properties:
       SqsManagedSseEnabled: true
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
-      QueueName: !Sub UnicornWebIngestDLQ-${Stage}
       Tags:
         - Key: stage
           Value: !Ref Stage
@@ -388,8 +353,8 @@ Resources:
           Value: !FindInMap [Constants, ServiceNamespace, Value]
         - Key: stage
           Value: !Ref Stage
-  #### EVENT BUS
 
+  #### EVENT BUS
   # Event bus for Properties Web used to publish and consume events
   UnicornWebEventBus:
     Type: AWS::Events::EventBus
@@ -414,43 +379,17 @@ Resources:
             events:source:
               - !FindInMap [Constants, ServiceNamespace, Value]
 
-  # Event bus policy to restrict who can create rules on the event bus to subscribe to events published by the Contracts Service.
-  # Update this policy as you get new subscribers by adding their namespace to events:source
-  # PropertiesServiceRulePolicy:
-  #   Type: "AWS::Events::EventBusPolicy"
-  #   Properties:
-  #     EventBusName: !Ref UnicornWebEventBus
-  #     StatementId: !Sub CreateRulePolicy-${Stage}
-  #     Statement:
-  #       Effect: Allow
-  #       Principal:
-  #         AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
-  #       Action:
-  #         - "events:PutRule"
-  #         - "events:DeleteRule"
-  #         - "events:DescribeRule"
-  #         - "events:DisableRule"
-  #         - "events:EnableRule"
-  #         - "events:PutTargets"
-  #         - "events:RemoveTargets"
-  #       Resource:
-  #         - !Sub >-
-  #           arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${UnicornWebEventBus.Name}/*
-  #       Condition:
-  #         StringEqualsIfExists:
-  #           "events:creatorAccount": "${aws:PrincipalAccount}"
-  #         StringEquals:
-  #           "events:source":
-  #             - !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesNamespace}}"
-  #         "Null":
-  #           "events:source": "false"
-
   # Catchall rule used for development purposes.
 
   UnicornWebCatchAllRule:
     Type: AWS::Events::Rule
+    Metadata:
+      cfn-lint:
+        config:
+          ignore_checks:
+            - ES4000
     Properties:
-      Name: contracts.catchall
+      Name: web.catchall
       Description: Catch all events published by the web service.
       EventBusName: !Ref UnicornWebEventBus
       EventPattern:
@@ -473,38 +412,39 @@ Resources:
         - "/aws/events/${Stage}/${NS}-catchall"
         - Stage: !Ref Stage
           NS: !FindInMap [Constants, ServiceNamespace, Value]
-      RetentionInDays: 3
+      RetentionInDays: !FindInMap
+        - LogsRetentionPeriodMap
+        - !Ref Stage
+        - Days
 
   # Permissions to allow EventBridge to send logs to CloudWatch
-  # EventBridgeCloudWatchLogGroupPolicy:
-  #   Type: AWS::Logs::ResourcePolicy
-  #   Properties:
-  #     PolicyName: !Sub EventBridgeToCWLogsPolicy-${Stage}
-  #     # Note: PolicyDocument has to be established this way. See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-resourcepolicy.html#cfn-logs-resourcepolicy-policydocument
-  #     PolicyDocument: !Sub
-  #       - |
-  #         {
-  #           "Version": "2012-10-17",
-  #           "Statement": [
-  #             {
-  #               "Effect": "Allow",
-  #               "Principal": {
-  #                 "Service": [
-  #                   "delivery.logs.amazonaws.com",
-  #                   "events.amazonaws.com"
-  #                 ]
-  #               },
-  #               "Action": [
-  #                 "logs:CreateLogStream",
-  #                 "logs:PutLogEvents"
-  #               ],
-  #               "Resource": [
-  #                 "${logGroup}"
-  #               ]
-  #             }
-  #           ]
-  #         }
-  #       - { logGroup: UnicornWebCatchAllLogGroup.Arn }
+  EventBridgeCloudWatchLogGroupPolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: !Sub EvBToCWLogs-${AWS::StackName}
+      # Note: PolicyDocument has to be established this way. See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-resourcepolicy.html#cfn-logs-resourcepolicy-policydocument
+      PolicyDocument: !Sub |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "delivery.logs.amazonaws.com",
+                  "events.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Resource": [
+                "${UnicornWebCatchAllLogGroup.Arn}"
+              ]
+            }
+          ]
+        }
 
   ##### DLQs
   UnicornWebEventBusDLQ:
@@ -524,37 +464,44 @@ Resources:
 
 #### OUTPUTS
 Outputs:
+  BaseUrl:
+    Description: Web service API endpoint
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
   ApiUrl:
     Description: Web service API endpoint
     Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/"
 
-  BaseUrl:
-    Description: Web service API endpoint
-    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
+  IngestQueueUrl:
+    Description: URL for the Ingest SQS Queue
+    Value: !GetAtt UnicornWebIngestQueue.QueueUrl
 
   WebTableName:
     Description: Name of the DynamoDB Table for Unicorn Web
     Value: !Ref WebTable
 
-  SearchPropertiesByCity:
-    Description: "GET request to list all properties in a given city"
-    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}"
-
-  SearchPropertiesByStreet:
-    Description: "GET request to list all properties in a given street"
-    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}/{street}"
-
-  PropertyApproval:
-    Description: "POST request to add a property to the database"
-    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/request_approval"
-
-  PropertyDetails:
-    Description: "GET request to get the full details of a single property"
-    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/properties/{country}/{city}/{street}/{number}"
+  SearchFunctionArn:
+    Description: Search function ARN
+    Value: !GetAtt SearchFunction.Arn
+  RequestApprovalFunctionArn:
+    Description: Approval function ARN
+    Value: !GetAtt RequestApprovalFunction.Arn
+  PublicationApprovedFunctionArn:
+    Description: Publication evaluation event handler function ARN
+    Value: !GetAtt PublicationApprovedFunction.Arn
 
   IsProd:
     Description: Is Production?
-    Value: !If
-      - IsProd
-      - "true"
-      - "false"
+    Value: !If [IsProd, "true", "false"]
+
+  ApiSearchPropertiesByCity:
+    Description: "GET request to list all properties in a given city"
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}"
+  ApiSearchPropertiesByStreet:
+    Description: "GET request to list all properties in a given street"
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}/{street}"
+  ApiPropertyApproval:
+    Description: "POST request to add a property to the database"
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/request_approval"
+  ApiPropertyDetails:
+    Description: "GET request to get the full details of a single property"
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/properties/{country}/{city}/{street}/{number}"
