@@ -4,7 +4,7 @@ info:
   version: "1.0.0"
   description: Unicorn Properties Contract Service API
 paths:
-  /contracts:
+  /contract:
     post:
       requestBody:
         content:
@@ -21,13 +21,16 @@ paths:
                 $ref: "#/components/schemas/Empty"
       x-amazon-apigateway-request-validator: "Validate body"
       x-amazon-apigateway-integration:
-        credentials: 
+        credentials:
           Fn::GetAtt: [ContractsApiIntegrationRole, Arn]
         httpMethod: "POST"
-        uri: {"Fn::Sub":"arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${ContractServiceIngestQueue.QueueName}"}
+        uri:
+          "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${UnicornContractsIngestQueue.QueueName}"
         responses:
           default:
             statusCode: "200"
+            responseTemplates:
+              application/json: '{"message":"OK"}'
         requestParameters:
           integration.request.header.Content-Type: "'application/x-www-form-urlencoded'"
         requestTemplates:
@@ -80,13 +83,16 @@ paths:
                 $ref: "#/components/schemas/Empty"
       x-amazon-apigateway-request-validator: "Validate body"
       x-amazon-apigateway-integration:
-        credentials: 
+        credentials:
           Fn::GetAtt: [ContractsApiIntegrationRole, Arn]
         httpMethod: "POST"
-        uri: {"Fn::Sub":"arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${ContractServiceIngestQueue.QueueName}"}
+        uri:
+          "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${UnicornContractsIngestQueue.QueueName}"
         responses:
           default:
             statusCode: "200"
+            responseTemplates:
+              application/json: '{"message":"OK"}'
         requestParameters:
           integration.request.header.Content-Type: "'application/x-www-form-urlencoded'"
         requestTemplates:
@@ -98,10 +104,14 @@ components:
     CreateContractModel:
       required:
         - "property_id"
-        - "address"
         - "seller_name"
+        - "address"
       type: "object"
       properties:
+        property_id:
+          type: "string"
+        seller_name:
+          type: "string"
         address:
           required:
             - "city"
@@ -118,17 +128,14 @@ components:
               type: "string"
             number:
               type: "integer"
-        seller_name:
-          type: "string"
-        property_id:
-          type: "string"
     UpdateContractModel:
       required:
         - "property_id"
       type: "object"
       properties:
-        property_id:
-          type: "string"
+        $ref: "#/components/schemas/CreateContractModel/properties"
+        # property_id:
+        #   type: "string"
     Empty:
       title: "Empty Schema"
       type: "object"

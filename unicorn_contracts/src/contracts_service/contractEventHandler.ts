@@ -17,6 +17,17 @@ const DDB_TABLE = process.env.DYNAMODB_TABLE;
 
 
 class ContractEventHandlerFunction implements LambdaInterface {
+
+  /**
+   * Handles the SQS event and processes each record.
+   * 
+   * @public
+   * @async
+   * @method handler
+   * @param {SQSEvent} event - The SQS event containing the records to process.
+   * @param {Context} context - The AWS Lambda context.
+   * @returns {Promise<void>} - A promise that resolves when all records have been processed.
+   */
   @tracer.captureLambdaHandler()
   @metrics.logMetrics({ captureColdStartMetric: true, throwOnEmptyMetrics: true })
   @logger.injectLambdaContext({ logEvent: true })
@@ -60,7 +71,16 @@ class ContractEventHandlerFunction implements LambdaInterface {
     }
   }
 
-
+  /**
+   * Creates a new contract in the database.
+   * 
+   * @private
+   * @async
+   * @method createContract
+   * @param {ContractDBType} contract - The contract to be created.
+   * @returns {Promise<void>} - A promise that resolves when the contract is created.
+   * @throws {ContractError} - If there is an error during the creation process.
+   */
   @tracer.captureMethod()
   private async createContract(contract: ContractDBType): Promise<void> {
 
@@ -110,7 +130,6 @@ class ContractEventHandlerFunction implements LambdaInterface {
       throw error;
     }
 
-
     logger.info("Inserted record for contract", {
       contract_id,
       metadata: ddbPutCommandOutput.$metadata,
@@ -118,6 +137,15 @@ class ContractEventHandlerFunction implements LambdaInterface {
     metrics.addMetric("ContractCreated", MetricUnits.Count, 1);
   }
 
+  /**
+   * Updates a contract in the database.
+   * 
+   * @private
+   * @async
+   * @method updateContract
+   * @param {ContractDBType} contract - The contract to be updated.
+   * @returns {Promise<void>} - A promise that resolves when the update is complete.
+   */
   @tracer.captureMethod()
   private async updateContract(contract: ContractDBType): Promise<void> {
     const modified_date = new Date();
