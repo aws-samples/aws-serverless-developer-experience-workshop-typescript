@@ -3,37 +3,28 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Unicorn Properties Service - events synchronization with Contract Service +
-  Property Approval Workflow
+  Unicorn Properties Service resources
 
-######################################
-# METADATA
-######################################
+#### METADATA
 Metadata:
   cfn-lint:
     config:
       ignore_checks:
         - ES6000
-        - ES2003
-        - I3042
-        - I3011   # Required to ignore retention policy of inline-created SQS queue for ApprovalStateMachine's EventBridge Rule
-        - I3013   # Required to ignore retention policy of inline-created SQS queue for ApprovalStateMachine's EventBridge Rule
+        - I3011
+        - I3013
 
-######################################
-# PARAMETERS
-######################################
+#### PARAMETERS
 Parameters:
   Stage:
     Type: String
     Default: Local
     AllowedValues:
+      - Local
       - Dev
       - Prod
-      - Local
 
-######################################
-# MAPPINGS
-######################################   
+#### MAPPINGS
 Mappings:
   LogsRetentionPeriodMap:
     Local:
@@ -42,51 +33,73 @@ Mappings:
       Days: 3
     Prod:
       Days: 14
+  Constants:
+    ServiceNamespace:
+      Value: "unicorn.properties"
+    ProjectName:
+      Value: "AWS Serverless Developer Experience"
 
-######################################
-# CONDITIONS
-######################################   
+#### CONDITIONS
 Conditions:
   IsProd: !Equals 
     - !Ref Stage
     - Prod
 
-######################################
-# GLOBALS
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
-######################################
+#### GLOBALS
 Globals:
-  Function: 
-    Tracing: Active
+  Function:
+    Runtime: dotnet6
+    MemorySize: 512
     Timeout: 15
-    Runtime: nodejs18.x
-    MemorySize: 128
+    Tracing: Active
     Architectures:
       - x86_64
     Environment:
       Variables:
         NODE_OPTIONS: '--enable-source-maps'
         CONTRACT_STATUS_TABLE: !Ref ContractStatusTable
-        EVENT_BUS: !Sub "{{resolve:ssm:/UniProp/${Stage}/EventBusName}}"
-        SERVICE_NAMESPACE: !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesNamespace}}"
-        POWERTOOLS_SERVICE_NAME: !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesNamespace}}"
-        POWERTOOLS_TRACE_DISABLED: "false"                                                                # Explicitly disables tracing, default
-        POWERTOOLS_LOGGER_LOG_EVENT: !If [IsProd, "false", "true"]                                        # Logs incoming event, default
-        POWERTOOLS_LOGGER_SAMPLE_RATE: !If [IsProd, "0.1", "0"]                                           # Debug log sampling percentage, default
-        POWERTOOLS_METRICS_NAMESPACE: !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesNamespace}}"
-        LOG_LEVEL: INFO                                                                                   # Log level for Logger (INFO, DEBUG, etc.), default
+        EVENT_BUS: !Ref UnicornPropertiesEventBus
+        SERVICE_NAMESPACE: !FindInMap [Constants, ServiceNamespace, Value]
+        POWERTOOLS_SERVICE_NAME: !FindInMap [Constants, ServiceNamespace, Value]
+        POWERTOOLS_TRACE_DISABLED: "false" # Explicitly disables tracing, default
+        POWERTOOLS_LOGGER_LOG_EVENT: !If [IsProd, "false", "true"] # Logs incoming event, default
+        POWERTOOLS_LOGGER_SAMPLE_RATE: !If [IsProd, "0.1", "0"] # Debug log sampling percentage, default
+        POWERTOOLS_METRICS_NAMESPACE: !FindInMap [Constants, ServiceNamespace, Value]
+        LOG_LEVEL: INFO # Log level for Logger (INFO, DEBUG, etc.), default
     Tags:
       stage: !Ref Stage
-      project: AWS Serverless Developer Experience
-      service: Unicorn Properties Service
+      project: !FindInMap [ Constants, ProjectName, Value ]
+      namespace: !FindInMap [Constants, ServiceNamespace, Value]
 
-######################################
-# RESOURCES
-######################################
+#### RESOURCES
 Resources:
-  # ######################################
-  # # LAMBDA FUNCTIONS
-  # ######################################
+
+  #### SSM PARAMETERS
+  # Services own and share their namespace
+  UnicornPropertiesNamespaceParam: 
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub /UniProp/${Stage}/UnicornPropertiesNamespace
+      Value: !FindInMap [Constants, ServiceNamespace, Value]
+      
+  # Services share their event bus name and arn
+  UnicornPropertiesEventBusNameParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub /UniProp/${Stage}/UnicornPropertiesEventBus
+      Value: !GetAtt UnicornPropertiesEventBus.Name
+      
+  UnicornPropertiesEventBusArnParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub /UniProp/${Stage}/UnicornPropertiesEventBusArn
+      Value: !GetAtt UnicornPropertiesEventBus.Arn
+
+
+  #### LAMBDA FUNCTIONS
   ContractStatusChangedHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -94,10 +107,10 @@ Resources:
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref ContractStatusTable
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt PropertiesServiceDLQ.QueueName
+        - DynamoDBReadPolicy:
+            TableName: !Ref ContractStatusTable
       Events:
-        StatusChanged:
+        StatusChangedEvent:
           Type: EventBridgeRule
           Properties:
             RuleName: properties.contstatuschangedhdr-contracts.contstatuschanged
@@ -131,6 +144,8 @@ Resources:
     Properties:
       Handler: propertiesApprovalSyncFunction.lambdaHandler
       Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ContractStatusTable
         - DynamoDBStreamReadPolicy:
             TableName: !Ref ContractStatusTable
             StreamName: !Select 
@@ -144,7 +159,8 @@ Resources:
             - Effect: Allow
               Action:
                 - states:SendTaskSuccess
-              Resource: !Ref ApprovalStateMachine
+              Resource:
+                - !Ref ApprovalStateMachine
       Events:
         Stream:
           Type: DynamoDB
@@ -215,10 +231,8 @@ Resources:
         EntryPoints: 
           - src/properties_service/waitForContractApprovalFunction.ts
 
-  ######################################
-  # DLQs
-  ######################################
-  PropertiesEventBusRuleDLQ:  # TODO: consider moving this to shared infra rather than defining per rule
+  #### DLQs
+  PropertiesEventBusRuleDLQ:
     Type: AWS::SQS::Queue
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
@@ -227,9 +241,9 @@ Resources:
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
       Tags:
         - Key: project
-          Value: AWS Serverless Developer Experience
-        - Key: service
-          Value: !Sub '{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesNamespace}}'
+          Value: !FindInMap [ Constants, ProjectName, Value ]
+        - Key: namespace
+          Value: !FindInMap [Constants, ServiceNamespace, Value]
         - Key: stage
           Value: !Ref Stage
 
@@ -242,15 +256,13 @@ Resources:
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
       Tags:
         - Key: project
-          Value: AWS Serverless Developer Experience
-        - Key: service
-          Value: !Sub '{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesNamespace}}'
+          Value: !FindInMap [ Constants, ProjectName, Value ]
+        - Key: namespace
+          Value: !FindInMap [Constants, ServiceNamespace, Value]
         - Key: stage
           Value: !Ref Stage
 
-  ######################################
-  # STATE MACHINE
-  ######################################
+  #### STATE MACHINE
   ApprovalStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
@@ -263,9 +275,9 @@ Resources:
         - LambdaInvokePolicy:
             FunctionName: !Ref WaitForContractApprovalFunction
         - LambdaInvokePolicy:
-            FunctionName: !Ref ContractExistsCheckerFunction
-        - LambdaInvokePolicy:
             FunctionName: !Ref ContentIntegrityValidatorFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ContractExistsCheckerFunction
         - S3ReadPolicy:
             BucketName: !Sub "{{resolve:ssm:/UniProp/${Stage}/ImagesBucket}}"
         - ComprehendBasicAccessPolicy: {}
@@ -309,16 +321,14 @@ Resources:
               Type: SQS
               Destination: !GetAtt PropertiesServiceDLQ.Arn
       DefinitionSubstitutions:
-        ContentIntegrityValidator: !GetAtt ContentIntegrityValidatorFunction.Arn
-        ContractStatusChecker: !GetAtt WaitForContractApprovalFunction.Arn
         ContractExistsChecker: !GetAtt ContractExistsCheckerFunction.Arn
+        WaitForContractApproval: !GetAtt WaitForContractApprovalFunction.Arn
+        ContentIntegrityValidator: !GetAtt ContentIntegrityValidatorFunction.Arn
         ImageUploadBucketName: !Sub "{{resolve:ssm:/UniProp/${Stage}/ImagesBucket}}"
         EventBusName: !Sub "{{resolve:ssm:/UniProp/${Stage}/EventBusName}}"
-        ServiceName: !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesNamespace}}"
+        ServiceName: !FindInMap [Constants, ServiceNamespace, Value]
 
-  ######################################
-  # CLOUDWATCH LOG GROUPS
-  ######################################
+  #### CLOUDWATCH LOG GROUPS
   ContractStatusChangedHandlerFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -385,9 +395,7 @@ Resources:
         - !Ref Stage
         - Days
 
-  ######################################
-  # DYNAMODB TABLE
-  ######################################
+  #### DYNAMODB TABLE
   ContractStatusTable:
     Type: AWS::DynamoDB::Table
     UpdateReplacePolicy: Delete
@@ -404,15 +412,102 @@ Resources:
       BillingMode: PAY_PER_REQUEST
       Tags:
         - Key: project
-          Value: AWS Serverless Developer Experience
-        - Key: service
-          Value: !Sub '{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesNamespace}}'
+          Value: !FindInMap [ Constants, ProjectName, Value ]
+        - Key: namespace
+          Value: !FindInMap [Constants, ServiceNamespace, Value]
         - Key: stage
           Value: !Ref Stage
 
-######################################
-# OUTPUTS
-######################################
+
+#### EVENT BUS
+  
+  # Event bus for Contract Service used to publish and consume events
+  UnicornPropertiesEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub UnicornContractsBus-${Stage}
+
+  # Event bus policy to restrict who can publish events (should only be services from ServiceNamespace)
+  ContractEventsBusPublishPolicy:
+    Type: AWS::Events::EventBusPolicy
+    Properties:
+      EventBusName: !Ref UnicornPropertiesEventBus
+      StatementId: !Sub PropertiesPublishEventsPolicy-${Stage}
+      Statement:
+        Effect: Allow
+        Principal:
+          AWS:
+            - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+        Action: events:PutEvents
+        Resource: !GetAtt UnicornPropertiesEventBus.Arn
+        Condition:
+          StringEquals:
+            events:source:
+              - !FindInMap [Constants, ServiceNamespace, Value]
+
+  # Catchall rule used for development purposes.
+  UnicornPropertiesCatchAllRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: contracts.catchall
+      Description: Catch all events published by the contracts service.
+      EventBusName: !Ref UnicornPropertiesEventBus
+      EventPattern:
+        account:
+          - !Ref AWS::AccountId
+        source:
+          - !FindInMap [Constants, ServiceNamespace, Value]
+      State: ENABLED #You may want to disable this rule in production
+      Targets:
+        - Arn: !GetAtt UnicornPropertiesCatchAllLogGroup.Arn
+          Id: !Sub UnicornPropertiesCatchAllLogGroupTarget-${Stage}
+
+  # CloudWatch log group used to catch all events
+  UnicornPropertiesCatchAllLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub
+        - "/aws/events/${Stage}/${NS}-catchall"
+        - Stage: !Ref Stage
+          NS: !FindInMap [Constants, ServiceNamespace, Value]
+      RetentionInDays: 3
+
+  # Permissions to allow EventBridge to send logs to CloudWatch
+  EventBridgeCloudWatchLogGroupPolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: !Sub EvBToCWLogs-${AWS::StackName}
+      # Note: PolicyDocument has to be established this way. See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-resourcepolicy.html#cfn-logs-resourcepolicy-policydocument
+      PolicyDocument: !Sub
+        - |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": [
+                    "delivery.logs.amazonaws.com",
+                    "events.amazonaws.com"
+                  ]
+                },
+                "Action": [
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents"
+                ],
+                "Resource": [
+                  "${logGroup}"
+                ]
+              }
+            ]
+          }
+        - {
+          logGroup: UnicornPropertiesCatchAllLogGroup.Arn,
+        }
+
+##### OUTPUTS
 Outputs:
   ContractStatusTableName:
     Value: !Ref ContractStatusTable
