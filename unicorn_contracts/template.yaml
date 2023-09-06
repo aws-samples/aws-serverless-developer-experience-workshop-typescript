@@ -53,7 +53,7 @@ Globals:
   Function:
     Runtime: nodejs18.x
     MemorySize: 128
-    Timeout: 60
+    Timeout: 15 
     Tracing: Active
     Architectures:
       - x86_64
@@ -388,7 +388,7 @@ Resources:
                 eventName: [INSERT, MODIFY]
                 dynamodb:
                   NewImage:
-                    ContractStatus:
+                    contract_status:
                       S: [DRAFT, APPROVED]
       # Enrichment: arn:aws:execute-api:us-east-1:123456789123:53eo2i89p9/*/POST/pets
       Target: !GetAtt UnicornContractsEventBus.Arn
@@ -397,10 +397,10 @@ Resources:
           Source: !FindInMap [Constants, ServiceNamespace, Value]
           DetailType: ContractStatusChanged
         InputTemplate: !ToJsonString
-          PropertyId: "<$.dynamodb.NewImage.PropertyId.S>"
-          ContractId: "<$.dynamodb.NewImage.ContractId.S>"
-          ContractStatus: "<$.dynamodb.NewImage.ContractStatus.S>"
-          ContractLastModifiedOn: "<$.dynamodb.NewImage.ContractLastModifiedOn.S>"
+          property_id: "<$.dynamodb.NewImage.property_id.S>"
+          contract_id: "<$.dynamodb.NewImage.contract_id.S>"
+          contract_status: "<$.dynamodb.NewImage.contract_status.S>"
+          contract_last_modified_on: "<$.dynamodb.NewImage.contract_last_modified_on.S>"
 
   # IAM Role for Event Bridge Pipe
   DdbStreamToEventPipeRole:
