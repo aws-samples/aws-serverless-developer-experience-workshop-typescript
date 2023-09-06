@@ -38,7 +38,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
 
     // Parse SQS records
     for (const sqsRecord of event.Records) {
-      const contract = this.validateRecord(sqsRecord);
+      const contract = this.parseRecord(sqsRecord);
       switch (sqsRecord.messageAttributes.HttpMethod.stringValue) {
         case "POST":
           logger.info("Creating a contract", { contract });
@@ -195,8 +195,15 @@ class ContractEventHandlerFunction implements LambdaInterface {
     metrics.addMetric('ContractUpdated', MetricUnits.Count, 1);
   }
 
-
-  private validateRecord(record: SQSRecord): ContractDBType {
+  /**
+   * Parses an SQS record into ContractDBType
+   * 
+   * @private
+   * @method validateRecord
+   * @param {SQSRecord} record - The SQS record containing the contract.
+   * @returns {ContractDBType} - The contract from the SQS record
+   */
+  private parseRecord(record: SQSRecord): ContractDBType {
     let contract: ContractDBType;
     try {
       contract = JSON.parse(record.body);
