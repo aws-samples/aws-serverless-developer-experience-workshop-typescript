@@ -1,9 +1,10 @@
 version: 0.1
+
 default:
   global:
     parameters:
-      stack_name: "uni-prop-local-properties"
-      s3_prefix: "uni-prop-local-properties"
+      stack_name: uni-prop-local-properties
+      s3_prefix: uni-prop-local-properties
       resolve_s3: true
       resolve_image_repositories: true
   build:
@@ -12,12 +13,17 @@ default:
       parallel: true
   deploy:
     parameters:
-      confirm_changeset: false
-      capabilities: "CAPABILITY_IAM"
       disable_rollback: true
+      confirm_changeset: false
+      fail_on_empty_changeset: false
+      capabilities: CAPABILITY_IAM
       parameter_overrides:
+<<<<<<< HEAD
         - "Stage=local"
       image_repositories: []
+=======
+        - "Stage=Local"
+>>>>>>> f9af54f (updated sam config for unicorn_properties)
   validate:
     parameters:
       lint: true
@@ -26,25 +32,64 @@ default:
       watch: true
   local_start_api:
     parameters:
-      warm_containers: "EAGER"
+      warm_containers: EAGER
   local_start_lambda:
     parameters:
-      warm_containers: "EAGER"
+      warm_containers: EAGER
+
+schema:
+  deploy:
+    parameters:
+      stack_name: uni-prop-local-properties-schema
+      s3_prefix: uni-prop-local-properties-schema
+      template_file: integration/event-schemas.yaml
+      resolve_s3: true
+      confirm_changeset: false
+      fail_on_empty_changeset: false
+      on_failure: ROLLBACK
+      parameter_overrides:
+        - "Stage=Local"
+
+subscribers:
+  global:
+    parameters:
+      stack_name: uni-prop-local-properties-subscribers
+      s3_prefix: uni-prop-local-properties-subscribers
+      resolve_s3: true
+  deploy:
+    parameters:
+      template_file: subscriber-policies.yaml
+      confirm_changeset: false
+      fail_on_empty_changeset: false
+      on_failure: ROLLBACK
+      capabilities: CAPABILITY_IAM
+      parameter_overrides:
+        - "Stage=Local"
 
 subscriber-policies:
   global:
     parameters:
+<<<<<<< HEAD
       stack_name: uni-prop-local-properties-subscriber-policies
       s3_prefix: uni-prop-local-properties-subscriber-policies
       resolve_s3: true
   deploy:
     parameters:
       template_file: ./integration/subscriber-policies.yaml
+=======
+      stack_name: uni-prop-local-properties-subscriptions
+      s3_prefix: uni-prop-local-properties-subscriptions
+      resolve_s3: true
+  deploy:
+    parameters:
+      template_file: subscriptions.yaml
+>>>>>>> f9af54f (updated sam config for unicorn_properties)
       confirm_changeset: false
       fail_on_empty_changeset: false
       on_failure: ROLLBACK
       capabilities: CAPABILITY_IAM
       parameter_overrides:
+<<<<<<< HEAD
         - "Stage=local"
 
 subscriptions:
@@ -62,3 +107,6 @@ subscriptions:
       capabilities: CAPABILITY_IAM
       parameter_overrides:
         - "Stage=local"
+=======
+        - "Stage=Local"
+>>>>>>> f9af54f (updated sam config for unicorn_properties)
