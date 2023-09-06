@@ -37,9 +37,9 @@ class ContractEventHandlerFunction implements LambdaInterface {
   ): Promise<void> {
 
     // Parse SQS records
-    for (const sqs_record of event.Records) {
-      const contract = this.validateRecord(sqs_record);
-      switch (sqs_record.messageAttributes.HttpMethod.stringValue) {
+    for (const sqsRecord of event.Records) {
+      const contract = this.validateRecord(sqsRecord);
+      switch (sqsRecord.messageAttributes.HttpMethod.stringValue) {
         case "POST":
           logger.info("Creating a contract", { contract });
           try {
@@ -89,12 +89,12 @@ class ContractEventHandlerFunction implements LambdaInterface {
     // Construct the DDB Table record
     logger.info("Constructing DB Entry from contract", { contract });
     const createDate = new Date();
-    const contract_id = randomUUID();
+    const contractId = randomUUID();
     const dbEntry: ContractDBType = {
       property_id: contract["property_id"],
       contract_created: createDate.toISOString(),
       contract_last_modified_on: createDate.toISOString(),
-      contract_id: contract_id,
+      contract_id: contractId,
       address: contract["address"],
       seller_name: contract["seller_name"],
       contract_status: ContractStatusEnum.DRAFT,
@@ -131,7 +131,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
     }
 
     logger.info("Inserted record for contract", {
-      contract_id,
+      contractId,
       metadata: ddbPutCommandOutput.$metadata,
     });
     metrics.addMetric("ContractCreated", MetricUnits.Count, 1);
@@ -148,12 +148,12 @@ class ContractEventHandlerFunction implements LambdaInterface {
    */
   @tracer.captureMethod()
   private async updateContract(contract: ContractDBType): Promise<void> {
-    const modified_date = new Date();
+    const modifiedDate = new Date();
     const dbEntry: ContractDBType = {
       contract_id: contract.contract_id,
       property_id: contract.property_id,
       contract_status: ContractStatusEnum.APPROVED,
-      contract_last_modified_on: modified_date.toISOString(),
+      contract_last_modified_on: modifiedDate.toISOString(),
     };
 
     logger.info("Record to update", { dbEntry })
