@@ -16,7 +16,7 @@ default:
       capabilities: "CAPABILITY_IAM"
       disable_rollback: true
       parameter_overrides:
-        - "Stage=Local"
+        - "Stage=local"
       image_repositories: []
   validate:
     parameters:
@@ -31,14 +31,34 @@ default:
     parameters:
       warm_containers: "EAGER"
 
-subscriptions:
+subscriber-policies:
   global:
-    parameters: 
-      stack_name: uni-prop-local-properties-subscriptions
+    parameters:
+      stack_name: uni-prop-local-properties-subscriber-policies
+      s3_prefix: uni-prop-local-properties-subscriber-policies
+      resolve_s3: true
   deploy:
     parameters:
-      parameter_overrides: Stage="Local"
-      capabilities: CAPABILITY_IAM
-      template_file: "subscriptions.yaml"
+      template_file: ./integration/subscriber-policies.yaml
+      confirm_changeset: false
       fail_on_empty_changeset: false
       on_failure: ROLLBACK
+      capabilities: CAPABILITY_IAM
+      parameter_overrides:
+        - "Stage=local"
+
+subscriptions:
+  global:
+    parameters:
+      stack_name: uni-prop-local-properties-subscriptions
+      s3_prefix: uni-prop-local-properties-subscriptions
+      resolve_s3: true
+  deploy:
+    parameters:
+      template_file: ./integration/subscriptions.yaml
+      confirm_changeset: false
+      fail_on_empty_changeset: false
+      on_failure: ROLLBACK
+      capabilities: CAPABILITY_IAM
+      parameter_overrides:
+        - "Stage=local"

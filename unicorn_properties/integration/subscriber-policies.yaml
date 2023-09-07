@@ -7,11 +7,11 @@ Description: Defines the event bus policies that determine who can create rules 
 Parameters:
   Stage:
     Type: String
-    Default: Local
+    Default: local
     AllowedValues:
-      - Local
-      - Dev
-      - Prod
+      - local
+      - dev
+      - prod
   UnicornPropertiesEventBus:
     Type: String
     Default: UnicornPropertiesBus-Local
@@ -46,6 +46,6 @@ Resources:
             "events:creatorAccount": "${aws:PrincipalAccount}"
           StringEquals:
             "events:source":
-              - !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesNamespace}}"
+              - !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornPropertiesNamespace}}"
           "Null":
             "events:source": "false"

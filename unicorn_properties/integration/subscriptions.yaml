@@ -6,11 +6,11 @@ Description: Defines the subscriptions for
 Parameters:
   Stage:
     Type: String
-    Default: Local
+    Default: local
     AllowedValues:
-      - Local
-      - Dev
-      - Prod
+      - local
+      - dev
+      - prod
 
 Resources:
   
@@ -19,16 +19,16 @@ Resources:
     Properties:
       Name: web.publicationapproved-properties.pubevalcompleted
       Description: Publication evaluation completed subscription
-      EventBusName: !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesEventBusArn}}"
+      EventBusName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornPropertiesEventBusArn}}"
       EventPattern:
         source:
-          - !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornPropertiesNamespaceParam}}"
+          - !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornPropertiesNamespaceParam}}"
         detail-type:
           - PublicationEvaluationCompleted
       State: ENABLED
       Targets: 
         - Id: SendEventTo
-          Arn: !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornWebEventBusArn}}"
+          Arn: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebEventBusArn}}"
           RoleArn: !GetAtt UnicornPropertiesEventBusToUnicornWebEventBusRole.Arn
 
   # This IAM role allows EventBridge to assume the permissions necessary to send events 
@@ -56,7 +56,7 @@ Resources:
             Statement:            
               - Effect: Allow
                 Action: 'events:PutEvents'
-                Resource: !Sub "{{resolve:ssm:/UniProp/${Stage}/UnicornWebEventBusArn}}"
+                Resource: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebEventBusArn}}"
 
   # SQS resource policy required to allow target on devops bus to send failed messages to target DLQ
   # BlueServiceEventBusDlqPolicy: 

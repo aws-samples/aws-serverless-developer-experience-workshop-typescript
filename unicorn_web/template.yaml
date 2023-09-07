@@ -22,20 +22,20 @@ Metadata:
 Parameters:
   Stage:
     Type: String
-    Default: Local
+    Default: local
     AllowedValues:
-      - Local
-      - Dev
-      - Prod
+      - local
+      - dev
+      - prod
 
 #### MAPPINGS
 Mappings:
   LogsRetentionPeriodMap:
-    Local:
+    local:
       Days: 3
-    Dev:
+    dev:
       Days: 3
-    Prod:
+    prod:
       Days: 14
   Constants:
     ServiceNamespace:
@@ -82,22 +82,21 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub /UniProp/${Stage}/UnicornWebNamespace
+      Name: !Sub /uni-prop/${Stage}/UnicornWebNamespace
       Value: !FindInMap [Constants, ServiceNamespace, Value]
 
-  # Services share their event bus name and arn
   UnicornWebEventBusParam:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub /UniProp/${Stage}/UnicornWebEventBus
+      Name: !Sub /uni-prop/${Stage}/UnicornWebEventBus
       Value: !GetAtt UnicornWebEventBus.Name
 
   UnicornWebEventBusArnParam:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: !Sub /UniProp/${Stage}/UnicornWebEventBusArn
+      Name: !Sub /uni-prop/${Stage}/UnicornWebEventBusArn
       Value: !GetAtt UnicornWebEventBus.Arn
 
   ##### LAMBDA FUNCTIONS
@@ -116,10 +115,7 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       LogGroupName: !Sub "/aws/lambda/${SearchFunction}"
-      RetentionInDays: !FindInMap
-        - LogsRetentionPeriodMap
-        - !Ref Stage
-        - Days
+      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
   RequestApprovalFunction:
     Type: AWS::Serverless::Function
@@ -149,18 +145,13 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       LogGroupName: !Sub "/aws/lambda/${RequestApprovalFunction}"
-      RetentionInDays: !FindInMap
-        - LogsRetentionPeriodMap
-        - !Ref Stage
-        - Days
+      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
-  PublicationApprovedFunction:
+  PublicationApprovedEventHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: publicationApprovedEventHandler.lambdaHandler
       Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref WebTable
         - DynamoDBWritePolicy:
             TableName: !Ref WebTable
       Events:
@@ -174,30 +165,14 @@ Resources:
                 - !Ref UnicornWebEventBus
               detail-type:
                 - PublicationEvaluationCompleted
-            RetryPolicy:
-              MaximumRetryAttempts: 5
-              MaximumEventAgeInSeconds: 900
-            DeadLetterConfig:
-              Arn: !GetAtt UnicornWebEventBusDLQ.Arn
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints: 
-          - src/approvals_service/publicationApprovedEventHandler.ts
 
-  PublicationApprovedFunctionLogGroup:
+  PublicationApprovedEventHandlerFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${PublicationApprovedFunction}"
-      RetentionInDays: !FindInMap
-        - LogsRetentionPeriodMap
-        - !Ref Stage
-        - Days
+      LogGroupName: !Sub "/aws/lambda/${PublicationApprovedEventHandlerFunction}"
+      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
   #### API GATEWAY REST API
   UnicornWebApi:
@@ -289,10 +264,7 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
-      RetentionInDays: !FindInMap
-        - LogsRetentionPeriodMap
-        - !Ref Stage
-        - Days
+      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
   #### INGEST QUEUES
   UnicornWebIngestQueue:
@@ -302,6 +274,7 @@ Resources:
     Properties:
       SqsManagedSseEnabled: true
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
+      QueueName: !Sub UnicornWebIngestQueue-${Stage}
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt UnicornWebIngestDLQ.Arn
         maxReceiveCount: 1
@@ -321,6 +294,7 @@ Resources:
     Properties:
       SqsManagedSseEnabled: true
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
+      QueueName: !Sub UnicornWebIngestDLQ-${Stage}
       Tags:
         - Key: stage
           Value: !Ref Stage
@@ -412,10 +386,7 @@ Resources:
         - "/aws/events/${Stage}/${NS}-catchall"
         - Stage: !Ref Stage
           NS: !FindInMap [Constants, ServiceNamespace, Value]
-      RetentionInDays: !FindInMap
-        - LogsRetentionPeriodMap
-        - !Ref Stage
-        - Days
+      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
   # Permissions to allow EventBridge to send logs to CloudWatch
   EventBridgeCloudWatchLogGroupPolicy:
@@ -446,22 +417,6 @@ Resources:
           ]
         }
 
-  ##### DLQs
-  UnicornWebEventBusDLQ:
-    Type: AWS::SQS::Queue
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-    Properties:
-      SqsManagedSseEnabled: true
-      MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
-      Tags:
-        - Key: project
-          Value: !FindInMap [Constants, ProjectName, Value]
-        - Key: namespace
-          Value: !FindInMap [Constants, ServiceNamespace, Value]
-        - Key: stage
-          Value: !Ref Stage
-
 #### OUTPUTS
 Outputs:
   BaseUrl:
@@ -485,9 +440,9 @@ Outputs:
   RequestApprovalFunctionArn:
     Description: Approval function ARN
     Value: !GetAtt RequestApprovalFunction.Arn
-  PublicationApprovedFunctionArn:
+  PublicationApprovedEventHandlerFunctionArn:
     Description: Publication evaluation event handler function ARN
-    Value: !GetAtt PublicationApprovedFunction.Arn
+    Value: !GetAtt PublicationApprovedEventHandlerFunction.Arn
 
   IsProd:
     Description: Is Production?

@@ -18,7 +18,7 @@ default:
       fail_on_empty_changeset: false
       capabilities: CAPABILITY_IAM
       parameter_overrides:
-        - "Stage=Local"
+        - "Stage=local"
   validate:
     parameters:
       lint: true
@@ -35,8 +35,8 @@ default:
 subscribers:
   global:
     parameters:
-      stack_name: uni-prop-local-contract-subscribers
-      s3_prefix: uni-prop-local-contract-subscribers
+      stack_name: uni-prop-local-contract-subscriber-policies
+      s3_prefix: uni-prop-local-contract-subscriber-policies
       resolve_s3: true
   deploy:
     parameters:
@@ -46,4 +46,4 @@ subscribers:
       on_failure: ROLLBACK
       capabilities: CAPABILITY_IAM
       parameter_overrides:
-        - "Stage=Local"
+        - "Stage=local"
