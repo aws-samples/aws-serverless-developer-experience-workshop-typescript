@@ -54,7 +54,7 @@ Globals:
   Function:
     Runtime: nodejs18.x
     MemorySize: 128
-    Timeout: 60
+    Timeout: 15
     Tracing: Active
     Architectures:
       - x86_64
@@ -103,8 +103,7 @@ Resources:
   SearchFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./SearchService
-      Handler: Unicorn.Web.SearchService::Unicorn.Web.SearchService.PropertySearchFunction::FunctionHandler
+      Handler: propertySearchFunction.lambdaHandler
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref WebTable
@@ -120,8 +119,7 @@ Resources:
   RequestApprovalFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./ApprovalService
-      Handler: Unicorn.Web.ApprovalService::Unicorn.Web.ApprovalService.RequestApprovalFunction::FunctionHandler
+      Handler: publicationApprovedEventHandler.lambdaHandler
       Policies:
         - EventBridgePutEventsPolicy:
             EventBusName: !Ref UnicornWebEventBus
