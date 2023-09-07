@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 import { APIGatewayProxyEvent, Context } from "aws-lambda";
 import { randomUUID } from "crypto";
-import { lambdaHandler } from "../../src/contracts_service/createContractFunction";
+import { lambdaHandler } from "../../src/contracts_service/contractEventHandler";
 import { mockClient } from "aws-sdk-client-mock";
 import { DynamoDBClient, PutItemCommandInput } from "@aws-sdk/client-dynamodb";
 import {
