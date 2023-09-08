@@ -59,7 +59,7 @@ Globals:
   Function: 
     Tracing: Active
     Timeout: 15
-    Runtime: nodejs16.x
+    Runtime: nodejs18.x
     MemorySize: 128
     Architectures:
       - x86_64
