@@ -18,12 +18,7 @@ default:
       fail_on_empty_changeset: false
       capabilities: CAPABILITY_IAM
       parameter_overrides:
-<<<<<<< HEAD
         - "Stage=local"
-      image_repositories: []
-=======
-        - "Stage=Local"
->>>>>>> f9af54f (updated sam config for unicorn_properties)
   validate:
     parameters:
       lint: true
@@ -37,7 +32,7 @@ default:
     parameters:
       warm_containers: EAGER
 
-schema:
+schemas:
   deploy:
     parameters:
       stack_name: uni-prop-local-properties-schema
@@ -48,48 +43,22 @@ schema:
       fail_on_empty_changeset: false
       on_failure: ROLLBACK
       parameter_overrides:
-        - "Stage=Local"
-
-subscribers:
-  global:
-    parameters:
-      stack_name: uni-prop-local-properties-subscribers
-      s3_prefix: uni-prop-local-properties-subscribers
-      resolve_s3: true
-  deploy:
-    parameters:
-      template_file: subscriber-policies.yaml
-      confirm_changeset: false
-      fail_on_empty_changeset: false
-      on_failure: ROLLBACK
-      capabilities: CAPABILITY_IAM
-      parameter_overrides:
-        - "Stage=Local"
+        - "Stage=local"
 
 subscriber-policies:
   global:
     parameters:
-<<<<<<< HEAD
       stack_name: uni-prop-local-properties-subscriber-policies
       s3_prefix: uni-prop-local-properties-subscriber-policies
       resolve_s3: true
   deploy:
     parameters:
-      template_file: ./integration/subscriber-policies.yaml
-=======
-      stack_name: uni-prop-local-properties-subscriptions
-      s3_prefix: uni-prop-local-properties-subscriptions
-      resolve_s3: true
-  deploy:
-    parameters:
-      template_file: subscriptions.yaml
->>>>>>> f9af54f (updated sam config for unicorn_properties)
+      template_file: ./Integration/subscriber-policies.yaml
       confirm_changeset: false
       fail_on_empty_changeset: false
       on_failure: ROLLBACK
       capabilities: CAPABILITY_IAM
       parameter_overrides:
-<<<<<<< HEAD
         - "Stage=local"
 
 subscriptions:
@@ -107,6 +76,3 @@ subscriptions:
       capabilities: CAPABILITY_IAM
       parameter_overrides:
         - "Stage=local"
-=======
-        - "Stage=Local"
->>>>>>> f9af54f (updated sam config for unicorn_properties)

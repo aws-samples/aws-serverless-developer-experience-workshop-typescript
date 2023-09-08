@@ -12,40 +12,35 @@ Parameters:
       - local
       - dev
       - prod
-  UnicornPropertiesEventBus:
-    Type: String
-    Default: UnicornPropertiesBus-Local
-    AllowedValues:
-      - UnicornPropertiesBus-Local
-      - UnicornPropertiesBus-Dev
-      - UnicornPropertiesBus-Prod
 
 Resources:
   # Update this policy as you get new subscribers by adding their namespace to events:source
-  PropertiesServiceRulePolicy:
-    Type: "AWS::Events::EventBusPolicy"
+  CrossServiceCreateRulePolicy:
+    Type: AWS::Events::EventBusPolicy
     Properties:
-      EventBusName: !Ref UnicornPropertiesEventBus
+      EventBusName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornPropertiesEventBus}}"
       StatementId: !Sub CreateRulePolicy-${Stage}
       Statement:
         Effect: Allow
         Principal:
           AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
         Action:
-          - "events:PutRule"
-          - "events:DeleteRule"
-          - "events:DescribeRule"
-          - "events:DisableRule"
-          - "events:EnableRule"
-          - "events:PutTargets"
-          - "events:RemoveTargets"
+          - events:PutRule
+          - events:DeleteRule
+          - events:DescribeRule
+          - events:DisableRule
+          - events:EnableRule
+          - events:PutTargets
+          - events:RemoveTargets
         Resource:
-          - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${UnicornPropertiesEventBus}/*"
+          - !Sub
+              - arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${eventBusName}/*
+              - eventBusName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornPropertiesEventBus}}"
         Condition:
           StringEqualsIfExists:
             "events:creatorAccount": "${aws:PrincipalAccount}"
           StringEquals:
             "events:source":
-              - !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornPropertiesNamespace}}"
+              - !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornContractsNamespace}}"
           "Null":
             "events:source": "false"

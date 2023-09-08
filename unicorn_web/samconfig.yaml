@@ -32,7 +32,7 @@ default:
     parameters:
       warm_containers: EAGER
 
-schema:
+schemas:
   global:
     parameters:
       stack_name: uni-prop-local-web-schema
@@ -45,9 +45,9 @@ schema:
       fail_on_empty_changeset: false
       on_failure: ROLLBACK
       parameter_overrides:
-        - "Stage=Local"
+        - "Stage=local"
 
-subscribers:
+subscriber-policies:
   global:
     parameters:
       stack_name: uni-prop-local-web-subscriber-policies

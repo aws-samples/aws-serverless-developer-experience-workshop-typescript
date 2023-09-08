@@ -32,7 +32,22 @@ default:
     parameters:
       warm_containers: EAGER
 
-subscribers:
+schemas:
+  global:
+    parameters:
+      stack_name: uni-prop-local-contract-schemas
+      s3_prefix: uni-prop-local-contract-schemas
+      resolve_s3: true
+  deploy:
+    parameters:
+      template_file: ./Integration/event-schemas.yaml
+      confirm_changeset: false
+      fail_on_empty_changeset: false
+      on_failure: ROLLBACK
+      parameter_overrides:
+        - "Stage=local"
+
+subscriber-policies:
   global:
     parameters:
       stack_name: uni-prop-local-contract-subscriber-policies
@@ -40,7 +55,7 @@ subscribers:
       resolve_s3: true
   deploy:
     parameters:
-      template_file: ./subscriber-policies.yaml
+      template_file: ./integration/subscriber-policies.yaml
       confirm_changeset: false
       fail_on_empty_changeset: false
       on_failure: ROLLBACK

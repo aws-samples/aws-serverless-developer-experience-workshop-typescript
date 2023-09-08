@@ -125,8 +125,6 @@ Resources:
             EventBusName: !Ref UnicornWebEventBus
         - DynamoDBReadPolicy:
             TableName: !Ref WebTable
-        - DynamoDBWritePolicy:
-            TableName: !Ref WebTable
       Events:
         IngestQueue:
           Type: SQS
@@ -352,7 +350,6 @@ Resources:
               - !FindInMap [Constants, ServiceNamespace, Value]
 
   # Catchall rule used for development purposes.
-
   UnicornWebCatchAllRule:
     Type: AWS::Events::Rule
     Metadata:
