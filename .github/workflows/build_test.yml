@@ -1,8 +1,6 @@
 name: Build & Test Workflow
 
-permissions:
-  id-token: write # This is required for requesting the JWT
-  contents: read  # This is required for actions/checkout
+
 
 on:
   push:
@@ -24,8 +22,11 @@ env:
   AWS_REGION : "ap-southeast-2"
 
 jobs:
-  build:
+  service:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       matrix:
         folder: [unicorn_contracts, unicorn_properties, unicorn_web]
