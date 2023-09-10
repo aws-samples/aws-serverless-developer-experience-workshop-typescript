@@ -22,7 +22,8 @@
     "unit": "jest --config=jest.config.test.unit.ts",
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "deploy":"sam build && sam deploy --no-confirm-changeset"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.114",
