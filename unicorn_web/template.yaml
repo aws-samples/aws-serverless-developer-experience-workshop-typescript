@@ -44,7 +44,7 @@ Globals:
   Api:
     OpenApiVersion: 3.0.1
   Function:
-    Runtime: python3.11
+    Runtime: nodejs18.x
     MemorySize: 128
     Timeout: 15
     Tracing: Active
@@ -87,8 +87,7 @@ Resources:
   SearchFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./SearchService
-      Handler: Unicorn.Web.SearchService::Unicorn.Web.SearchService.PropertySearchFunction::FunctionHandler
+      Handler: propertySearchFunction.lambdaHandler
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref WebTable
@@ -151,8 +150,7 @@ Resources:
   PublicationApprovedEventHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./ApprovalService
-      Handler: Unicorn.Web.ApprovalService::Unicorn.Web.ApprovalService.PublicationApprovedEventHandler::FunctionHandler
+      Handler: publicationApprovedEventHandler.lambdaHandler
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref WebTable
