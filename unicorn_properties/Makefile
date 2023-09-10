@@ -6,10 +6,12 @@ stackName		:= $(shell yq -oy '.default.global.parameters.stack_name' samconfig.y
 build:
 	sam validate --lint
 	cfn-lint template.yaml -a cfn_lint_serverless.rules
+	poetry export --without-hashes --format=requirements.txt --output=src/requirements.txt
 	sam build -c $(DOCKER_OPTS)
 
 deps:
 	npm install
+	poetry install
 
 deploy: build
 	sam deploy
@@ -22,7 +24,7 @@ unit-test:
 	npm test --  tests/unit/
 
 integration-test: deps
-	npm test --  tests/integration/
+	poetry run pytest tests/integration/
 
 #### Utilities
 sync:
@@ -35,10 +37,14 @@ clean:
 	find . -type d -name __pycache__ -exec rm -rf {} \; 2>/dev/null || true
 	find . -type f -name requirements.txt -exec rm -f {} \; 2>/dev/null || true
 	npx jest --clearCache
-	rm -rf .aws-sam/ htmlcov/ .coverage || true
+	rm -rf node_modules/ .pytest_cache/ .aws-sam/ htmlcov/ .coverage || true
 
 delete:
 	sam delete --stack-name $(stackName) --no-prompts
 
+# NOTE: [2023-05-09] This is a fix for installing Poetry dependencies in GitHub Actions
 ci_init:
 	npm ci
+	poetry export --without-hashes --format=requirements.txt --output=src/requirements.txt --with dev
+	poetry run pip install -r src/requirements.txt
+	poetry install -n
