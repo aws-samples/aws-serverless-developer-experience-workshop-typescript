@@ -106,3 +106,7 @@ class TestCreateContract(TestCase):
                                 Key={'property_id': {'S': 'usa/anytown/main-street/111'}})
         
         assert ddb_resp['Item']['contract_status']['S'] == 'APPROVED'
+<<<<<<< HEAD
+=======
+        assert ddb_resp['Item'].get('sfn_wait_approved_task_token', None) is not None
+>>>>>>> 153caca (unicorn_properties integration tests)
