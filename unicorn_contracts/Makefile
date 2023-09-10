@@ -16,22 +16,27 @@ build:
 	sam build -c $(DOCKER_OPTS)
 
 deps:
+	poetry install
 	npm i
 
 deploy: build
 	sam deploy --no-confirm-changeset
 
+# NOTE: [2023-05-09] This is a fix for installing Poetry dependencies in GitHub Actions
 ci_init:
+	poetry export --without-hashes --format=requirements.txt --output=src/requirements.txt --with dev
+	poetry install -n
 	npm ci
+
 
 #### Tests
 test: unit-test integration-test
 
 unit-test:
-	npm test -- tests/unit/
+	npm test --  --passWithNoTests
 
 integration-test: deps
-	npm test tests/integration/
+	poetry run pytest tests/integration/
 
 curl-test: clean-tests
 	$(call runif,CREATE CONTRACT)
@@ -67,7 +72,7 @@ clean:
 	find . -type d -name __pycache__ -exec rm -rf {} \; 2>/dev/null || true
 	find . -type f -name requirements.txt -exec rm -f {} \; 2>/dev/null || true
 	npx jest --clearCache
-	rm -rf .node_modules/ .aws-sam/ htmlcov/ .coverage || true
+	rm -rf .pytest_cache/ .aws-sam/ htmlcov/ .coverage node_modules/ || true
 
 delete:
 	sam delete --stack-name $(stackName) --no-prompts
@@ -76,7 +81,7 @@ delete:
 #### Helper Functions
 define runif
 	@echo
-	@echo "Run $(1) now?"
+	@echo "Run $(1) now? (Y/n)"
 	@read
 	@echo "Running $(1)"
 endef
@@ -85,7 +90,8 @@ define ddb_get
 	@aws dynamodb get-item \
 		--table-name $(call cf_output,$(stackName),ContractsTableName) \
 		--key 		'$(1)' \
-	| jq -f tests/integration/transformations/ddb_contract.jq
+	| jq -f tests/integration/transformations/ddb_contract.jq \
+	| diff -y tests/integration/events/create_contract_valid_payload_1.json - || :
 endef
 
 define ddb_delete
