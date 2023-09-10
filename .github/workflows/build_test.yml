@@ -26,6 +26,7 @@ jobs:
   shared-infrastructure:
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v3
     - name: Configure AWS SAM
       uses: aws-actions/setup-sam@v2
       with: 
