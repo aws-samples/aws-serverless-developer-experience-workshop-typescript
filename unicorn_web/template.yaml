@@ -7,7 +7,6 @@ Transform:
 Description: >
   Unicorn Properties Services - web interface. Add, list and get details for Unicorn Properties.
 
-#### METADATA
 Metadata:
   cfn-lint:
     config:
@@ -16,9 +15,7 @@ Metadata:
         - ES1001
         - ES1007
         - ES6000
-        - WS2001
 
-#### PARAMETERS
 Parameters:
   Stage:
     Type: String
@@ -28,7 +25,6 @@ Parameters:
       - dev
       - prod
 
-#### MAPPINGS
 Mappings:
   LogsRetentionPeriodMap:
     local:
@@ -43,7 +39,6 @@ Mappings:
     ProjectName:
       Value: "AWS Serverless Developer Experience"
 
-#### CONDITIONS
 Conditions:
   IsProd: !Equals [!Ref Stage, Prod]
 
@@ -62,29 +57,21 @@ Globals:
       Variables:
         DYNAMODB_TABLE: !Ref WebTable
         EVENT_BUS: !Ref UnicornWebEventBus
-        SERVICE_NAMESPACE: !FindInMap [Constants, ServiceNamespace, Value]
-        POWERTOOLS_SERVICE_NAME: !FindInMap [Constants, ServiceNamespace, Value]
+        SERVICE_NAMESPACE: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
+        POWERTOOLS_SERVICE_NAME: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
         POWERTOOLS_TRACE_DISABLED: "false" # Explicitly disables tracing, default
         POWERTOOLS_LOGGER_LOG_EVENT: !If [IsProd, "false", "true"] # Logs incoming event, default
         POWERTOOLS_LOGGER_SAMPLE_RATE: !If [IsProd, "0.1", "0"] # Debug log sampling percentage, default
-        POWERTOOLS_METRICS_NAMESPACE: !FindInMap [Constants, ServiceNamespace, Value]
+        POWERTOOLS_METRICS_NAMESPACE: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
         POWERTOOLS_LOG_LEVEL: INFO # Log level for Logger (INFO, DEBUG, etc.), default
     Tags:
       stage: !Ref Stage
       project: !FindInMap [Constants, ProjectName, Value]
-      namespace: !FindInMap [Constants, ServiceNamespace, Value]
+      namespace: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
 
-##### RESOURCES
 Resources:
   #### SSM PARAMETERS
-  # Services own and share their namespace
-  UnicornWebNamespaceParam:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub /uni-prop/${Stage}/UnicornWebNamespace
-      Value: !FindInMap [Constants, ServiceNamespace, Value]
-
+  
   UnicornWebEventBusParam:
     Type: AWS::SSM::Parameter
     Properties:
@@ -108,6 +95,7 @@ Resources:
         - DynamoDBReadPolicy:
             TableName: !Ref WebTable
 
+  # Log group for the SearchFunction
   SearchFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -135,6 +123,7 @@ Resources:
             ScalingConfig:
               MaximumConcurrency: 5
 
+  # Log group for the RequestApprovalFunction  
   RequestApprovalFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -143,6 +132,7 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${RequestApprovalFunction}"
       RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
+  # Respond to PublicationEvaluationCompleted events from Unicorn Web EventBus
   PublicationApprovedEventHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -150,11 +140,15 @@ Resources:
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref WebTable
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
       Events:
         ApprovalEvent:
           Type: EventBridgeRule
           Properties:
-            RuleName: web.publicationapproved-properties.pubevalcompleted
+            RuleName: unicorn.web-PublicationEvaluationCompleted
             EventBusName: !Ref UnicornWebEventBus
             Pattern:
               source:
@@ -162,6 +156,7 @@ Resources:
               detail-type:
                 - PublicationEvaluationCompleted
 
+  # Log group for the PublicationApprovedEventHandlerFunction
   PublicationApprovedEventHandlerFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -254,7 +249,7 @@ Resources:
                   - lambda:InvokeFunction
                 Resource: !GetAtt SearchFunction.Arn
 
-  # API GW Cloudwatch Log Group
+  # API GW CloudWatch Logs Group, logs all requests from API Gateway
   UnicornWebApiLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -263,6 +258,7 @@ Resources:
       RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
   #### INGEST QUEUES
+  # Queue API Gateway requests to be processed by RequestApprovalFunction
   UnicornWebIngestQueue:
     Type: AWS::SQS::Queue
     UpdateReplacePolicy: Delete
@@ -281,8 +277,9 @@ Resources:
         - Key: project
           Value: !FindInMap [Constants, ProjectName, Value]
         - Key: namespace
-          Value: !FindInMap [Constants, ServiceNamespace, Value]
+          Value: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
 
+  # DeadLetterQueue for UnicornWebIngestQueue. Contains messages that failed to be processed
   UnicornWebIngestDLQ:
     Type: AWS::SQS::Queue
     UpdateReplacePolicy: Delete
@@ -297,9 +294,10 @@ Resources:
         - Key: project
           Value: !FindInMap [Constants, ProjectName, Value]
         - Key: namespace
-          Value: !FindInMap [Constants, ServiceNamespace, Value]
+          Value: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
 
   ##### DYNAMODB
+  # Persists Property details in DynamoDB
   WebTable:
     Type: AWS::DynamoDB::Table
     UpdateReplacePolicy: Delete
@@ -320,18 +318,18 @@ Resources:
         - Key: project
           Value: !FindInMap [Constants, ProjectName, Value]
         - Key: namespace
-          Value: !FindInMap [Constants, ServiceNamespace, Value]
+          Value: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
         - Key: stage
           Value: !Ref Stage
 
   #### EVENT BUS
-  # Event bus for Properties Web used to publish and consume events
+  # Event bus for Unicorn Web Service used to publish and consume events
   UnicornWebEventBus:
     Type: AWS::Events::EventBus
     Properties:
       Name: !Sub UnicornWebBus-${Stage}
 
-  # Event bus policy to restrict who can publish events (should only be services from WebServiceNamespace)
+  # Event bus policy to restrict who can publish events (should only be services from UnicornWebNamespace)
   UnicornWebEventBusPublishPolicy:
     Type: AWS::Events::EventBusPolicy
     Properties:
@@ -347,7 +345,7 @@ Resources:
         Condition:
           StringEquals:
             events:source:
-              - !FindInMap [Constants, ServiceNamespace, Value]
+              - !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
 
   # Catchall rule used for development purposes.
   UnicornWebCatchAllRule:
@@ -365,7 +363,9 @@ Resources:
         account:
           - !Ref AWS::AccountId
         source:
-          - !FindInMap [Constants, ServiceNamespace, Value]
+          - !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornContractsNamespace}}"
+          - !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornPropertiesNamespace}}"
+          - !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
       State: ENABLED #You may want to disable this rule in production
       Targets:
         - Arn: !GetAtt UnicornWebCatchAllLogGroup.Arn
@@ -380,7 +380,7 @@ Resources:
       LogGroupName: !Sub
         - "/aws/events/${Stage}/${NS}-catchall"
         - Stage: !Ref Stage
-          NS: !FindInMap [Constants, ServiceNamespace, Value]
+          NS: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
       RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
   # Permissions to allow EventBridge to send logs to CloudWatch
@@ -412,7 +412,6 @@ Resources:
           ]
         }
 
-#### OUTPUTS
 Outputs:
   BaseUrl:
     Description: Web service API endpoint
@@ -420,6 +419,19 @@ Outputs:
   ApiUrl:
     Description: Web service API endpoint
     Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/"
+
+  ApiSearchPropertiesByCity:
+    Description: "GET request to list all properties in a given city"
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}"
+  ApiSearchPropertiesByStreet:
+    Description: "GET request to list all properties in a given street"
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}/{street}"
+  ApiPropertyApproval:
+    Description: "POST request to add a property to the database"
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/request_approval"
+  ApiPropertyDetails:
+    Description: "GET request to get the full details of a single property"
+    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/properties/{country}/{city}/{street}/{number}"
 
   IngestQueueUrl:
     Description: URL for the Ingest SQS Queue
@@ -439,19 +451,5 @@ Outputs:
     Description: Publication evaluation event handler function ARN
     Value: !GetAtt PublicationApprovedEventHandlerFunction.Arn
 
-  IsProd:
-    Description: Is Production?
-    Value: !If [IsProd, "true", "false"]
-
-  ApiSearchPropertiesByCity:
-    Description: "GET request to list all properties in a given city"
-    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}"
-  ApiSearchPropertiesByStreet:
-    Description: "GET request to list all properties in a given street"
-    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}/{street}"
-  ApiPropertyApproval:
-    Description: "POST request to add a property to the database"
-    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/request_approval"
-  ApiPropertyDetails:
-    Description: "GET request to get the full details of a single property"
-    Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/properties/{country}/{city}/{street}/{number}"
+  UnicornWebCatchAllLogGroupArn:
+    Value: !GetAtt UnicornWebCatchAllLogGroup.Arn
