@@ -65,7 +65,6 @@ Globals:
       namespace: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornPropertiesNamespace}}"
 
 Resources:
-
   # Services share their event bus name and arn
   UnicornPropertiesEventBusNameParam:
     Type: AWS::SSM::Parameter
@@ -231,6 +230,20 @@ Resources:
         - Key: stage
           Value: !Ref Stage
 
+  PropertiesServiceDLQ:
+    Type: AWS::SQS::Queue
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      SqsManagedSseEnabled: true
+      MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
+      Tags:
+        - Key: project
+          Value: !FindInMap [ Constants, ProjectName, Value ]
+        - Key: namespace
+          Value: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornPropertiesNamespace}}"
+        - Key: stage
+          Value: !Ref Stage
 
   #### STATE MACHINE
   ApprovalStateMachine:
@@ -298,6 +311,55 @@ Resources:
         EventBusName: !GetAtt UnicornPropertiesEventBus.Name
         ServiceName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornPropertiesNamespace}}"
 
+  #### CLOUDWATCH LOG GROUPS
+  ContractStatusChangedHandlerFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ContractStatusChangedHandlerFunction}"
+      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+
+  PropertiesApprovalSyncFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${PropertiesApprovalSyncFunction}"
+      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+
+  ContractExistsCheckerFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ContractExistsCheckerFunction}"
+      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+
+  ContentIntegrityValidatorFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ContentIntegrityValidatorFunction}"
+      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+
+  WaitForContractApprovalFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${WaitForContractApprovalFunction}"
+      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+
+  # Store ApprovalStateMachineLogGroup workflow execution logs
+  ApprovalStateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub "/aws/states/${AWS::StackName}-ApprovalStateMachine"
+      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
   #### DEAD LETTER QUEUES
   # Store EventBridge events that failed to be DELIVERED to ContractStatusChangedHandlerFunction
