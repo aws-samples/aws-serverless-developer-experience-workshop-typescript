@@ -372,10 +372,10 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       AttributeDefinitions:
-        - AttributeName: propertyId
+        - AttributeName: property_id
           AttributeType: S
       KeySchema:
-        - AttributeName: propertyId
+        - AttributeName: property_id
           KeyType: HASH
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
