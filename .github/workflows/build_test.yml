@@ -46,7 +46,7 @@ jobs:
         role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: SAM Build, Deploy and Test
+    - name: Configure AWS SAM
       uses: aws-actions/setup-sam@v2
       with: 
         use-installer: true
@@ -62,12 +62,16 @@ jobs:
 
     - name: Initialize and install dependencies
       run: make ci_init
+      working-directory: ${{ matrix.folder }}
 
     - name: Build the SAM template
       run: sam build 
+      working-directory: ${{ matrix.folder }}
 
     - name: Deploy the SAM template
       run: sam deploy --no-confirm-changeset
+      working-directory: ${{ matrix.folder }}
 
     - name: Run integration tests
       run: make integration-test
+      working-directory: ${{ matrix.folder }}
