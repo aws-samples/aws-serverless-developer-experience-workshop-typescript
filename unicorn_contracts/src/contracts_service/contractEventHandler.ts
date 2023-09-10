@@ -161,7 +161,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
       TableName: DDB_TABLE,
       Key: { property_id: { S: dbEntry.property_id } },
       UpdateExpression: "set contract_status = :t, modified_date = :m",
-      ConditionExpression: 'attribute_exists(property_id) AND contract_status IN (:status)',
+      ConditionExpression: 'attribute_exists(property_id) AND contract_status = :DRAFT',
       ExpressionAttributeValues: {
         ":t": { S: dbEntry.contract_status as string },
         ":m": { S: dbEntry.contract_last_modified_on as string },
