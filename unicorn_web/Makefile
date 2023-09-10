@@ -8,7 +8,7 @@ apiUrl			= $(call cf_output,$(stackName),ApiUrl)
 
 #### Build/Deploy Tasks
 deps:
-	npm install
+	poetry install
 
 build:
 	sam validate --lint
@@ -26,7 +26,14 @@ unit-test:
 	npm test --  tests/unit/
 
 integration-test: deps
-	npm test --  tests/integration/
+	poetry run pytest tests/integration/
+
+curl-test:
+	$(call mcurl,GET,search/usa/anytown)
+	$(call mcurl,GET,search/usa/anytown/main-street)
+	$(call mcurl,GET,properties/usa/anytown/main-street/111)
+	@echo "[DONE]"
+
 
 #### Utilities
 sync:
@@ -46,6 +53,9 @@ delete:
 
 ci_init:
 	npm ci
+	poetry export --without-hashes --format=requirements.txt --output=src/requirements.txt --with dev
+	poetry run pip install -r src/requirements.txt
+	poetry install -n
 
 
 #### Helper Functions
