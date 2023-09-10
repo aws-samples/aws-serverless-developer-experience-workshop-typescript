@@ -55,6 +55,7 @@ Globals:
         DYNAMODB_TABLE: !Ref WebTable
         EVENT_BUS: !Ref UnicornWebEventBus
         SERVICE_NAMESPACE: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
+        POWERTOOLS_LOGGER_CASE: PascalCase
         POWERTOOLS_SERVICE_NAME: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
         POWERTOOLS_TRACE_DISABLED: "false" # Explicitly disables tracing, default
         POWERTOOLS_LOGGER_LOG_EVENT: !If [IsProd, "false", "true"] # Logs incoming event, default
@@ -86,7 +87,8 @@ Resources:
   SearchFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: propertySearchFunction.lambdaHandler
+      CodeUri: ./SearchService
+      Handler: Unicorn.Web.SearchService::Unicorn.Web.SearchService.PropertySearchFunction::FunctionHandler
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref WebTable
@@ -149,7 +151,8 @@ Resources:
   PublicationApprovedEventHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: publicationApprovedEventHandler.lambdaHandler
+      CodeUri: ./ApprovalService
+      Handler: Unicorn.Web.ApprovalService::Unicorn.Web.ApprovalService.PublicationApprovedEventHandler::FunctionHandler
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref WebTable
@@ -383,6 +386,8 @@ Resources:
         account:
           - !Ref AWS::AccountId
         source:
+          - !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornContractsNamespace}}"
+          - !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornPropertiesNamespace}}"
           - !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
       State: ENABLED #You may want to disable this rule in production
       Targets:
