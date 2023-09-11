@@ -10,7 +10,6 @@ build:
 	sam build -c $(DOCKER_OPTS)
 
 deps:
-	npm install
 	poetry install
 
 deploy: build
