@@ -11,10 +11,10 @@ Metadata:
   cfn-lint:
     config:
       ignore_checks:
-        - ES4000      # Rule disabled because the CatchAll Rule doesn't need a DLQ
-        - ES6000      # Rule disabled because SQS DLOs don't need a RedrivePolicy
-        - WS2001      # Rule disabled because check does not support !ToJsonString transform
-        - ES1001      # Rule disabled because our Lambda functions don't need DestinationConfig.OnFailure
+        - I3042
+        - ES1001
+        - ES1007
+        - ES6000
 
 Parameters:
   Stage:
@@ -67,6 +67,7 @@ Globals:
       namespace: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
 
 Resources:
+
   UnicornWebEventBusParam:
     Type: AWS::SSM::Parameter
     Properties:
@@ -161,7 +162,7 @@ Resources:
         ApprovalEvent:
           Type: EventBridgeRule
           Properties:
-            RuleName: web.publicationapproved-properties.pubevalcompleted
+            RuleName: unicorn.web-PublicationEvaluationCompleted
             EventBusName: !Ref UnicornWebEventBus
             Pattern:
               source:
@@ -299,6 +300,7 @@ Resources:
           Value: !FindInMap [Constants, ProjectName, Value]
         - Key: namespace
           Value: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
+
   # DeadLetterQueue for UnicornWebIngestQueue. Contains messages that failed to be processed
   UnicornWebIngestDLQ:
     Type: AWS::SQS::Queue
