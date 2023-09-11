@@ -88,7 +88,8 @@ Resources:
   ContractEventHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: contractEventHandler.lambdaHandler
+      CodeUri: ./ContractsService
+      Handler: Unicorn.Contracts.ContractService::Unicorn.Contracts.ContractService.ContractEventHandler::FunctionHandler
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref ContractsTable
@@ -223,7 +224,7 @@ Resources:
           Value: !FindInMap [Constants, ProjectName, Value]
         - Key: namespace
           Value: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornContractsNamespace}}"
-
+  
   #### DEAD LETTER QUEUES
   # DeadLetterQueue for UnicornContractsIngestQueue. Contains messages that failed to be processed
   UnicornContractsIngestDLQ:
@@ -368,8 +369,6 @@ Resources:
           StartingPosition: LATEST
           OnPartialBatchItemFailure: AUTOMATIC_BISECT
           BatchSize: 1
-          # DeadLetterConfig:
-          #   Arn: String
         FilterCriteria:
           Filters:
             - Pattern: !ToJsonString
@@ -378,7 +377,6 @@ Resources:
                   NewImage:
                     contract_status:
                       S: [DRAFT, APPROVED]
-      # Enrichment: arn:aws:execute-api:us-east-1:123456789123:53eo2i89p9/*/POST/pets
       Target: !GetAtt UnicornContractsEventBus.Arn
       TargetParameters:
         EventBridgeEventBusParameters:
