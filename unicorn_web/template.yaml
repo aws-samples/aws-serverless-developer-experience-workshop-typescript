@@ -5,7 +5,7 @@ Transform:
   - AWS::LanguageExtensions
   - AWS::Serverless-2016-10-31
 Description: >
-  Unicorn Web Service - web interface. Add, list and get details for Unicorn Properties.
+  Unicorn Properties Services - web interface. Add, list and get details for Unicorn Properties.
 
 Metadata:
   cfn-lint:
@@ -44,7 +44,7 @@ Globals:
   Api:
     OpenApiVersion: 3.0.1
   Function:
-    Runtime: python3.11
+    Runtime: nodejs18.x
     MemorySize: 128
     Timeout: 15
     Tracing: Active
@@ -83,7 +83,6 @@ Resources:
       Value: !GetAtt UnicornWebEventBus.Arn
 
   ##### LAMBDA FUNCTIONS
-  # Handle Search and Property details requests from API
   SearchFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -109,7 +108,6 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${SearchFunction}"
       RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
-  # Process queued API requests to approve properties from UnicornWebIngestQueue
   RequestApprovalFunction:
     Type: AWS::Serverless::Function
     Properties:
