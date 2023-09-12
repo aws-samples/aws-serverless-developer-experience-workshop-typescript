@@ -68,4 +68,24 @@ describe("Testing approved property listing searches", () => {
         ])
     })
 
+    it('Should show the approved property listing in search by address', async () => {
+        const response = await fetch(`${apiUrl}properties/au/anytown/main-street/1337`, {
+            method: 'GET',
+        })
+        const json = await response.json()
+        expect(json).toEqual(
+            {
+                "city": "Anytown",
+                "contract": "sale",
+                "country": "AU",
+                "currency": "SPL",
+                "listprice": 200,
+                "number": 1337,
+                "description": "This classic Anytown estate comes with a covetable lake view. The romantic and comfortable backyard is the perfect setting for unicorn get-togethers. The open concept Main Stable is fully equipped with all the desired amenities. Second floor features 6 straw bales including large Rainbow Suite with private training pool terrace and Jr Sparkles Suite.",
+                "status": "APPROVED",
+                "street": "Main Street",
+            }
+        )
+    })
+
 });

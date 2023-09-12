@@ -8,7 +8,7 @@ apiUrl			= $(call cf_output,$(stackName),ApiUrl)
 
 #### Build/Deploy Tasks
 deps:
-	poetry install
+	npm i
 
 build:
 	sam validate --lint
