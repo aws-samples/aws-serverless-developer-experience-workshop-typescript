@@ -1,19 +1,12 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
 AWSTemplateFormatVersion: "2010-09-09"
-Transform: AWS::Serverless-2016-10-31
+Transform:
+  - AWS::Serverless-2016-10-31
 Description: >
   Base infrastructure that will set up the central event bus and S3 image upload bucket.
 
 
-# -------------------------  METADATA  --------------------------- #
-Metadata:
-  cfn-lint:
-    config:
-      ignore_checks:
-        - ES6000
-        - WS1004
-
-
-# -------------------------  PARAMETERS  --------------------------- #
 Parameters:
   Stage:
     Type: String
@@ -23,12 +16,12 @@ Parameters:
       - dev
       - prod
 
-# -------------------------  GLOBALS  --------------------------- #
+
 Globals:
   Function:
     Timeout: 15
     Runtime: python3.11
-    MemorySize: 512
+    MemorySize: 128
     Tracing: Active
     Architectures:
       - arm64
@@ -37,42 +30,46 @@ Globals:
       project: AWS Serverless Developer Experience
       service: Unicorn Base Infrastructure
 
-# -------------------------  RESOURCES  --------------------------- #
 
 Resources:
-
   #### SSM PARAMETERS
-
-  UnicornContractsNamespaceParam: 
+  # Service Namespaces
+  UnicornContractsNamespaceParam:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
       Name: !Sub /uni-prop/${Stage}/UnicornContractsNamespace
       Value: "unicorn.contracts"
-
-  UnicornPropertiesNamespaceParam: 
+  UnicornPropertiesNamespaceParam:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
       Name: !Sub /uni-prop/${Stage}/UnicornPropertiesNamespace
       Value: "unicorn.properties"
-
-  UnicornWebNamespaceParam: 
+  UnicornWebNamespaceParam:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
       Name: !Sub /uni-prop/${Stage}/UnicornWebNamespace
       Value: "unicorn.web"
 
-  # S3 PROPERTY IMAGES BUCKET
+  # Images S3 Bucket
+  UnicornPropertiesImagesBucketParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Name: !Sub /uni-prop/${Stage}/ImagesBucket
+      Value: !Ref UnicornPropertiesImagesBucket
 
+
+  #### S3 PROPERTY IMAGES BUCKET
   UnicornPropertiesImagesBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "uni-prop-${Stage}-images-${AWS::AccountId}"
+      BucketName: !Sub uni-prop-${Stage}-images-${AWS::AccountId}
 
-  # IMAGE UPLOAD CUSTOM RESOURCE FUNCTION
 
+  #### IMAGE UPLOAD CUSTOM RESOURCE FUNCTION
   ImageUploadFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -115,7 +112,7 @@ Resources:
           
           print('file unzipped')
           
-          #### upload to s3
+          # upload to s3
           for root,_,files in os.walk('/tmp/property_images'):
             for file in files:
               print(f"file: {os.path.join(root, file)}")
@@ -142,43 +139,7 @@ Resources:
       ServiceToken: !GetAtt ImageUploadFunction.Arn
       DestinationBucket: !Ref UnicornPropertiesImagesBucket
 
-  # SSM PARAMETERS
-
-  UnicornPropertiesImagesBucketParam:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Type: String
-      Name: !Sub /uni-prop/${Stage}/ImagesBucket
-      Value: !Ref UnicornPropertiesImagesBucket
-
-
-
-
-# -------------------------  OUTPUTS  --------------------------- #
+# OUTPUTS
 Outputs:
   ImageUploadBucketName:
     Value: !Ref UnicornPropertiesImagesBucket
-
-  UnicornContractsNamespace:
-    Description: Unicorn Contracts namespace parameter
-    Value: !Ref UnicornContractsNamespaceParam
-
-  UnicornPropertiesNamespace:
-    Description: Unicorn Properties namespace parameter
-    Value: !Ref UnicornPropertiesNamespaceParam
-
-  UnicornWebNamespace:
-    Description: Unicorn Web namespace parameter
-    Value: !Ref UnicornWebNamespaceParam
-
-  UnicornContractsNamespaceVale:
-    Description: Unicorn Contracts namespace parameter value
-    Value: !GetAtt UnicornContractsNamespaceParam.Value
-
-  UnicornPropertiesNamespaceValue:
-    Description: Unicorn Properties namespace parameter value
-    Value: !GetAtt UnicornPropertiesNamespaceParam.Value
-
-  UnicornWebNamespaceValue:
-    Description: Unicorn Web namespace parameter value
-    Value: !GetAtt UnicornWebNamespaceParam.Value
