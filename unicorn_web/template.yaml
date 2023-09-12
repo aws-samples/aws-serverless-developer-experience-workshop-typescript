@@ -129,6 +129,14 @@ Resources:
             Enabled: true
             ScalingConfig:
               MaximumConcurrency: 5
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints: 
+          - src/approvals_service/requestApprovalFunction.ts
 
   # Log group for the RequestApprovalFunction
   RequestApprovalFunctionLogGroup:

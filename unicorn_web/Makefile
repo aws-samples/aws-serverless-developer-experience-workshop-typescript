@@ -26,7 +26,7 @@ unit-test:
 	npm test --  tests/unit/
 
 integration-test: deps
-	poetry run pytest tests/integration/
+	npm test --  tests/integration/
 
 curl-test:
 	$(call mcurl,GET,search/usa/anytown)
@@ -53,9 +53,6 @@ delete:
 
 ci_init:
 	npm ci
-	poetry export --without-hashes --format=requirements.txt --output=src/requirements.txt --with dev
-	poetry run pip install -r src/requirements.txt
-	poetry install -n
 
 
 #### Helper Functions
