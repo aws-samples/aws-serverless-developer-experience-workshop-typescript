@@ -1,20 +1,21 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 AWSTemplateFormatVersion: 2010-09-09
-Transform: 
+Transform:
   - AWS::LanguageExtensions
   - AWS::Serverless-2016-10-31
 Description: >
-  Unicorn Properties Services - web interface. Add, list and get details for Unicorn Properties.
+  Unicorn Web Service - web interface. Add, list and get details for Unicorn Properties.
 
 Metadata:
   cfn-lint:
     config:
       ignore_checks:
-        - I3042
-        - ES1001
-        - ES1007
-        - ES6000
+        - ES4000 # Rule disabled because the CatchAll Rule doesn't need a DLQ
+        - ES6000 # Rule disabled because SQS DLOs don't need a RedrivePolicy
+        - WS2001 # Rule disabled because check does not support !ToJsonString transform
+        - ES1001 # Rule disabled because our Lambda functions don't need DestinationConfig.OnFailure
+        - W3002
 
 Parameters:
   Stage:
@@ -67,7 +68,7 @@ Globals:
       namespace: !Sub "{{resolve:ssm:/uni-prop/${Stage}/UnicornWebNamespace}}"
 
 Resources:
-
+  # Services share their event bus name and arn
   UnicornWebEventBusParam:
     Type: AWS::SSM::Parameter
     Properties:
@@ -83,6 +84,7 @@ Resources:
       Value: !GetAtt UnicornWebEventBus.Arn
 
   ##### LAMBDA FUNCTIONS
+  # Handle Search and Property details requests from API
   SearchFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -108,6 +110,7 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${SearchFunction}"
       RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
+  # Process queued API requests to approve properties from UnicornWebIngestQueue
   RequestApprovalFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -126,16 +129,8 @@ Resources:
             Enabled: true
             ScalingConfig:
               MaximumConcurrency: 5
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints: 
-          - src/approvals_service/requestApprovalFunction.ts
 
-  # Log group for the RequestApprovalFunction  
+  # Log group for the RequestApprovalFunction
   RequestApprovalFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -148,7 +143,8 @@ Resources:
   PublicationApprovedEventHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: publicationApprovedEventHandler.lambdaHandler
+      CodeUri: src/approvals_service/
+      Handler: publication_approved_event_handler.lambda_handler
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref WebTable
@@ -167,14 +163,6 @@ Resources:
                 - !Ref UnicornWebEventBus
               detail-type:
                 - PublicationEvaluationCompleted
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints: 
-          - src/approvals_service/publicationApprovedEventHandler.ts
 
   # Log group for the PublicationApprovedEventHandlerFunction
   PublicationApprovedEventHandlerFunctionLogGroup:
@@ -432,7 +420,32 @@ Resources:
           ]
         }
 
+  #### CLOUDFORMATION NESTED STACKS
+  EventSchemasStack:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location: "integration/event-schemas.yaml"
+      Parameters:
+        Stage: !Ref Stage
+  SubscriberPoliciesStack:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - UnicornWebEventBusParam
+    Properties:
+      Location: "integration/subscriber-policies.yaml"
+      Parameters:
+        Stage: !Ref Stage
+  SubscriptionsStack:
+    Type: AWS::Serverless::Application
+    DependsOn:
+      - UnicornWebEventBusArnParam
+    Properties:
+      Location: "integration/subscriptions.yaml"
+      Parameters:
+        Stage: !Ref Stage
+
 Outputs:
+  #### API GATEWAY OUTPUTS
   BaseUrl:
     Description: Web service API endpoint
     Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
@@ -440,6 +453,7 @@ Outputs:
     Description: Web service API endpoint
     Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/"
 
+  #### API ACTIONS OUTPUTS
   ApiSearchPropertiesByCity:
     Description: "GET request to list all properties in a given city"
     Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/search/{country}/{city}"
@@ -453,14 +467,17 @@ Outputs:
     Description: "GET request to get the full details of a single property"
     Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/properties/{country}/{city}/{street}/{number}"
 
+  #### SQS OUTPUTS
   IngestQueueUrl:
     Description: URL for the Ingest SQS Queue
     Value: !GetAtt UnicornWebIngestQueue.QueueUrl
 
+  #### DYNAMODB OUTPUTS
   WebTableName:
     Description: Name of the DynamoDB Table for Unicorn Web
     Value: !Ref WebTable
 
+  #### LAMBDA FUNCTIONS OUTPUTS
   SearchFunctionArn:
     Description: Search function ARN
     Value: !GetAtt SearchFunction.Arn
@@ -471,5 +488,11 @@ Outputs:
     Description: Publication evaluation event handler function ARN
     Value: !GetAtt PublicationApprovedEventHandlerFunction.Arn
 
-  UnicornWebCatchAllLogGroupArn:
-    Value: !GetAtt UnicornWebCatchAllLogGroup.Arn
+  #### EVENT BRIDGE OUTPUTS
+  UnicornWebEventBusName:
+    Value: !GetAtt UnicornWebEventBus.Name
+
+  #### CLOUDWATCH LOGS OUTPUTS
+  UnicornWebCatchAllLogGroupName:
+    Description: Log all events on the service's EventBridge Bus
+    Value: !Ref UnicornWebCatchAllLogGroup
