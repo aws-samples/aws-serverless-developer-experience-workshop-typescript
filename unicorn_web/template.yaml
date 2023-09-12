@@ -143,8 +143,7 @@ Resources:
   PublicationApprovedEventHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/approvals_service/
-      Handler: publication_approved_event_handler.lambda_handler
+      Handler: publicationApprovedEventHandler.lambdaHandler
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref WebTable
@@ -163,6 +162,14 @@ Resources:
                 - !Ref UnicornWebEventBus
               detail-type:
                 - PublicationEvaluationCompleted
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints: 
+          - src/approvals_service/publicationApprovedEventHandler.ts
 
   # Log group for the PublicationApprovedEventHandlerFunction
   PublicationApprovedEventHandlerFunctionLogGroup:

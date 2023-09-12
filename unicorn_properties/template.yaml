@@ -237,11 +237,18 @@ Resources:
   WaitForContractApprovalFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/
-      Handler: properties_service.wait_for_contract_approval_function.lambda_handler
+      Handler: waitForContractApprovalFunction.lambdaHandler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ContractStatusTable
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints: 
+          - src/properties_service/waitForContractApprovalFunction.ts
 
   # Log group for the WaitForContractApprovalFunction
   WaitForContractApprovalFunctionLogGroup:
