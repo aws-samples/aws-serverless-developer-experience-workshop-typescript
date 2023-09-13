@@ -117,7 +117,7 @@ class RequestApprovalFunction implements LambdaInterface {
       const property: PropertyDBType = await this.getPropertyFor(PK, SK);
 
       // If property is already being approved or approved already
-      if (property.status in ["APPROVED", "DEClINED", "PENDING"]) {
+      if (property.status in ["APPROVED"]) {
         logger.info(
           `Property already in status ${property.status}; no action taken`
         );
