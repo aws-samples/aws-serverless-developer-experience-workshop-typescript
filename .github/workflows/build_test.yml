@@ -46,7 +46,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
-      fail-fast: false
       matrix:
         folder: [unicorn_contracts, unicorn_properties, unicorn_web]
 
