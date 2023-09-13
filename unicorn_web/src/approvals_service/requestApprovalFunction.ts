@@ -56,10 +56,7 @@ class RequestApprovalFunction implements LambdaInterface {
    * Request approval for a particular property
    * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
    * @param {Object} event - API Gateway Lambda Proxy Input Format
-   *
-   * Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
-   * @returns {Object} object - API Gateway Lambda Proxy Output Format
-   *
+   * @returns {Promise<void>}
    */
   @tracer.captureLambdaHandler()
   @metrics.logMetrics({ captureColdStartMetric: true })
@@ -76,7 +73,7 @@ class RequestApprovalFunction implements LambdaInterface {
    * Request approval for a particular property
    * @param event The request event
    * @param _context The Lambda context
-   * @returns
+   * @returns {Promise<void>}
    */
   @tracer.captureMethod()
   private async requestApproval(
