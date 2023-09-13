@@ -130,7 +130,7 @@ Resources:
                     },
                     "contract_last_modified_on": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "string"
                     },
                     "contract_status": {
                       "type": "string"
