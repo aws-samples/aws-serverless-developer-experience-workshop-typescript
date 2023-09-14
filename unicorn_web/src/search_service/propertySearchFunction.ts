@@ -104,7 +104,7 @@ class PropertySearchFunction implements LambdaInterface {
       },
       ProjectionExpression: PROJECTION_PROPERTIES,
       ExpressionAttributeNames: { "#num": "number", "#status": "status" },
-      FilterExpression: "#status = :s",
+      FilterExpression: "status = :s",
       TableName: DDB_TABLE,
     };
 
@@ -173,7 +173,7 @@ class PropertySearchFunction implements LambdaInterface {
       },
       ProjectionExpression: PROJECTION_PROPERTIES,
       ExpressionAttributeNames: { "#num": "number", "#status": "status" },
-      FilterExpression: "#status = :s",
+      FilterExpression: "status = :s",
       TableName: DDB_TABLE,
     };
 

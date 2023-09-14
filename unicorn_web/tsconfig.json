@@ -8,7 +8,6 @@
         "src/*": ["src/*"],
         "tests/*": ["tests/*"]
       },
-      "resolveJsonModule": true,
       "preserveConstEnums": true,
       "noEmit": true,
       "sourceMap": false,

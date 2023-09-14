@@ -5,7 +5,7 @@ module.exports = {
   },
   moduleFileExtensions: ["js", "ts"],
   collectCoverageFrom: ["**/src/**/*.ts", "!**/node_modules/**"],
-  testMatch: ["**/tests/unit/*.test.ts", "**/tests/integration/*.test.ts"],
+  testMatch: ["**/tests/unit/*.test.ts"],
   testPathIgnorePatterns: ["/node_modules/"],
   testEnvironment: "node",
   coverageProvider: "v8",

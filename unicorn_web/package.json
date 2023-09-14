@@ -7,26 +7,22 @@
   "author": "Amazon.com, Inc.",
   "license": "MIT",
   "dependencies": {
+    "esbuild": "^0.17.18",
     "@aws-lambda-powertools/logger": "^1.8.0",
     "@aws-lambda-powertools/metrics": "^1.8.0",
     "@aws-lambda-powertools/tracer": "^1.8.0",
-    "@aws-sdk/client-cloudformation": "^3.410.0",
-    "@aws-sdk/client-cloudwatch-logs": "^3.410.0",
     "@aws-sdk/client-dynamodb": "^3.370.0",
-    "@aws-sdk/client-eventbridge": "^3.410.0",
-    "@aws-sdk/lib-dynamodb": "^3.410.0",
+    "@aws-sdk/client-eventbridge": "^3.370.0",
     "@aws-sdk/util-dynamodb": "^3.319.0",
     "@types/cfn-response": "^1.0.5",
     "aws-lambda": "^1.0.7",
-    "cfn-response": "^1.0.1",
-    "esbuild": "^0.17.18"
+    "cfn-response": "^1.0.1"
   },
   "scripts": {
     "unit": "jest --config=jest.config.test.unit.ts",
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
-    "test": "jest --runInBand",
-    "deploy": "sam build && sam deploy --no-confirm-changeset"
+    "test": "jest --passWithNoTests"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.114",

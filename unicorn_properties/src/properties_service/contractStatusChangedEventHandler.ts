@@ -72,7 +72,7 @@ class ContractStatusChangedFunction implements LambdaInterface {
       ExpressionAttributeValues: {
         ":c": { S: statusEntry.contractId as string },
         ":t": { S: statusEntry.contractStatus as string },
-        ":m": { S: statusEntry.contractLastModifiedOn },
+        ":m": { S: statusEntry.contractLastModifiedOn.toISOString() },
       },
     };
     logger.info(`Constructed command ${JSON.stringify(ddbUpdateCommandInput)}`);
