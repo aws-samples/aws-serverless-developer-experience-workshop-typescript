@@ -2,7 +2,7 @@
 
 export class ContractStatusChanged {
   'contractId': string;
-  'contractLastModifiedOn': Date;
+  'contractLastModifiedOn': string;
   'contractStatus': string;
   'propertyId': string;
 
@@ -17,7 +17,7 @@ export class ContractStatusChanged {
         {
             "name": "contractLastModifiedOn",
             "baseName": "contract_last_modified_on",
-            "type": "Date"
+            "type": "string"
         },
         {
             "name": "contractStatus",
