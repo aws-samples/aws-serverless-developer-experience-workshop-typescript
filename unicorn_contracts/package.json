@@ -12,15 +12,19 @@
     "@aws-lambda-powertools/tracer": "^1.8.0",
     "@aws-sdk/client-dynamodb": "^3.370.0",
     "@aws-sdk/client-eventbridge": "^3.370.0",
+    "@aws-sdk/client-sqs": "^3.395.0",
+    "@aws-sdk/lib-dynamodb": "^3.398.0",
     "@aws-sdk/util-dynamodb": "^3.319.0",
     "aws-lambda": "^1.0.7",
     "esbuild": "^0.17.18"
   },
   "scripts": {
+    "build": "sam build",
     "unit": "jest --config=jest.config.test.unit.ts",
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "deploy":"sam build && sam deploy --no-confirm-changeset"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.114",

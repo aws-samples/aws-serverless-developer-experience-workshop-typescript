@@ -16,3 +16,18 @@ This function sends an event to EventBridge requesting an approval for a propert
 
 - publication approved function
 There is also a lambda function responsible for receiving any "Approval Evaluation Completed" events from EventBridge. This function writes the evaluation result to DynamoDB table.
+
+### Testing the APIs
+
+```bash
+export API=`aws cloudformation describe-stacks --stack-name uni-prop-local-web --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text`
+
+curl --location --request POST "${API}request_approval" \
+--header 'Content-Type: application/json' \
+--data-raw '{"property_id": "usa/anytown/main-street/111"}'
+
+
+curl -X POST ${API_URL}request_approval \
+    -H 'Content-Type: application/json' \
+    -d '{"property_id":"usa/anytown/main-street/111"}' | jq
+```
