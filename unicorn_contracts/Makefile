@@ -16,7 +16,6 @@ build:
 	sam build -c $(DOCKER_OPTS)
 
 deps:
-	poetry install
 	pnpm i
 
 deploy: build
