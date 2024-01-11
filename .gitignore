@@ -1,1 +1,7 @@
-.vscode/settings.json
+.DS_Store
+.idea/*
+**/.aws-sam/
+*.DotSettings.user
+.vscode/*
+UnicornProperties.sln.DotSettings.user
+**/cdk.out/
