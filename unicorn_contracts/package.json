@@ -30,11 +30,11 @@
     "deploy": "sam build && sam deploy --no-confirm-changeset"
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudformation": "^3.410.0",
-    "@aws-sdk/client-cloudwatch-logs": "^3.410.0",
-    "@types/aws-lambda": "^8.10.133",
-    "@types/jest": "^29.5.12",
-    "@types/node": "^18.19.14",
+    "@aws-sdk/client-cloudformation": "^3.495.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.495.0",
+    "@types/aws-lambda": "^8.10.131",
+    "@types/jest": "^29.5.11",
+    "@types/node": "^18.19.8",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "aws-sdk-client-mock": "^2.2.0",
