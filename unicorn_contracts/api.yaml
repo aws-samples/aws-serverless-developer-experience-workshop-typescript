@@ -21,11 +21,9 @@ paths:
                 $ref: "#/components/schemas/Empty"
       x-amazon-apigateway-request-validator: "Validate body"
       x-amazon-apigateway-integration:
-        credentials:
-          Fn::GetAtt: [UnicornContractsApiIntegrationRole, Arn]
+        credentials: {{apiRoleArn}}
         httpMethod: "POST"
-        uri:
-          "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${UnicornContractsIngestQueue.QueueName}"
+        uri: arn:aws:apigateway:{{region}}:sqs:path/{{accountId}}/{{ingestQueueName}}
         responses:
           default:
             statusCode: "200"
@@ -83,11 +81,9 @@ paths:
                 $ref: "#/components/schemas/Empty"
       x-amazon-apigateway-request-validator: "Validate body"
       x-amazon-apigateway-integration:
-        credentials:
-          Fn::GetAtt: [UnicornContractsApiIntegrationRole, Arn]
+        credentials: {{apiRoleArn}}
         httpMethod: "POST"
-        uri:
-          "Fn::Sub": "arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${UnicornContractsIngestQueue.QueueName}"
+        uri: arn:aws:apigateway:{{region}}:sqs:path/{{accountId}}/{{ingestQueueName}}
         responses:
           default:
             statusCode: "200"
@@ -134,8 +130,6 @@ components:
       type: "object"
       properties:
         $ref: "#/components/schemas/CreateContractModel/properties"
-        # property_id:
-        #   type: "string"
     Empty:
       title: "Empty Schema"
       type: "object"
