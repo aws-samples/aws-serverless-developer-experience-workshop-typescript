@@ -234,14 +234,14 @@ export class UnicornConstractsStack extends Stack {
     });
     ingestQueue.grantSendMessages(apiRole);
 
-    const openApiParms = {
+    const openApiParams = {
       ingestQueueName: ingestQueue.queueName,
       apiRoleArn: apiRole.roleArn,
       region: Stack.of(this).region,
       accountId: this.account
     };
 
-    const openApiSpec = this.resolve(yaml.load(render(fs.readFileSync(path.join(__dirname, '../../api.yaml'), 'utf-8'), openApiParms)));
+    const openApiSpec = this.resolve(yaml.load(render(fs.readFileSync(path.join(__dirname, '../../api.yaml'), 'utf-8'), openApiParams)));
 
     const api = new apigateway.SpecRestApi(this, 'api', {
       apiDefinition: apigateway.ApiDefinition.fromInline(openApiSpec),
