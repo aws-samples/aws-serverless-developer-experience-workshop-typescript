@@ -64,19 +64,16 @@ export class UnicornConstractsStack extends Stack {
     // Catchall rule used for development purposes.
     const catchAllRule = new events.Rule(this, 'contracts.catchall', {
       description: "Catch all events published by the contracts service.",
+      eventBus: eventBus,
       eventPattern: {
-        source: [propertiesNamespace, webNamespace],
+        source: [propertiesNamespace, webNamespace, contractsNamespace],
         account: [this.account]
       },
       enabled: true,
-      targets: [new targets.CloudWatchLogGroup(catchAllLogGroup)]
     })
-    const eventBridgeRole = new iam.Role(this, 'events-role', {
-      assumedBy: new iam.ServicePrincipal('events.amazonaws.com'),
-    });
-    catchAllLogGroup.grantWrite(eventBridgeRole);
+    catchAllRule.addTarget(new targets.CloudWatchLogGroup(catchAllLogGroup));
 
-    /*
+     /*
       Share Event bus through SSM
     */
     const eventBusParam = new ssm.StringParameter(this,
@@ -95,11 +92,10 @@ export class UnicornConstractsStack extends Stack {
       Persist Contracts information in DynamoDB
     */
     const table = new dynamodb.TableV2(this, `ContractsTable`, {
-      tableName: `ContractsTable-${props.stage}`,
+      tableName: `uni-prop-${props.stage}-contracts-ContractStatusTable`,
       partitionKey: { name: "property_id", type: dynamodb.AttributeType.STRING },
       removalPolicy: RemovalPolicy.DESTROY,
       dynamoStream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
-      billing: dynamodb.Billing.onDemand()
     }
     )
 
@@ -218,9 +214,9 @@ export class UnicornConstractsStack extends Stack {
         LOG_LEVEL: "INFO" // Log level for Logger
       },
     })
-    ingestQueue.grantConsumeMessages(contractEventHandlerLambda);
     eventHandlerLogs.grantWrite(contractEventHandlerLambda);
     table.grantReadWriteData(contractEventHandlerLambda)
+    ingestQueue.grantConsumeMessages(contractEventHandlerLambda);
     const eventSource = new SqsEventSource(ingestQueue, {enabled: true, batchSize: 1, maxConcurrency: 5});
     contractEventHandlerLambda.addEventSource(eventSource);
 
@@ -235,16 +231,8 @@ export class UnicornConstractsStack extends Stack {
     const apiRole = new iam.Role(this, 'UnicornContractsApiIntegrationRole', {
       roleName: 'UnicornContractsApiIntegrationRole',
       assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
-      inlinePolicies: {
-        'AllowSqsIntegration':
-          new iam.PolicyDocument({
-            statements: [new iam.PolicyStatement({
-              actions: ['sqs:SendMessage', 'sqs:GetQueueUrl'],
-              resources: [ingestQueue.queueArn],
-            })],
-          })
-      }
     });
+    ingestQueue.grantSendMessages(apiRole);
 
     const openApiParms = {
       ingestQueueName: ingestQueue.queueName,
@@ -253,9 +241,7 @@ export class UnicornConstractsStack extends Stack {
       accountId: this.account
     };
 
-    console.log(JSON.stringify(this.resolve(openApiParms)));
     const openApiSpec = this.resolve(yaml.load(render(fs.readFileSync(path.join(__dirname, '../../api.yaml'), 'utf-8'), openApiParms)));
-    console.log(JSON.stringify(openApiSpec));
 
     const api = new apigateway.SpecRestApi(this, 'api', {
       apiDefinition: apigateway.ApiDefinition.fromInline(openApiSpec),
