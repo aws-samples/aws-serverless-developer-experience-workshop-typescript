@@ -119,6 +119,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
     const ddbPutCommandOutput: PutItemCommandOutput = await ddbClient.send(
       ddbPutCommand
     );
+    logger.info('DDB OUTPUT', JSON.stringify(ddbPutCommandOutput));
     if (ddbPutCommandOutput.$metadata.httpStatusCode != 200) {
       let error: ContractError = {
         propertyId: dbEntry.property_id,
