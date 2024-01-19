@@ -1,19 +1,26 @@
 {
   "name": "unicorn_shared",
   "version": "0.1.0",
-  "description": "shared resources such as types and namespaces",
-  "private": true,
+  "bin": {
+    "unicorn_shared": "bin/unicorn_shared.js"
+  },
   "scripts": {
     "build": "tsc",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.11",
     "@types/node": "20.10.8",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "aws-cdk": "2.121.1",
     "ts-node": "^10.9.2",
     "typescript": "~5.3.3"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.128.0",
-    "constructs": "^10.3.0"
+    "aws-cdk-lib": "2.121.1",
+    "constructs": "^10.0.0"
   }
 }
