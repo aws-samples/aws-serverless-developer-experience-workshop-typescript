@@ -54,53 +54,53 @@ export class UnicornSharedStack extends Stack {
       architecture: lambda.Architecture.ARM_64,
       handler: 'index.lambda_handler',
       code: lambda.Code.fromInline(`
-        import os
-        import zipfile
-        from urllib.request import urlopen
-        import boto3
-        import cfnresponse
+import os
+import zipfile
+from urllib.request import urlopen
+import boto3
+import cfnresponse
 
-        zip_file_name = 'property_images.zip'
-        url = f"https://aws-serverless-developer-experience-workshop-assets.s3.amazonaws.com/property_images/{zip_file_name}"
-        temp_zip_download_location = f"/tmp/{zip_file_name}"
+zip_file_name = 'property_images.zip'
+url = f"https://aws-serverless-developer-experience-workshop-assets.s3.amazonaws.com/property_images/{zip_file_name}"
+temp_zip_download_location = f"/tmp/{zip_file_name}"
 
-        s3 = boto3.resource('s3')
+s3 = boto3.resource('s3')
 
-        def create(event, context):
-          image_bucket_name = event['ResourceProperties']['DestinationBucket']
-          bucket = s3.Bucket(image_bucket_name)
-          print(f"downloading zip file from: {url} to: {temp_zip_download_location}")
-          r = urlopen(url).read()
-          with open(temp_zip_download_location, 'wb') as t:
-            t.write(r)
-            print('zip file downloaded')
+def create(event, context):
+  image_bucket_name = event['ResourceProperties']['DestinationBucket']
+  bucket = s3.Bucket(image_bucket_name)
+  print(f"downloading zip file from: {url} to: {temp_zip_download_location}")
+  r = urlopen(url).read()
+  with open(temp_zip_download_location, 'wb') as t:
+    t.write(r)
+    print('zip file downloaded')
 
-          print(f"unzipping file: {temp_zip_download_location}")
-          with zipfile.ZipFile(temp_zip_download_location,'r') as zip_ref:
-            zip_ref.extractall('/tmp')
-          
-          print('file unzipped')
-          
-          # upload to s3
-          for root,_,files in os.walk('/tmp/property_images'):
-            for file in files:
-              print(f"file: {os.path.join(root, file)}")
-              print(f"s3 bucket: {image_bucket_name}")
-              imagesBucket.upload_file(os.path.join(root, file), file)
-        def delete(event, context):
-          image_bucket_name = event['ResourceProperties']['DestinationBucket']
-          img_bucket = s3.Bucket(image_bucket_name)
-          img_imagesBucket.objects.delete()
-          img_imagesBucket.delete()
-        def lambda_handler(event, context):
-          try:
-            if event['RequestType'] in ['Create', 'Update']:
-              create(event, context)
-            elif event['RequestType'] in ['Delete']:
-              delete(event, context)
-          except Exception as e:
-            print(e)
-          cfnresponse.send(event, context, cfnresponse.SUCCESS, dict())
+  print(f"unzipping file: {temp_zip_download_location}")
+  with zipfile.ZipFile(temp_zip_download_location,'r') as zip_ref:
+    zip_ref.extractall('/tmp')
+  
+  print('file unzipped')
+  
+  # upload to s3
+  for root,_,files in os.walk('/tmp/property_images'):
+    for file in files:
+      print(f"file: {os.path.join(root, file)}")
+      print(f"s3 bucket: {image_bucket_name}")
+      imagesBucket.upload_file(os.path.join(root, file), file)
+def delete(event, context):
+  image_bucket_name = event['ResourceProperties']['DestinationBucket']
+  img_bucket = s3.Bucket(image_bucket_name)
+  img_imagesBucket.objects.delete()
+  img_imagesBucket.delete()
+def lambda_handler(event, context):
+  try:
+    if event['RequestType'] in ['Create', 'Update']:
+      create(event, context)
+    elif event['RequestType'] in ['Delete']:
+      delete(event, context)
+  except Exception as e:
+    print(e)
+  cfnresponse.send(event, context, cfnresponse.SUCCESS, dict())
       `)
     });
     imagesBucket.grantReadWrite(imageUploadFunction);
