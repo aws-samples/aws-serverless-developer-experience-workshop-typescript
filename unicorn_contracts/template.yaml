@@ -158,6 +158,7 @@ Resources:
         project: !FindInMap [Constants, ProjectName, Value]
         namespace: "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
 
+  # API GW Cloudwatch Log Group
   UnicornContractsApiLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
