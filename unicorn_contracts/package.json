@@ -7,7 +7,7 @@
   "author": "Amazon.com, Inc.",
   "main": "app.js",
   "scripts": {
-    "build": "sam build",
+    "build": "tsc",
     "compile": "tsc",
     "deploy": "sam build && sam deploy --no-confirm-changeset",
     "lint": "eslint --ext .ts --quiet --fix",
