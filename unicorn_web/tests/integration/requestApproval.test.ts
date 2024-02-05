@@ -28,7 +28,7 @@ describe("Testing approval requests", () => {
         expect(response.status).toBe(200);
         const json = await response.json();
         expect(json).toEqual({ message: 'OK' });
-        await sleep(3000);
+        await sleep(5000);
         const event = await getCloudWatchLogsValues("USA/Anytown/main-street/111").next();
         expect(event.value['detail-type']).toEqual('PublicationApprovalRequested');
         expect(event.value['detail'].property_id).toEqual('USA/Anytown/main-street/111');
