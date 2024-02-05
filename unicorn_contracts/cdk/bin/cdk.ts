@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { UnicornConstractsStack } from '../lib/cdk-stack';
+import { UnicornConstractsStack } from '../lib/unicorn-contracts';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 
 /** The different stages for the app. */
@@ -36,13 +36,15 @@ export const isProd = (stage: Stage) => stage === Stage.prod;
 
 const app = new cdk.App();
 
-new UnicornConstractsStack(app, `uni-prop-${Stage.local}-contracts`, {
+const tags = (stage: Stage) => ({
     stage: Stage.local,
-    tags: {
-        stage: Stage.local,
-        project: "AWS_Serverless_Developer_Experience",
-    }, env: { account: "819998446679", region: "ap-southeast-2" }
-});
+    project: "AWS_Serverless_Developer_Experience",
+})
 
-//new EventsSchemaStack()
-// new SubscriberPoliciesStack()
+Object.values(Stage).map((stage) => {
+    new UnicornConstractsStack(app, `uni-prop-${stage}-contracts`, {
+        tags: tags(stage), stage: stage, env: { account: "819998446679", region: "ap-southeast-2" }
+    });
+    // new EventsSchemaStack()
+    // new SubscriberPoliciesStack()
+})

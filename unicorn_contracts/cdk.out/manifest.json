@@ -1,0 +1,1131 @@
+{
+  "version": "36.0.0",
+  "artifacts": {
+    "uni-prop-local-contracts.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "uni-prop-local-contracts.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "uni-prop-local-contracts": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://819998446679/ap-southeast-2",
+      "properties": {
+        "templateFile": "uni-prop-local-contracts.template.json",
+        "terminationProtection": false,
+        "tags": {
+          "namespace": "unicorn.contracts",
+          "project": "AWS_Serverless_Developer_Experience",
+          "stage": "local"
+        },
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-deploy-role-819998446679-ap-southeast-2",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-cfn-exec-role-819998446679-ap-southeast-2",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-819998446679-ap-southeast-2/5dfade98b76ac808450af0953c62f1ab6278a0d252d5a99c88abc2f9816568ef.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "uni-prop-local-contracts.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-lookup-role-819998446679-ap-southeast-2",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "uni-prop-local-contracts.assets"
+      ],
+      "metadata": {
+        "/uni-prop-local-contracts": [
+          {
+            "type": "aws:cdk:stack-tags",
+            "data": [
+              {
+                "Key": "namespace",
+                "Value": "unicorn.contracts"
+              },
+              {
+                "Key": "project",
+                "Value": "AWS_Serverless_Developer_Experience"
+              },
+              {
+                "Key": "stage",
+                "Value": "local"
+              }
+            ]
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractstBus-local/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractstBuslocal1BD3054B"
+          }
+        ],
+        "/uni-prop-local-contracts/CatchAllLogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CatchAllLogGroupF11A1859"
+          }
+        ],
+        "/uni-prop-local-contracts/ContractEventsBusPublishPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventsBusPublishPolicyF317C566"
+          }
+        ],
+        "/uni-prop-local-contracts/contracts.catchall/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "contractscatchall6028D6C9"
+          }
+        ],
+        "/uni-prop-local-contracts/EventsLogGroupPolicyuniproplocalcontractscontractscatchallDA1C6F54/Resource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EventsLogGroupPolicyuniproplocalcontractscontractscatchallDA1C6F549937E85B"
+          }
+        ],
+        "/uni-prop-local-contracts/EventsLogGroupPolicyuniproplocalcontractscontractscatchallDA1C6F54/CustomResourcePolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EventsLogGroupPolicyuniproplocalcontractscontractscatchallDA1C6F54CustomResourcePolicy29A024E5"
+          }
+        ],
+        "/uni-prop-local-contracts/AWS679f53fac002430cb0da5b7982bd2287/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2"
+          }
+        ],
+        "/uni-prop-local-contracts/AWS679f53fac002430cb0da5b7982bd2287/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AWS679f53fac002430cb0da5b7982bd22872D164C4C"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsEventBusNameParam/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsEventBusNameParam91B32E51"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsEventBusArnParam/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsEventBusArnParamF5838343"
+          }
+        ],
+        "/uni-prop-local-contracts/ContractsTable": [
+          {
+            "type": "aws:cdk:hasPhysicalName",
+            "data": {
+              "Ref": "ContractsTable778EA487"
+            }
+          }
+        ],
+        "/uni-prop-local-contracts/ContractsTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractsTable778EA487"
+          }
+        ],
+        "/uni-prop-local-contracts/ContractsTableStreamToEventPipeDLQ/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractsTableStreamToEventPipeDLQA3610E4A"
+          }
+        ],
+        "/uni-prop-local-contracts/pipe-role/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "piperoleB7FECE54"
+          }
+        ],
+        "/uni-prop-local-contracts/pipe-role/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "piperoleDefaultPolicyBDF71245"
+          }
+        ],
+        "/uni-prop-local-contracts/ContractsTableStreamToEventPipe": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractsTableStreamToEventPipe"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsIngestDLQ/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsIngestDLQ33CB6168"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsIngestQueue/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsIngestQueueC5933A3B"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractEventsHandlerLogs/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractEventsHandlerLogs80699BA3"
+          }
+        ],
+        "/uni-prop-local-contracts/ContractEventHandlerFunction-local/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionlocalServiceRole1EB5415C"
+          }
+        ],
+        "/uni-prop-local-contracts/ContractEventHandlerFunction-local/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionlocalServiceRoleDefaultPolicy2230085D"
+          }
+        ],
+        "/uni-prop-local-contracts/ContractEventHandlerFunction-local/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionlocal38E947E4"
+          }
+        ],
+        "/uni-prop-local-contracts/ContractEventHandlerFunction-local/SqsEventSource:uniproplocalcontractsUnicornContractsIngestQueueD07EEFC5/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionlocalSqsEventSourceuniproplocalcontractsUnicornContractsIngestQueueD07EEFC590E1319B"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsApiLogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiLogGroup1708160E"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsApiIntegrationRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiIntegrationRoleC69B711A"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsApiIntegrationRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiIntegrationRoleDefaultPolicy499E0112"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsApi/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiDCFC01BD"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsApi/CloudWatchRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiCloudWatchRole77D8154C"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsApi/Account": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiAccountA03D542B"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsApi/Deployment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiDeployment8EE73F6B1fbb01db63bf48cecd66eff4b85e19b6"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsApi/DeploymentStage.local/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiDeploymentStagelocal60CD1E40"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsApi/Endpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiEndpointE8AB09A9"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsApi/Default/contracts/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApicontracts07E5303B"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsApi/Default/contracts/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApicontractsPOSTFEA62230"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsApi/Default/contracts/PUT/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApicontractsPUTF05E1F8D"
+          }
+        ],
+        "/uni-prop-local-contracts/ApiUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiUrl"
+          }
+        ],
+        "/uni-prop-local-contracts/IngestQueueUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "IngestQueueUrl"
+          }
+        ],
+        "/uni-prop-local-contracts/ContractsTableName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractsTableName"
+          }
+        ],
+        "/uni-prop-local-contracts/ContractEventHandlerFunctionName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionName"
+          }
+        ],
+        "/uni-prop-local-contracts/ContractEventHandlerFunctionArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionArn"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsEventBusName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsEventBusName"
+          }
+        ],
+        "/uni-prop-local-contracts/UnicornContractsCatchAllLogGroupArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsCatchAllLogGroupArn"
+          }
+        ],
+        "/uni-prop-local-contracts/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/uni-prop-local-contracts/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/uni-prop-local-contracts/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "uni-prop-local-contracts"
+    },
+    "uni-prop-dev-contracts.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "uni-prop-dev-contracts.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "uni-prop-dev-contracts": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://819998446679/ap-southeast-2",
+      "properties": {
+        "templateFile": "uni-prop-dev-contracts.template.json",
+        "terminationProtection": false,
+        "tags": {
+          "namespace": "dummy-value-for-/uni-prop/dev/UnicornContractsNamespace",
+          "project": "AWS_Serverless_Developer_Experience",
+          "stage": "local"
+        },
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-deploy-role-819998446679-ap-southeast-2",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-cfn-exec-role-819998446679-ap-southeast-2",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-819998446679-ap-southeast-2/6f70bf930626b4baacec2198e72ce9d0f84c52d36421870391e5ed9567f5ea0c.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "uni-prop-dev-contracts.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-lookup-role-819998446679-ap-southeast-2",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "uni-prop-dev-contracts.assets"
+      ],
+      "metadata": {
+        "/uni-prop-dev-contracts": [
+          {
+            "type": "aws:cdk:error",
+            "data": "Need to perform AWS calls for account 819998446679, but no credentials have been configured",
+            "trace": [
+              "Annotations.addMessage (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/aws-cdk-lib@2.122.0_constructs@10.3.0/node_modules/aws-cdk-lib/core/lib/annotations.js:1:1608)",
+              "Annotations.addError (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/aws-cdk-lib@2.122.0_constructs@10.3.0/node_modules/aws-cdk-lib/core/lib/annotations.js:1:1100)",
+              "Function.getValue (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/aws-cdk-lib@2.122.0_constructs@10.3.0/node_modules/aws-cdk-lib/core/lib/context-provider.js:2:1172)",
+              "Function.valueFromLookup (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/aws-cdk-lib@2.122.0_constructs@10.3.0/node_modules/aws-cdk-lib/aws-ssm/lib/parameter.js:1:5820)",
+              "new UnicornConstractsStack (/Users/kechn/serverless-developer-experience/ts-reference/unicorn_contracts/cdk/lib/unicorn-contracts.ts:34:52)",
+              "/Users/kechn/serverless-developer-experience/ts-reference/unicorn_contracts/cdk/bin/cdk.ts:45:5",
+              "Array.map (<anonymous>)",
+              "Object.<anonymous> (/Users/kechn/serverless-developer-experience/ts-reference/unicorn_contracts/cdk/bin/cdk.ts:44:22)",
+              "Module._compile (node:internal/modules/cjs/loader:1376:14)",
+              "Module.m._compile (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/ts-node@10.9.2_@types+node@18.19.8_typescript@5.3.3/node_modules/ts-node/src/index.ts:1618:23)",
+              "Module._extensions..js (node:internal/modules/cjs/loader:1435:10)",
+              "Object.require.extensions.<computed> [as .ts] (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/ts-node@10.9.2_@types+node@18.19.8_typescript@5.3.3/node_modules/ts-node/src/index.ts:1621:12)",
+              "Module.load (node:internal/modules/cjs/loader:1207:32)",
+              "Function.Module._load (node:internal/modules/cjs/loader:1023:12)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)",
+              "phase4 (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/ts-node@10.9.2_@types+node@18.19.8_typescript@5.3.3/node_modules/ts-node/src/bin.ts:649:14)",
+              "bootstrap (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/ts-node@10.9.2_@types+node@18.19.8_typescript@5.3.3/node_modules/ts-node/src/bin.ts:95:10)",
+              "main (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/ts-node@10.9.2_@types+node@18.19.8_typescript@5.3.3/node_modules/ts-node/src/bin.ts:55:10)",
+              "Object.<anonymous> (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/ts-node@10.9.2_@types+node@18.19.8_typescript@5.3.3/node_modules/ts-node/src/bin.ts:800:3)",
+              "Module._compile (node:internal/modules/cjs/loader:1376:14)",
+              "Object.Module._extensions..js (node:internal/modules/cjs/loader:1435:10)",
+              "Module.load (node:internal/modules/cjs/loader:1207:32)",
+              "Function.Module._load (node:internal/modules/cjs/loader:1023:12)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)",
+              "node:internal/main/run_main_module:28:49"
+            ]
+          },
+          {
+            "type": "aws:cdk:stack-tags",
+            "data": [
+              {
+                "Key": "namespace",
+                "Value": "dummy-value-for-/uni-prop/dev/UnicornContractsNamespace"
+              },
+              {
+                "Key": "project",
+                "Value": "AWS_Serverless_Developer_Experience"
+              },
+              {
+                "Key": "stage",
+                "Value": "local"
+              }
+            ]
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractstBus-dev/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractstBusdev7CF10568"
+          }
+        ],
+        "/uni-prop-dev-contracts/CatchAllLogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CatchAllLogGroupF11A1859"
+          }
+        ],
+        "/uni-prop-dev-contracts/ContractEventsBusPublishPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventsBusPublishPolicyF317C566"
+          }
+        ],
+        "/uni-prop-dev-contracts/contracts.catchall/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "contractscatchall6028D6C9"
+          }
+        ],
+        "/uni-prop-dev-contracts/EventsLogGroupPolicyunipropdevcontractscontractscatchallD7D347A4/Resource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EventsLogGroupPolicyunipropdevcontractscontractscatchallD7D347A44A6FD0AB"
+          }
+        ],
+        "/uni-prop-dev-contracts/EventsLogGroupPolicyunipropdevcontractscontractscatchallD7D347A4/CustomResourcePolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EventsLogGroupPolicyunipropdevcontractscontractscatchallD7D347A4CustomResourcePolicy800099DB"
+          }
+        ],
+        "/uni-prop-dev-contracts/AWS679f53fac002430cb0da5b7982bd2287/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2"
+          }
+        ],
+        "/uni-prop-dev-contracts/AWS679f53fac002430cb0da5b7982bd2287/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AWS679f53fac002430cb0da5b7982bd22872D164C4C"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsEventBusNameParam/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsEventBusNameParam91B32E51"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsEventBusArnParam/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsEventBusArnParamF5838343"
+          }
+        ],
+        "/uni-prop-dev-contracts/ContractsTable": [
+          {
+            "type": "aws:cdk:hasPhysicalName",
+            "data": {
+              "Ref": "ContractsTable778EA487"
+            }
+          }
+        ],
+        "/uni-prop-dev-contracts/ContractsTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractsTable778EA487"
+          }
+        ],
+        "/uni-prop-dev-contracts/ContractsTableStreamToEventPipeDLQ/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractsTableStreamToEventPipeDLQA3610E4A"
+          }
+        ],
+        "/uni-prop-dev-contracts/pipe-role/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "piperoleB7FECE54"
+          }
+        ],
+        "/uni-prop-dev-contracts/pipe-role/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "piperoleDefaultPolicyBDF71245"
+          }
+        ],
+        "/uni-prop-dev-contracts/ContractsTableStreamToEventPipe": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractsTableStreamToEventPipe"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsIngestDLQ/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsIngestDLQ33CB6168"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsIngestQueue/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsIngestQueueC5933A3B"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractEventsHandlerLogs/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractEventsHandlerLogs80699BA3"
+          }
+        ],
+        "/uni-prop-dev-contracts/ContractEventHandlerFunction-dev/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctiondevServiceRole04AFD4F5"
+          }
+        ],
+        "/uni-prop-dev-contracts/ContractEventHandlerFunction-dev/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctiondevServiceRoleDefaultPolicy84D7B921"
+          }
+        ],
+        "/uni-prop-dev-contracts/ContractEventHandlerFunction-dev/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctiondev8D83A462"
+          }
+        ],
+        "/uni-prop-dev-contracts/ContractEventHandlerFunction-dev/SqsEventSource:unipropdevcontractsUnicornContractsIngestQueue85A428BB/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctiondevSqsEventSourceunipropdevcontractsUnicornContractsIngestQueue85A428BB18190879"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsApiLogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiLogGroup1708160E"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsApiIntegrationRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiIntegrationRoleC69B711A"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsApiIntegrationRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiIntegrationRoleDefaultPolicy499E0112"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsApi/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiDCFC01BD"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsApi/CloudWatchRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiCloudWatchRole77D8154C"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsApi/Account": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiAccountA03D542B"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsApi/Deployment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiDeployment8EE73F6Bfe28489763dd9a66a5e056341608f298"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsApi/DeploymentStage.dev/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiDeploymentStagedevEEA79EC8"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsApi/Endpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiEndpointE8AB09A9"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsApi/Default/contracts/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApicontracts07E5303B"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsApi/Default/contracts/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApicontractsPOSTFEA62230"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsApi/Default/contracts/PUT/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApicontractsPUTF05E1F8D"
+          }
+        ],
+        "/uni-prop-dev-contracts/ApiUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiUrl"
+          }
+        ],
+        "/uni-prop-dev-contracts/IngestQueueUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "IngestQueueUrl"
+          }
+        ],
+        "/uni-prop-dev-contracts/ContractsTableName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractsTableName"
+          }
+        ],
+        "/uni-prop-dev-contracts/ContractEventHandlerFunctionName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionName"
+          }
+        ],
+        "/uni-prop-dev-contracts/ContractEventHandlerFunctionArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionArn"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsEventBusName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsEventBusName"
+          }
+        ],
+        "/uni-prop-dev-contracts/UnicornContractsCatchAllLogGroupArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsCatchAllLogGroupArn"
+          }
+        ],
+        "/uni-prop-dev-contracts/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/uni-prop-dev-contracts/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/uni-prop-dev-contracts/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "uni-prop-dev-contracts"
+    },
+    "uni-prop-prod-contracts.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "uni-prop-prod-contracts.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "uni-prop-prod-contracts": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://819998446679/ap-southeast-2",
+      "properties": {
+        "templateFile": "uni-prop-prod-contracts.template.json",
+        "terminationProtection": false,
+        "tags": {
+          "namespace": "dummy-value-for-/uni-prop/prod/UnicornContractsNamespace",
+          "project": "AWS_Serverless_Developer_Experience",
+          "stage": "local"
+        },
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-deploy-role-819998446679-ap-southeast-2",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-cfn-exec-role-819998446679-ap-southeast-2",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-819998446679-ap-southeast-2/26c823eebdd9da2f21cb865caa957dfea6712cbf9accdca10517b17df4703a22.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "uni-prop-prod-contracts.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-lookup-role-819998446679-ap-southeast-2",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "uni-prop-prod-contracts.assets"
+      ],
+      "metadata": {
+        "/uni-prop-prod-contracts": [
+          {
+            "type": "aws:cdk:error",
+            "data": "Need to perform AWS calls for account 819998446679, but no credentials have been configured",
+            "trace": [
+              "Annotations.addMessage (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/aws-cdk-lib@2.122.0_constructs@10.3.0/node_modules/aws-cdk-lib/core/lib/annotations.js:1:1608)",
+              "Annotations.addError (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/aws-cdk-lib@2.122.0_constructs@10.3.0/node_modules/aws-cdk-lib/core/lib/annotations.js:1:1100)",
+              "Function.getValue (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/aws-cdk-lib@2.122.0_constructs@10.3.0/node_modules/aws-cdk-lib/core/lib/context-provider.js:2:1172)",
+              "Function.valueFromLookup (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/aws-cdk-lib@2.122.0_constructs@10.3.0/node_modules/aws-cdk-lib/aws-ssm/lib/parameter.js:1:5820)",
+              "new UnicornConstractsStack (/Users/kechn/serverless-developer-experience/ts-reference/unicorn_contracts/cdk/lib/unicorn-contracts.ts:34:52)",
+              "/Users/kechn/serverless-developer-experience/ts-reference/unicorn_contracts/cdk/bin/cdk.ts:45:5",
+              "Array.map (<anonymous>)",
+              "Object.<anonymous> (/Users/kechn/serverless-developer-experience/ts-reference/unicorn_contracts/cdk/bin/cdk.ts:44:22)",
+              "Module._compile (node:internal/modules/cjs/loader:1376:14)",
+              "Module.m._compile (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/ts-node@10.9.2_@types+node@18.19.8_typescript@5.3.3/node_modules/ts-node/src/index.ts:1618:23)",
+              "Module._extensions..js (node:internal/modules/cjs/loader:1435:10)",
+              "Object.require.extensions.<computed> [as .ts] (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/ts-node@10.9.2_@types+node@18.19.8_typescript@5.3.3/node_modules/ts-node/src/index.ts:1621:12)",
+              "Module.load (node:internal/modules/cjs/loader:1207:32)",
+              "Function.Module._load (node:internal/modules/cjs/loader:1023:12)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)",
+              "phase4 (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/ts-node@10.9.2_@types+node@18.19.8_typescript@5.3.3/node_modules/ts-node/src/bin.ts:649:14)",
+              "bootstrap (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/ts-node@10.9.2_@types+node@18.19.8_typescript@5.3.3/node_modules/ts-node/src/bin.ts:95:10)",
+              "main (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/ts-node@10.9.2_@types+node@18.19.8_typescript@5.3.3/node_modules/ts-node/src/bin.ts:55:10)",
+              "Object.<anonymous> (/Users/kechn/serverless-developer-experience/ts-reference/node_modules/.pnpm/ts-node@10.9.2_@types+node@18.19.8_typescript@5.3.3/node_modules/ts-node/src/bin.ts:800:3)",
+              "Module._compile (node:internal/modules/cjs/loader:1376:14)",
+              "Object.Module._extensions..js (node:internal/modules/cjs/loader:1435:10)",
+              "Module.load (node:internal/modules/cjs/loader:1207:32)",
+              "Function.Module._load (node:internal/modules/cjs/loader:1023:12)",
+              "Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)",
+              "node:internal/main/run_main_module:28:49"
+            ]
+          },
+          {
+            "type": "aws:cdk:stack-tags",
+            "data": [
+              {
+                "Key": "namespace",
+                "Value": "dummy-value-for-/uni-prop/prod/UnicornContractsNamespace"
+              },
+              {
+                "Key": "project",
+                "Value": "AWS_Serverless_Developer_Experience"
+              },
+              {
+                "Key": "stage",
+                "Value": "local"
+              }
+            ]
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractstBus-prod/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractstBusprodA8F75991"
+          }
+        ],
+        "/uni-prop-prod-contracts/CatchAllLogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CatchAllLogGroupF11A1859"
+          }
+        ],
+        "/uni-prop-prod-contracts/ContractEventsBusPublishPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventsBusPublishPolicyF317C566"
+          }
+        ],
+        "/uni-prop-prod-contracts/contracts.catchall/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "contractscatchall6028D6C9"
+          }
+        ],
+        "/uni-prop-prod-contracts/EventsLogGroupPolicyunipropprodcontractscontractscatchallADF442FD/Resource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EventsLogGroupPolicyunipropprodcontractscontractscatchallADF442FD37B4417B"
+          }
+        ],
+        "/uni-prop-prod-contracts/EventsLogGroupPolicyunipropprodcontractscontractscatchallADF442FD/CustomResourcePolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EventsLogGroupPolicyunipropprodcontractscontractscatchallADF442FDCustomResourcePolicy630FEF00"
+          }
+        ],
+        "/uni-prop-prod-contracts/AWS679f53fac002430cb0da5b7982bd2287/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AWS679f53fac002430cb0da5b7982bd2287ServiceRoleC1EA0FF2"
+          }
+        ],
+        "/uni-prop-prod-contracts/AWS679f53fac002430cb0da5b7982bd2287/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AWS679f53fac002430cb0da5b7982bd22872D164C4C"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsEventBusNameParam/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsEventBusNameParam91B32E51"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsEventBusArnParam/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsEventBusArnParamF5838343"
+          }
+        ],
+        "/uni-prop-prod-contracts/ContractsTable": [
+          {
+            "type": "aws:cdk:hasPhysicalName",
+            "data": {
+              "Ref": "ContractsTable778EA487"
+            }
+          }
+        ],
+        "/uni-prop-prod-contracts/ContractsTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractsTable778EA487"
+          }
+        ],
+        "/uni-prop-prod-contracts/ContractsTableStreamToEventPipeDLQ/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractsTableStreamToEventPipeDLQA3610E4A"
+          }
+        ],
+        "/uni-prop-prod-contracts/pipe-role/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "piperoleB7FECE54"
+          }
+        ],
+        "/uni-prop-prod-contracts/pipe-role/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "piperoleDefaultPolicyBDF71245"
+          }
+        ],
+        "/uni-prop-prod-contracts/ContractsTableStreamToEventPipe": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractsTableStreamToEventPipe"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsIngestDLQ/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsIngestDLQ33CB6168"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsIngestQueue/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsIngestQueueC5933A3B"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractEventsHandlerLogs/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractEventsHandlerLogs80699BA3"
+          }
+        ],
+        "/uni-prop-prod-contracts/ContractEventHandlerFunction-prod/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionprodServiceRoleC6D92AFD"
+          }
+        ],
+        "/uni-prop-prod-contracts/ContractEventHandlerFunction-prod/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionprodServiceRoleDefaultPolicy59CDD95F"
+          }
+        ],
+        "/uni-prop-prod-contracts/ContractEventHandlerFunction-prod/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionprodFBA67BC6"
+          }
+        ],
+        "/uni-prop-prod-contracts/ContractEventHandlerFunction-prod/SqsEventSource:unipropprodcontractsUnicornContractsIngestQueueA28E05F5/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionprodSqsEventSourceunipropprodcontractsUnicornContractsIngestQueueA28E05F52974BA86"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsApiLogGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiLogGroup1708160E"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsApiIntegrationRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiIntegrationRoleC69B711A"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsApiIntegrationRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiIntegrationRoleDefaultPolicy499E0112"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsApi/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiDCFC01BD"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsApi/CloudWatchRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiCloudWatchRole77D8154C"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsApi/Account": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiAccountA03D542B"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsApi/Deployment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiDeployment8EE73F6B7c5fb30449d01348091055526b9dcff4"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsApi/DeploymentStage.prod/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiDeploymentStageprodA00BD475"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsApi/Endpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApiEndpointE8AB09A9"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsApi/Default/contracts/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApicontracts07E5303B"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsApi/Default/contracts/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApicontractsPOSTFEA62230"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsApi/Default/contracts/PUT/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsApicontractsPUTF05E1F8D"
+          }
+        ],
+        "/uni-prop-prod-contracts/ApiUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ApiUrl"
+          }
+        ],
+        "/uni-prop-prod-contracts/IngestQueueUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "IngestQueueUrl"
+          }
+        ],
+        "/uni-prop-prod-contracts/ContractsTableName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractsTableName"
+          }
+        ],
+        "/uni-prop-prod-contracts/ContractEventHandlerFunctionName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionName"
+          }
+        ],
+        "/uni-prop-prod-contracts/ContractEventHandlerFunctionArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContractEventHandlerFunctionArn"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsEventBusName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsEventBusName"
+          }
+        ],
+        "/uni-prop-prod-contracts/UnicornContractsCatchAllLogGroupArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UnicornContractsCatchAllLogGroupArn"
+          }
+        ],
+        "/uni-prop-prod-contracts/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/uni-prop-prod-contracts/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/uni-prop-prod-contracts/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "uni-prop-prod-contracts"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    }
+  },
+  "missing": [
+    {
+      "key": "ssm:account=819998446679:parameterName=/uni-prop/dev/UnicornContractsNamespace:region=ap-southeast-2",
+      "provider": "ssm",
+      "props": {
+        "account": "819998446679",
+        "region": "ap-southeast-2",
+        "parameterName": "/uni-prop/dev/UnicornContractsNamespace",
+        "lookupRoleArn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-lookup-role-819998446679-ap-southeast-2"
+      }
+    },
+    {
+      "key": "ssm:account=819998446679:parameterName=/uni-prop/dev/UnicornPropertiesNamespace:region=ap-southeast-2",
+      "provider": "ssm",
+      "props": {
+        "account": "819998446679",
+        "region": "ap-southeast-2",
+        "parameterName": "/uni-prop/dev/UnicornPropertiesNamespace",
+        "lookupRoleArn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-lookup-role-819998446679-ap-southeast-2"
+      }
+    },
+    {
+      "key": "ssm:account=819998446679:parameterName=/uni-prop/dev/UnicornWebNamespace:region=ap-southeast-2",
+      "provider": "ssm",
+      "props": {
+        "account": "819998446679",
+        "region": "ap-southeast-2",
+        "parameterName": "/uni-prop/dev/UnicornWebNamespace",
+        "lookupRoleArn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-lookup-role-819998446679-ap-southeast-2"
+      }
+    },
+    {
+      "key": "ssm:account=819998446679:parameterName=/uni-prop/prod/UnicornContractsNamespace:region=ap-southeast-2",
+      "provider": "ssm",
+      "props": {
+        "account": "819998446679",
+        "region": "ap-southeast-2",
+        "parameterName": "/uni-prop/prod/UnicornContractsNamespace",
+        "lookupRoleArn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-lookup-role-819998446679-ap-southeast-2"
+      }
+    },
+    {
+      "key": "ssm:account=819998446679:parameterName=/uni-prop/prod/UnicornPropertiesNamespace:region=ap-southeast-2",
+      "provider": "ssm",
+      "props": {
+        "account": "819998446679",
+        "region": "ap-southeast-2",
+        "parameterName": "/uni-prop/prod/UnicornPropertiesNamespace",
+        "lookupRoleArn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-lookup-role-819998446679-ap-southeast-2"
+      }
+    },
+    {
+      "key": "ssm:account=819998446679:parameterName=/uni-prop/prod/UnicornWebNamespace:region=ap-southeast-2",
+      "provider": "ssm",
+      "props": {
+        "account": "819998446679",
+        "region": "ap-southeast-2",
+        "parameterName": "/uni-prop/prod/UnicornWebNamespace",
+        "lookupRoleArn": "arn:${AWS::Partition}:iam::819998446679:role/cdk-hnb659fds-lookup-role-819998446679-ap-southeast-2"
+      }
+    }
+  ]
+}

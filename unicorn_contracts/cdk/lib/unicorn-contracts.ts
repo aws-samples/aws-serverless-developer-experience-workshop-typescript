@@ -237,42 +237,37 @@ export class UnicornConstractsStack extends Stack {
     const openApiParams = {
       ingestQueueName: ingestQueue.queueName,
       apiRoleArn: apiRole.roleArn,
-      region: Stack.of(this).region,
+      region: this.region,
       accountId: this.account
     };
 
     const openApiSpec = this.resolve(yaml.load(render(fs.readFileSync(path.join(__dirname, '../../api.yaml'), 'utf-8'), openApiParams)));
 
-    const api = new apigateway.SpecRestApi(this, 'api', {
-      apiDefinition: apigateway.ApiDefinition.fromInline(openApiSpec),
+    const api = new apigateway.RestApi(this, 'UnicornContractsApi', {
       cloudWatchRole: true,
+      cloudWatchRoleRemovalPolicy: RemovalPolicy.DESTROY,
       deployOptions: {
         stageName: props.stage,
         dataTraceEnabled: true,
         tracingEnabled: true,
         metricsEnabled: true,
         accessLogDestination: new apigateway.LogGroupLogDestination(apiLogs),
-        accessLogFormat: apigateway.AccessLogFormat.custom(JSON.stringify({
-          "requestId": "$context.requestId",
-          "integration-error": "$context.integration.error",
-          "integration-status": "$context.integration.status",
-          "integration-latency": "$context.integration.latency",
-          "integration-requestId": "$context.integration.requestId",
-          "integration-integrationStatus": "$context.integration.integrationStatus",
-          "response-latency": "$context.responseLatency",
-          "status": "$context.status",
-        })),
         methodOptions: {
           '/*/*': {
             loggingLevel: isProd(props.stage) ? apigateway.MethodLoggingLevel.ERROR : apigateway.MethodLoggingLevel.INFO,
-            throttlingBurstLimit: 10,
-            throttlingRateLimit: 100
           }
 
         }
       },
       endpointTypes: [apigateway.EndpointType.REGIONAL],
     })
+
+   const contractsApiResource = api.root.addResource('contracts', {
+    defaultIntegration: new apigateway.AwsIntegration({service: 'sqs', path: ingestQueue.queueName, region: this.region})
+   })
+
+   contractsApiResource.addMethod('POST');
+   contractsApiResource.addMethod('PUT');
 
     /*
       Outputs
