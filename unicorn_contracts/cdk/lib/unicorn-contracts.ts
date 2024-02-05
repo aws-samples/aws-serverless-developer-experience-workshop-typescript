@@ -14,8 +14,7 @@ import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import { CfnPipe } from 'aws-cdk-lib/aws-pipes';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
-import { LogsRetentionPeriod, Stage, isProd } from '../bin/cdk';
-import {UNICORN_CONTRACTS_NAMESPACE, UNICORN_PROPERTIES_NAMESPACE, UNICORN_WEB_NAMESPACE} from 'shared';
+import { LogsRetentionPeriod, Stage, isProd, UNICORN_CONTRACTS_NAMESPACE, UNICORN_PROPERTIES_NAMESPACE, UNICORN_WEB_NAMESPACE } from 'unicorn_shared';
 
 interface UnicornConstractsStackProps extends StackProps {
   stage: Stage,
@@ -63,9 +62,9 @@ export class UnicornConstractsStack extends Stack {
     })
     catchAllRule.addTarget(new targets.CloudWatchLogGroup(catchAllLogGroup));
 
-     /*
-      Share Event bus through SSM
-    */
+    /*
+     Share Event bus through SSM
+   */
     const eventBusParam = new ssm.StringParameter(this,
       'UnicornContractsEventBusNameParam', {
       parameterName: `/uni-prop/${props.stage}/UnicornContractsEventBus`,
@@ -207,7 +206,7 @@ export class UnicornConstractsStack extends Stack {
     eventHandlerLogs.grantWrite(contractEventHandlerLambda);
     table.grantReadWriteData(contractEventHandlerLambda)
     ingestQueue.grantConsumeMessages(contractEventHandlerLambda);
-    const eventSource = new SqsEventSource(ingestQueue, {enabled: true, batchSize: 1, maxConcurrency: 5});
+    const eventSource = new SqsEventSource(ingestQueue, { enabled: true, batchSize: 1, maxConcurrency: 5 });
     contractEventHandlerLambda.addEventSource(eventSource);
 
     /*
@@ -251,11 +250,11 @@ export class UnicornConstractsStack extends Stack {
       endpointTypes: [apigateway.EndpointType.REGIONAL],
     })
 
-   const contractsApiResource = api.root.addResource('contracts', {
-    defaultIntegration: new apigateway.AwsIntegration({service: 'sqs', path: ingestQueue.queueName, region: this.region}),
-   })
-   contractsApiResource.addMethod('POST');
-   contractsApiResource.addMethod('PUT');
+    const contractsApiResource = api.root.addResource('contracts', {
+      defaultIntegration: new apigateway.AwsIntegration({ service: 'sqs', path: ingestQueue.queueName, region: this.region }),
+    })
+    contractsApiResource.addMethod('POST');
+    contractsApiResource.addMethod('PUT');
 
     /*
       Outputs

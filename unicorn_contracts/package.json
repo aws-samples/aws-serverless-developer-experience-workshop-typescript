@@ -19,7 +19,8 @@
     "@aws-sdk/lib-dynamodb": "^3.506.0",
     "@aws-sdk/util-dynamodb": "^3.506.0",
     "aws-lambda": "^1.0.7",
-    "esbuild": "^0.17.19"
+    "esbuild": "^0.17.19",
+    "unicorn_shared": "workspace:*"
   },
   "scripts": {
     "build": "tsc",

@@ -45,18 +45,6 @@ dependencies:
     specifier: ^0.17.19
     version: 0.17.19
 
-  shared:
-    devDependencies:
-      '@types/node':
-        specifier: 20.10.8
-        version: 20.10.8
-      ts-node:
-        specifier: ^10.9.2
-        version: 10.9.2(@types/node@20.10.8)(typescript@5.3.3)
-      typescript:
-        specifier: ~5.3.3
-        version: 5.3.3
-
   unicorn_contracts:
     dependencies:
       '@aws-lambda-powertools/commons':
@@ -98,9 +86,9 @@ dependencies:
       esbuild:
         specifier: ^0.17.19
         version: 0.17.19
-      shared:
+      unicorn_shared:
         specifier: workspace:*
-        version: link:../shared
+        version: link:../unicorn_shared
     devDependencies:
       '@aws-sdk/client-cloudformation':
         specifier: ^3.495.0
@@ -152,6 +140,22 @@ dependencies:
         version: 10.9.2(@types/node@18.19.8)(typescript@5.3.3)
       typescript:
         specifier: ^5.3.3
+        version: 5.3.3
+
+  unicorn_shared:
+    dependencies:
+      aws-cdk-lib:
+        specifier: ^2.122.0
+        version: 2.122.0(constructs@10.3.0)
+    devDependencies:
+      '@types/node':
+        specifier: 20.10.8
+        version: 20.10.8
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@types/node@20.10.8)(typescript@5.3.3)
+      typescript:
+        specifier: ~5.3.3
         version: 5.3.3
 
 packages:
