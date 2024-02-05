@@ -1,9 +1,4 @@
-### CDK-specific ignores ###
-*.swp
-cdk.context.json
-package-lock.json
-yarn.lock
-.cdk.staging
+**/.aws-sam
 cdk.out
 
 # Created by https://www.toptal.com/developers/gitignore/api/node
