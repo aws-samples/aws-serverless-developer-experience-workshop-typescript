@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 import { initialiseDatabase, findOutputValue, clearDatabase, getCloudWatchLogsValues, sleep } from "./helper";
 
-describe("Testing approval requests", () => {
+describe("Testing updating contracts", () => {
     let apiUrl: string;
 
     beforeAll(async () => {
@@ -19,21 +19,21 @@ describe("Testing approval requests", () => {
         await clearDatabase();
     });
 
-    it('Should a confirm the approval request and fire a eventbridge event', async () => {
-        const response = await fetch(`${apiUrl}request_approval`, {
-            method: 'POST',
+    it('Should update the item in DynamoDB and fire a eventbridge event when an existing contract is updated', async () => {
+        const response = await fetch(`${apiUrl}contracts`, {
+            method: 'PUT',
             headers: { 'content-type': 'application/json' },
-            body: '{"property_id":"USA/Anytown/main-street/111"}'
+            body: '{"property_id":"usa/anytown/main-street/111"}'
         })
         expect(response.status).toBe(200);
         const json = await response.json();
         expect(json).toEqual({ message: 'OK' });
-        await sleep(3000);
-        const event = await getCloudWatchLogsValues("USA/Anytown/main-street/111").next();
-        expect(event.value['detail-type']).toEqual('PublicationApprovalRequested');
-        expect(event.value['detail'].property_id).toEqual('USA/Anytown/main-street/111');
-        expect(event.value['detail'].status).toEqual('PENDING');
+        await sleep(5000);
+        const event = await getCloudWatchLogsValues("usa/anytown/main-street/111").next();
+        expect(event.value['detail-type']).toEqual('ContractStatusChanged');
+        expect(event.value['detail'].property_id).toEqual('usa/anytown/main-street/111');
+        expect(event.value['detail'].contract_status).toEqual('APPROVED');
     }
-    ,10000)
+    , 20000)
 
 });
