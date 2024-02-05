@@ -20,7 +20,7 @@
     "aws-cdk-lib": "^2.122.0",
     "aws-lambda": "^1.0.7",
     "esbuild": "^0.17.19",
-    "shared": "workspace:*"
+    "unicorn_shared": "workspace:*"
   },
   "scripts": {
     "build": "tsc",
