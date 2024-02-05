@@ -16,13 +16,11 @@
     "@aws-sdk/client-sqs": "^3.495.0",
     "@aws-sdk/lib-dynamodb": "^3.495.0",
     "@aws-sdk/util-dynamodb": "^3.495.0",
-    "@types/mustache": "^4.2.5",
     "aws-cdk": "^2.122.0",
     "aws-cdk-lib": "^2.122.0",
     "aws-lambda": "^1.0.7",
     "esbuild": "^0.17.19",
-    "js-yaml": "^4.1.0",
-    "mustache": "^4.2.0"
+    "shared": "workspace:*"
   },
   "scripts": {
     "build": "tsc",
