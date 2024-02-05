@@ -285,6 +285,22 @@ importers:
         specifier: ^8.32.1
         version: 8.32.1(eslint@9.27.0)(typescript@5.8.3)
 
+  unicorn_shared:
+    dependencies:
+      aws-cdk-lib:
+        specifier: ^2.122.0
+        version: 2.122.0(constructs@10.3.0)
+    devDependencies:
+      '@types/node':
+        specifier: 20.10.8
+        version: 20.10.8
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@types/node@20.10.8)(typescript@5.3.3)
+      typescript:
+        specifier: ~5.3.3
+        version: 5.3.3
+
 packages:
 
   '@ampproject/remapping@2.3.0':

@@ -1,14 +1,21 @@
-import { DescribeKinesisStreamingDestinationCommandInput } from "@aws-sdk/client-dynamodb";
 import { App, Stack, StackProps } from "aws-cdk-lib";
-import { Stage } from "../bin/cdk";
+import { aws_events as events } from 'aws-cdk-lib';
+import { aws_iam as iam } from 'aws-cdk-lib';
+
+import { Stage } from "unicorn_shared";
 
 interface SubscriberPoliciesStackProps extends StackProps {
-    stage: Stage
+  stage: Stage
 }
 
 export class SubscriberPoliciesStack extends Stack {
   constructor(scope: App, id: string, props: SubscriberPoliciesStackProps) {
     super(scope, id, props);
+    const eventBusPolicy = new events.EventBusPolicy(this, 'MyEventBusPolicy', {
+      eventBus: eventBus,
+      statement: policyStatement,
+      statementId: 'statementId',
+    });
   }
 }
 
