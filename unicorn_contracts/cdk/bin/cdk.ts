@@ -2,6 +2,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { UnicornConstractsStack } from '../lib/unicorn-contracts';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { UNICORN_CONTRACTS_NAMESPACE } from 'shared';
 
 /** The different stages for the app. */
 export enum Stage {
@@ -39,6 +40,7 @@ const app = new cdk.App();
 const tags = (stage: Stage) => ({
     stage: Stage.local,
     project: "AWS_Serverless_Developer_Experience",
+    namespace: UNICORN_CONTRACTS_NAMESPACE
 })
 
 Object.values(Stage).map((stage) => {

@@ -6288,6 +6288,7 @@ snapshots:
   js-yaml@4.1.0:
     dependencies:
       argparse: 2.0.1
+    dev: true
 
   jsesc@3.1.0: {}
 

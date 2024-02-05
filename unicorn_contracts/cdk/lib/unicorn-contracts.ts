@@ -1,7 +1,5 @@
 import * as fs from 'fs';
 import * as path from 'path';
-const yaml = require('js-yaml');
-import { render } from 'mustache';
 import { Duration, RemovalPolicy, Stack, StackProps, App, Tags, CfnOutput, Fn } from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
 import * as apigateway from 'aws-cdk-lib/aws-apigateway'
@@ -17,6 +15,7 @@ import { CfnPipe } from 'aws-cdk-lib/aws-pipes';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 import { LogsRetentionPeriod, Stage, isProd } from '../bin/cdk';
+import {UNICORN_CONTRACTS_NAMESPACE, UNICORN_PROPERTIES_NAMESPACE, UNICORN_WEB_NAMESPACE} from 'shared';
 
 interface UnicornConstractsStackProps extends StackProps {
   stage: Stage,
@@ -29,15 +28,6 @@ export class UnicornConstractsStack extends Stack {
     const retentionPeriod = LogsRetentionPeriod(props.stage);
 
     /*
-      Existing SSM Parameters
-    */
-    const contractsNamespace = ssm.StringParameter.valueFromLookup(this, `/uni-prop/${props.stage}/UnicornContractsNamespace`);
-    const propertiesNamespace = ssm.StringParameter.valueFromLookup(this, `/uni-prop/${props.stage}/UnicornPropertiesNamespace`);
-    const webNamespace = ssm.StringParameter.valueFromLookup(this, `/uni-prop/${props.stage}/UnicornWebNamespace`);
-    Tags.of(this).add('namespace', contractsNamespace);
-
-
-    /*
       EVENT BUS
     */
     const eventBus = new events.EventBus(this, `UnicornContractstBus-${props.stage}`, {
@@ -46,7 +36,7 @@ export class UnicornConstractsStack extends Stack {
 
     // CloudWatch log group used to catch all events
     const catchAllLogGroup = new logs.LogGroup(this, 'CatchAllLogGroup', {
-      logGroupName: `/aws/events/${props.stage}/${contractsNamespace}-catchall`,
+      logGroupName: `/aws/events/${props.stage}/${UNICORN_CONTRACTS_NAMESPACE}-catchall`,
       removalPolicy: RemovalPolicy.DESTROY,
       retention: retentionPeriod
     })
@@ -57,7 +47,7 @@ export class UnicornConstractsStack extends Stack {
         principals: [new iam.AccountRootPrincipal()],
         actions: ['events:PutEvents'],
         resources: [eventBus.eventBusArn],
-        conditions: { StringEquals: { 'events:Source': contractsNamespace } }
+        conditions: { StringEquals: { 'events:Source': UNICORN_CONTRACTS_NAMESPACE } }
       }).toJSON(),
     });
 
@@ -66,7 +56,7 @@ export class UnicornConstractsStack extends Stack {
       description: "Catch all events published by the contracts service.",
       eventBus: eventBus,
       eventPattern: {
-        source: [propertiesNamespace, webNamespace, contractsNamespace],
+        source: [UNICORN_PROPERTIES_NAMESPACE, UNICORN_WEB_NAMESPACE, UNICORN_CONTRACTS_NAMESPACE],
         account: [this.account]
       },
       enabled: true,
@@ -147,7 +137,7 @@ export class UnicornConstractsStack extends Stack {
       target: eventBus.eventBusArn,
       targetParameters: {
         eventBridgeEventBusParameters: {
-          source: contractsNamespace,
+          source: UNICORN_CONTRACTS_NAMESPACE,
           detailType: 'ContractStatusChanged'
         },
         inputTemplate: JSON.stringify({
@@ -203,13 +193,13 @@ export class UnicornConstractsStack extends Stack {
       logGroup: eventHandlerLogs,
       environment: {
         DYNAMODB_TABLE: table.tableName,
-        SERVICE_NAMESPACE: contractsNamespace,
+        SERVICE_NAMESPACE: UNICORN_CONTRACTS_NAMESPACE,
         POWERTOOLS_LOGGER_CASE: "PascalCase",
-        POWERTOOLS_SERVICE_NAME: contractsNamespace,
+        POWERTOOLS_SERVICE_NAME: UNICORN_CONTRACTS_NAMESPACE,
         POWERTOOLS_TRACE_DISABLED: "false", // Explicitly disables tracing, default
         POWERTOOLS_LOGGER_LOG_EVENT: isProd(props.stage) ? "false" : "true", // Logs incoming event, default
         POWERTOOLS_LOGGER_SAMPLE_RATE: isProd(props.stage) ? "0.1" : "0", // Debug log sampling percentage, default
-        POWERTOOLS_METRICS_NAMESPACE: contractsNamespace,
+        POWERTOOLS_METRICS_NAMESPACE: UNICORN_CONTRACTS_NAMESPACE,
         POWERTOOLS_LOG_LEVEL: "INFO", // Log level for Logger (INFO, DEBUG, etc.), default
         LOG_LEVEL: "INFO" // Log level for Logger
       },
@@ -241,7 +231,6 @@ export class UnicornConstractsStack extends Stack {
       accountId: this.account
     };
 
-    const openApiSpec = this.resolve(yaml.load(render(fs.readFileSync(path.join(__dirname, '../../api.yaml'), 'utf-8'), openApiParams)));
 
     const api = new apigateway.RestApi(this, 'UnicornContractsApi', {
       cloudWatchRole: true,
@@ -263,9 +252,8 @@ export class UnicornConstractsStack extends Stack {
     })
 
    const contractsApiResource = api.root.addResource('contracts', {
-    defaultIntegration: new apigateway.AwsIntegration({service: 'sqs', path: ingestQueue.queueName, region: this.region})
+    defaultIntegration: new apigateway.AwsIntegration({service: 'sqs', path: ingestQueue.queueName, region: this.region}),
    })
-
    contractsApiResource.addMethod('POST');
    contractsApiResource.addMethod('PUT');
 
