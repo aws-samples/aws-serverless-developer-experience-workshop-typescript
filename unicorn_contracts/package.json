@@ -22,7 +22,7 @@
     "esbuild": "^0.17.19"
   },
   "scripts": {
-    "build": "sam build",
+    "build": "tsc",
     "unit": "jest --config=jest.config.test.unit.ts",
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
