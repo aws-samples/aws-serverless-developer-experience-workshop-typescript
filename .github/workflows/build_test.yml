@@ -57,6 +57,14 @@ jobs:
         version: 8
         package_json_file: ${{ matrix.folder }}/package.json
 
+    - name: Install dependencies
+      run: pnpm i
+      working-directory: ${{ matrix.folder }}
+
+    - name: Run unit tests
+      run: make unit-tests
+      working-directory: ${{ matrix.folder }}
+
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
@@ -68,10 +76,6 @@ jobs:
       with: 
         use-installer: true
 
-    - name: Install dependencies
-      run: pnpm i
-      working-directory: ${{ matrix.folder }}
-
     - name: Build the SAM template
       run: sam build 
       working-directory: ${{ matrix.folder }}
@@ -80,6 +84,6 @@ jobs:
       run: sam deploy --no-confirm-changeset
       working-directory: ${{ matrix.folder }}
 
-    - name: Run tests
-      run: make test
+    - name: Run integration tests
+      run: make integration-tests
       working-directory: ${{ matrix.folder }}

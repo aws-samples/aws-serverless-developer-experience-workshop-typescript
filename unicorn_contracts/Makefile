@@ -15,20 +15,17 @@ build:
 	cfn-lint template.yaml -a cfn_lint_serverless.rules
 	sam build -c $(DOCKER_OPTS)
 
-deps:
-	pnpm i
-
 deploy: build
 	sam deploy --no-confirm-changeset
 
-# NOTE: [2023-05-09] This is a fix for installing Poetry dependencies in GitHub Actions
-ci_init:
-	pnpm --dev
-
-
 #### Tests
-test: deps
-	pnpm test -- tests/integration
+test: unit-test integration-test
+
+unit-test:
+	pnpm test --  tests/unit/
+
+integration-test: 
+	pnpm test -- tests/integration/
 
 curl-test: clean-tests
 	$(call runif,CREATE CONTRACT)
