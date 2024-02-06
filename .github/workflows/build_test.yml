@@ -58,7 +58,8 @@ jobs:
         node-version: 18.x
   
     - uses: pnpm/action-setup@v2
-
+      with:
+        package_json_file: ${{ matrix.folder }}/package.json
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v2
       with:
