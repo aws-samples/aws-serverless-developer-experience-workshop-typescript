@@ -21,7 +21,7 @@ test: unit-test integration-test
 unit-test:
 	pnpm test --  tests/unit/
 
-integration-test: deps
+integration-test: 
 	pnpm test -- tests/integration/
 
 #### Utilities
