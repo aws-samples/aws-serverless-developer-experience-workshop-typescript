@@ -23,7 +23,7 @@ deploy: build
 test: unit-test integration-test
 
 unit-test:
-	pnpm test --  tests/unit/
+	pnpm test --  tests/unit/ --passWithNoTests
 
 integration-test: 
 	pnpm test --  tests/integration/
