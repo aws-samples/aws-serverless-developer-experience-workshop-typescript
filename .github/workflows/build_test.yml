@@ -62,7 +62,7 @@ jobs:
       working-directory: ${{ matrix.folder }}
 
     - name: Run unit tests
-      run: make unit-tests
+      run: make unit-test
       working-directory: ${{ matrix.folder }}
 
     - name: Configure AWS credentials
@@ -85,5 +85,5 @@ jobs:
       working-directory: ${{ matrix.folder }}
 
     - name: Run integration tests
-      run: make integration-tests
+      run: make integration-test
       working-directory: ${{ matrix.folder }}
