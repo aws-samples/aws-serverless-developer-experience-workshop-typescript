@@ -26,7 +26,8 @@ describe("Testing draft contract event handling", () => {
         if (!ddbResp.Item) throw Error("Contract not found")
         expect(ddbResp.Item.contract_status?.S).toBe("DRAFT");
         expect(ddbResp.Item.sfn_wait_approved_task_token).toBe(undefined);
-    });
+    }, 20000);
+
     it("Should update an existing contract status to APPROVED", async () => {
         const ddb = new DynamoDBClient({});
         const contractStatusTableName = await findOutputValue("ContractStatusTableName");
@@ -49,5 +50,5 @@ describe("Testing draft contract event handling", () => {
 
         if (!ddbResp.Item) throw new Error("Contract not found");
         expect(ddbResp.Item.contract_status?.S).toBe("APPROVED");
-    });
+    }, 20000);
 });
