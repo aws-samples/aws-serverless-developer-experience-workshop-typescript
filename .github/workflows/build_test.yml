@@ -1,96 +1,89 @@
-# name: Build & Test Workflow
-# on:
-#   push:
-#     branches: [develop, main, v2]
-#     paths:
-#       - '.github/workflows/*'
-#       - 'unicorn_contracts/**'
-#       - 'unicorn_properties/**'
-#       - 'unicorn_web/**'
-#   pull_request:
-#     branches: [develop, main, v2]
-#     paths:
-#       - './github/workflows/*'
-#       - 'unicorn_contracts/**'
-#       - 'unicorn_properties/**'
-#       - 'unicorn_web/**'
+name: Build & Test Workflow
+on:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/*'
+      - 'unicorn_shared/**'
+      - 'unicorn_contracts/**'
+      - 'unicorn_properties/**'
+      - 'unicorn_web/**'
+env:
+  AWS_REGION : "ap-southeast-2"
 
-# env:
-#   AWS_REGION : "ap-southeast-2"
+permissions:
+  id-token: write
+  contents: read
 
-# permissions:
-#   id-token: write
-#   contents: read
+jobs:
+  shared-infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Configure AWS SAM
+      uses: aws-actions/setup-sam@v2
+      with: 
+        use-installer: true
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
+        aws-region: ${{ env.AWS_REGION }}
+    - name: Deploy Shared Infrastructure
+      working-directory: unicorn_shared
+      run: sam build |
+           sam deploy --no-confirm-changeset
 
-# jobs:
-#   shared-infrastructure:
-#     runs-on: ubuntu-latest
-#     steps:
-#     - uses: actions/checkout@v3
-#     - name: Configure AWS SAM
-#       uses: aws-actions/setup-sam@v2
-#       with: 
-#         use-installer: true
-#     - name: Configure AWS credentials
-#       uses: aws-actions/configure-aws-credentials@v2
-#       with:
-#         role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
-#         aws-region: ${{ env.AWS_REGION }}
-#     - name: Deploy Shared Infrastructure
-#       working-directory: unicorn_shared
-#       run: sam build |
-#            sam deploy --no-confirm-changeset
+  uniorn-service:
+    needs: shared-infrastructure
+    runs-on: ubuntu-latest
+    continue-on-error: true
 
-#   service:
-#     needs: shared-infrastructure
-#     runs-on: ubuntu-latest
-#     strategy:
-#       max-parallel: 1
-#       matrix:
-#         folder: [unicorn_contracts, unicorn_properties, unicorn_web]
+    strategy:
+      max-parallel: 1
+      matrix:
+        folder: [unicorn_contracts, unicorn_properties, unicorn_web]
 
-#     steps:
-#     - uses: actions/checkout@v3
+    steps:
+    - uses: actions/checkout@v3
 
-#     - name: Setup NodeJS
-#       uses: actions/setup-node@v3
-#       with:
-#         node-version: 18.x
-#         cache-dependency-path: ${{ matrix.folder }}/package-lock.json
-#         cache: 'npm'
+    - name: Setup NodeJS
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+  
+    - uses: pnpm/action-setup@v2
+      with:
+        version: 8
+        package_json_file: ${{ matrix.folder }}/package.json
 
-#     - name: Configure AWS credentials
-#       uses: aws-actions/configure-aws-credentials@v2
-#       with:
-#         role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
-#         aws-region: ${{ env.AWS_REGION }}
+    - name: Install dependencies
+      run: pnpm i
+      working-directory: ${{ matrix.folder }}
 
-#     - name: Configure AWS SAM
-#       uses: aws-actions/setup-sam@v2
-#       with: 
-#         use-installer: true
+    - name: Run unit tests
+      run: make unit-test
+      working-directory: ${{ matrix.folder }}
 
-#     - uses: actions/setup-python@v4
-#       with: { python-version: 3.11.4 }
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
+        aws-region: ${{ env.AWS_REGION }}
 
-#     - uses: snok/install-poetry@v1
-#       with:
-#         version: 1.4.2
-#         virtualenvs-create: true
-#         virtualenvs-in-project: true
+    - name: Configure AWS SAM
+      uses: aws-actions/setup-sam@v2
+      with: 
+        use-installer: true
 
-#     - name: Initialize and install dependencies
-#       run: make ci_init
-#       working-directory: ${{ matrix.folder }}
+    - name: Build the SAM template
+      run: sam build 
+      working-directory: ${{ matrix.folder }}
 
-#     - name: Build the SAM template
-#       run: sam build 
-#       working-directory: ${{ matrix.folder }}
+    - name: Deploy the SAM template
+      run: sam deploy --no-confirm-changeset
+      working-directory: ${{ matrix.folder }}
 
-#     - name: Deploy the SAM template
-#       run: sam deploy --no-confirm-changeset
-#       working-directory: ${{ matrix.folder }}
-
-#     - name: Run integration tests
-#       run: make integration-test
-#       working-directory: ${{ matrix.folder }}
+    - name: Run integration tests
+      run: make integration-test
+      working-directory: ${{ matrix.folder }}

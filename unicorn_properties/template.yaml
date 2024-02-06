@@ -43,7 +43,9 @@ Conditions:
   IsProd: !Equals [!Ref Stage, Prod]
 
 Globals:
-  Function:
+  Function: 
+    Tracing: Active
+    Timeout: 15
     Runtime: nodejs18.x
     MemorySize: 128
     Timeout: 15

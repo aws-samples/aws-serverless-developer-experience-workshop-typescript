@@ -15,28 +15,16 @@ build:
 	cfn-lint template.yaml -a cfn_lint_serverless.rules
 	sam build -c $(DOCKER_OPTS)
 
-deps:
-	poetry install
-	npm i
-
 deploy: build
 	sam deploy --no-confirm-changeset
-
-# NOTE: [2023-05-09] This is a fix for installing Poetry dependencies in GitHub Actions
-ci_init:
-	poetry export --without-hashes --format=requirements.txt --output=src/requirements.txt --with dev
-	poetry install -n
-	npm ci
-
 
 #### Tests
 test: unit-test integration-test
 
 unit-test:
-	npm test --  --passWithNoTests
 
-integration-test: deps
-	poetry run pytest tests/integration/
+integration-test: 
+	pnpm test -- tests/integration/
 
 curl-test: clean-tests
 	$(call runif,CREATE CONTRACT)

@@ -6,11 +6,10 @@ stackName		:= $(shell yq -oy '.default.global.parameters.stack_name' samconfig.y
 build:
 	sam validate --lint
 	cfn-lint template.yaml -a cfn_lint_serverless.rules
-	poetry export --without-hashes --format=requirements.txt --output=src/requirements.txt
 	sam build -c $(DOCKER_OPTS)
 
 deps:
-	poetry install
+	pnpm i
 
 deploy: build
 	sam deploy
@@ -20,10 +19,10 @@ deploy: build
 test: unit-test integration-test
 
 unit-test:
-	npm test --  tests/unit/
+	pnpm test --  tests/unit/
 
-integration-test: deps
-	poetry run pytest tests/integration/
+integration-test: 
+	pnpm test -- tests/integration/
 
 #### Utilities
 sync:
@@ -41,9 +40,5 @@ clean:
 delete:
 	sam delete --stack-name $(stackName) --no-prompts
 
-# NOTE: [2023-05-09] This is a fix for installing Poetry dependencies in GitHub Actions
 ci_init:
-	npm ci
-	poetry export --without-hashes --format=requirements.txt --output=src/requirements.txt --with dev
-	poetry run pip install -r src/requirements.txt
-	poetry install -n
+	pnpm i

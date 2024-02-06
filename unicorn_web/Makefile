@@ -8,7 +8,7 @@ apiUrl			= $(call cf_output,$(stackName),ApiUrl)
 
 #### Build/Deploy Tasks
 deps:
-	npm i
+	pnpm i
 
 build:
 	sam validate --lint
@@ -23,10 +23,10 @@ deploy: build
 test: unit-test integration-test
 
 unit-test:
-	npm test --  tests/unit/
+	pnpm test --  tests/unit/ --passWithNoTests
 
-integration-test: deps
-	npm test --  tests/integration/
+integration-test: 
+	pnpm test --  tests/integration/
 
 curl-test:
 	$(call mcurl,GET,search/usa/anytown)
