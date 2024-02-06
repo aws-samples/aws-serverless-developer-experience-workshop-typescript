@@ -18,7 +18,7 @@ export const sleep = async (ms: number) =>
     });
 
 export async function* getCloudWatchLogsValues(propertyId: string): AsyncGenerator<any, void, unknown> {
-    const groupName = await findOutputValue('UnicornWebCatchAllLogGroupName')
+    const groupName = await findOutputValue('UnicornPropertiesCatchAllLogGroupName')
 
     // Initialize the CloudWatch Logs client
     const cwl = new CloudWatchLogs({ region: process.env.AWS_DEFAULT_REGION });
@@ -155,12 +155,12 @@ export async function clearDatabase() {
 
 export const findOutputValue = async (outputKey: string) => {
     const cloudformation = new CloudFormationClient({ region: process.env.AWS_DEFAULT_REGION });
-    const stackResources: DescribeStacksCommandOutput = await cloudformation.send(new DescribeStacksCommand({ StackName: "uni-prop-local-web" }));
+    const stackResources: DescribeStacksCommandOutput = await cloudformation.send(new DescribeStacksCommand({ StackName: "uni-prop-local-properties" }));
     if (stackResources.Stacks === undefined || stackResources.Stacks?.length < 1)
-        throw new Error("Could not find stack resources named: uni-prop-local-web ");
+        throw new Error("Could not find stack resources named: uni-prop-local-properties ");
 
     if (stackResources.Stacks[0].Outputs === undefined || stackResources.Stacks[0].Outputs?.length < 1) {
-        throw new Error("Could not find stack outputs for stack named: uni-prop-local-web");
+        throw new Error("Could not find stack outputs for stack named: uni-prop-local-properties");
     }
 
     const outputValue = stackResources.Stacks[0].Outputs.find(output => output.OutputKey === outputKey)?.OutputValue;
