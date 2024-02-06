@@ -34,7 +34,7 @@ jobs:
       run: sam build |
            sam deploy --no-confirm-changeset
 
-  service:
+  uniorn-service:
     needs: shared-infrastructure
     runs-on: ubuntu-latest
     continue-on-error: true
