@@ -78,6 +78,6 @@ jobs:
       run: sam deploy --no-confirm-changeset
       working-directory: ${{ matrix.folder }}
 
-    - name: Run integration tests
-      run: make integration-test
+    - name: Run tests
+      run: make test
       working-directory: ${{ matrix.folder }}
