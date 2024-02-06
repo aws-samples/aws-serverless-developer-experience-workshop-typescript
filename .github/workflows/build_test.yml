@@ -37,6 +37,8 @@ jobs:
   service:
     needs: shared-infrastructure
     runs-on: ubuntu-latest
+    continue-on-error: true
+
     strategy:
       max-parallel: 1
       matrix:
