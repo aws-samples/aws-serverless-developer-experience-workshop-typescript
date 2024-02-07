@@ -18,7 +18,6 @@
     "esbuild": "^0.17.19"
   },
   "scripts": {
-    "unit": "jest --config=jest.config.test.unit.ts",
     "lint": "eslint '*.ts' --quiet --fix",
     "compile": "tsc",
     "test": "jest",
