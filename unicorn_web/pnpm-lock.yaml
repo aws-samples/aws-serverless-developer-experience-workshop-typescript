@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@aws-lambda-powertools/commons':
+    specifier: ^1.18.0
+    version: 1.18.0
   '@aws-lambda-powertools/logger':
     specifier: ^1.18.0
     version: 1.18.0
