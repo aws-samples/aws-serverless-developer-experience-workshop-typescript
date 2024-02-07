@@ -19,8 +19,7 @@ Resources:
     Type: AWS::EventSchemas::Registry
     Properties:
       Description: 'Event schemas for Unicorn Contracts'
-      RegistryName:
-        Fn::Sub: "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}-${Stage}"
+      RegistryName: "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
 
   EventRegistryPolicy:
     Type: AWS::EventSchemas::RegistryPolicy
