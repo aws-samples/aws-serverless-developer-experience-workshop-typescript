@@ -3,16 +3,16 @@ stackName		:= $(shell yq -oy '.default.global.parameters.stack_name' samconfig.y
 
 
 #### Build/Deploy Tasks
-build:
-	sam validate --lint
-	cfn-lint template.yaml -a cfn_lint_serverless.rules
-	sam build -c $(DOCKER_OPTS)
-
+ci: deps clean build deploy
 deps:
 	pnpm i
 
-deploy: build
-	sam deploy
+build:
+	sam build -c $(DOCKER_OPTS)
+
+deploy: deps build
+	sam deploy --no-confirm-changeset
+
 
 
 #### Tests
@@ -34,7 +34,7 @@ logs:
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} \; 2>/dev/null || true
 	find . -type f -name requirements.txt -exec rm -f {} \; 2>/dev/null || true
-	npx jest --clearCache
+	pnpm exec jest --clearCache
 	rm -rf node_modules/ .pytest_cache/ .aws-sam/ htmlcov/ .coverage || true
 
 delete:

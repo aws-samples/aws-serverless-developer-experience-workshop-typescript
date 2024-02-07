@@ -2,21 +2,21 @@
 stackName		:= $(shell yq -oy '.default.global.parameters.stack_name' samconfig.yaml)
 
 
-#### Test Variables
-apiUrl			= $(call cf_output,$(stackName),ApiUrl)
-
-
 #### Build/Deploy Tasks
+ci: deps clean build deploy
 deps:
 	pnpm i
 
 build:
-	sam validate --lint
-	cfn-lint template.yaml -a cfn_lint_serverless.rules
 	sam build -c $(DOCKER_OPTS)
 
-deploy: build
-	sam deploy
+deploy: deps build
+	sam deploy --no-confirm-changeset
+
+
+
+#### Test Variables
+apiUrl			= $(call cf_output,$(stackName),ApiUrl)
 
 
 #### Tests
@@ -45,7 +45,7 @@ logs:
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} \; 2>/dev/null || true
 	find . -type f -name requirements.txt -exec rm -f {} \; 2>/dev/null || true
-	npx jest --clearCache
+	pnpm exec jest --clearCache
 	rm -rf .node_modules/ .aws-sam/ htmlcov/ .coverage || true
 
 delete:
