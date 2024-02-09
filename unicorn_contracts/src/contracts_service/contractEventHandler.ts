@@ -42,13 +42,13 @@ class ContractEventHandlerFunction implements LambdaInterface {
     // Parse SQS records
     for (const sqsRecord of event.Records) {
       const contract = this.parseRecord(sqsRecord);
+      tracer.putMetadata("property_id", contract);
       switch (sqsRecord.messageAttributes.HttpMethod.stringValue) {
         case "POST":
           logger.info("Creating a contract", { contract });
           try {
             // Save the entry.
             await this.createContract(contract);
-            tracer.putMetadata("ContractStatus", contract);
           } catch (error) {
             tracer.addErrorAsMetadata(error as Error);
             logger.error("Error during DDB PUT", error as Error);
@@ -60,7 +60,6 @@ class ContractEventHandlerFunction implements LambdaInterface {
           try {
             // Update the entry.
             await this.updateContract(contract);
-            tracer.putMetadata("ContractStatus", contract);
           } catch (error) {
             tracer.addErrorAsMetadata(error as Error);
             logger.error("Error during DDB UPDATE", error as Error);
@@ -86,8 +85,6 @@ class ContractEventHandlerFunction implements LambdaInterface {
    */
   @tracer.captureMethod()
   private async createContract(contract: ContractDBType): Promise<void> {
-    tracer.putAnnotation("property_id", contract.property_id);
-
     // Construct the DDB Table record
     logger.info("Constructing DB Entry from contract", { contract });
     const createDate = new Date();
@@ -119,8 +116,9 @@ class ContractEventHandlerFunction implements LambdaInterface {
     const ddbPutCommand = new PutItemCommand(ddbPutCommandInput);
 
     // Send the command
-    const ddbPutCommandOutput: PutItemCommandOutput =
-      await ddbClient.send(ddbPutCommand);
+    const ddbPutCommandOutput: PutItemCommandOutput = await ddbClient.send(
+      ddbPutCommand
+    );
     if (ddbPutCommandOutput.$metadata.httpStatusCode != 200) {
       let error: ContractError = {
         propertyId: dbEntry.property_id,
@@ -132,6 +130,8 @@ class ContractEventHandlerFunction implements LambdaInterface {
       };
       throw error;
     }
+
+    tracer.putAnnotation("ContractStatus", contract.contract_status);
 
     logger.info("Inserted record for contract", {
       contractId,
@@ -189,6 +189,8 @@ class ContractEventHandlerFunction implements LambdaInterface {
       };
       throw error;
     }
+
+    tracer.putAnnotation("ContractStatus", dbEntry.contract_status);
 
     logger.info("Updated record for contract", {
       contractId: dbEntry.contract_id,
