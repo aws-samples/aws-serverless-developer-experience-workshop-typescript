@@ -6,9 +6,6 @@ import {
   AttributeValue,
   DynamoDBBatchResponse,
 } from "aws-lambda";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
-import { logger, metrics, tracer } from "./powertools";
 import {
   SFNClient,
   SendTaskSuccessCommand,
@@ -25,21 +22,18 @@ export type ContractStatus = {
   sfn_wait_approved_task_token?: string;
 };
 
-class PropertiesApprovalSyncFunction implements LambdaInterface {
+class PropertiesApprovalSyncFunction {
   /**
    * Handle the contract update stream from the dynamodb table.
    * @param {Object} event - EventBridge Event Input Format
    * @returns {void}
    *
    */
-  @tracer.captureLambdaHandler()
-  @metrics.logMetrics({ captureColdStartMetric: true })
-  @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: DynamoDBStreamEvent,
     context: Context
   ): Promise<DynamoDBBatchResponse> {
-    logger.info(
+    console.log(
       `DynamodDB stream processing triggered ${JSON.stringify(event)}`
     );
     // Track results.
@@ -55,7 +49,7 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
       try {
         if (newImage === undefined) {
           // Nothing to do.
-          logger.warn(`Event had an undefined NEW_IMAGE ${record.eventID}`);
+          console.log(`Event had an undefined NEW_IMAGE ${record.eventID}`);
           continue;
         }
 
@@ -66,28 +60,28 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
           // We should be checking for Approval state.
           if (newImage.contract_status === "APPROVED") {
             // Let's send an update! Use the token from the merged image though.
-            logger.info(
+            console.log(
               `Sending CONTRACT APPROVED task success to token ${mergedImage.sfn_wait_approved_task_token}`
             );
             await this.sendTaskSuccess(
               mergedImage.sfn_wait_approved_task_token
             );
-            logger.info(
+            console.log(
               `Sent task success to token ${mergedImage.sfn_wait_approved_task_token}`
             );
           } else {
-            logger.warn(
+            console.log(
               `Contract ${mergedImage.contract_id} is not in APPROVED state. Skipping`
             );
           }
         } else {
           // Nothing to do, just an updated contract with no property approval workflow yet.
-          logger.info(
+          console.log(
             `Contract ${mergedImage.contract_id} has no property approval requested yet`
           );
         }
       } catch (error: any) {
-        logger.error(
+        console.log(
           `Failure during handling of event ${i}: ${JSON.stringify(
             record
           )} - error was ${JSON.stringify(error)}`
@@ -130,7 +124,6 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
    * Send a TaskSuccess message back to the StepFunctions instance
    * @param taskToken
    */
-  @tracer.captureMethod()
   private async sendTaskSuccess(taskToken: any): Promise<void> {
     const cmdInput: SendTaskSuccessCommandInput = {
       taskToken: taskToken,

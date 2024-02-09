@@ -3,9 +3,6 @@
 import { Context } from "aws-lambda";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { SFNClient } from "@aws-sdk/client-sfn";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
-import { logger, metrics, tracer } from "./powertools";
 import {
   DynamoDBClient,
   GetItemCommand,
@@ -43,33 +40,30 @@ export class ContractStatusNotFoundException extends Error {
   }
 }
 
-class ContractExistsCheckerFunction implements LambdaInterface {
+class ContractExistsCheckerFunction {
   /**
    * Handle the contract existence checking.
    * @param {Object} event - EventBridge Event Input Format
    * @returns {StepFunctionsResponse}
    *
    */
-  @tracer.captureLambdaHandler()
-  @metrics.logMetrics({ captureColdStartMetric: true })
-  @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: any,
     context: Context
   ): Promise<StepFunctionsResponse> {
-    logger.info(`Step Function event triggered ${JSON.stringify(event)}`);
+    console.log(`Step Function event triggered ${JSON.stringify(event)}`);
     let contractExists = false;
     let currentStatus: ContractStatus | undefined;
     try {
       // Get the task token and contract id from the input
       const detail = event.Input;
-      logger.info(`Input: ${JSON.stringify(detail)}`);
+      console.log(`Input: ${JSON.stringify(detail)}`);
       const propertyId = detail.property_id;
 
       // Look for the contract in the ContractStatusTable and check it's status
-      logger.info(`Get contract status for property: ${propertyId}`);
+      console.log(`Get contract status for property: ${propertyId}`);
       currentStatus = await this.getContractStatus(propertyId);
-      logger.info(`Current status is ${JSON.stringify(currentStatus)}`);
+      console.log(`Current status is ${JSON.stringify(currentStatus)}`);
 
       // No item? No contract?
       if (
@@ -78,14 +72,13 @@ class ContractExistsCheckerFunction implements LambdaInterface {
         currentStatus.contract_id === ""
       ) {
         const msg = `Contract not in system yet for ${propertyId}`;
-        logger.warn(msg);
+        console.log(msg);
         contractExists = false;
       } else {
         contractExists = true;
       }
     } catch (error: any) {
-      tracer.addErrorAsMetadata(error as Error);
-      logger.error(
+      console.log(
         `Error during Contract Status Check: ${JSON.stringify(error)}`
       );
       return {
@@ -105,7 +98,6 @@ class ContractExistsCheckerFunction implements LambdaInterface {
    * @param propertyId
    * @returns
    */
-  @tracer.captureMethod()
   private async getContractStatus(
     propertyId: string
   ): Promise<ContractStatus | undefined> {

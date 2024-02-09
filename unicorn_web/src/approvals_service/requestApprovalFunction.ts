@@ -5,8 +5,6 @@ import {
   SQSEvent,
   SQSRecord,
 } from "aws-lambda";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { logger, metrics, tracer } from "./powertools";
 import {
   DynamoDBClient,
   GetItemCommand,
@@ -23,7 +21,6 @@ import {
   PutEventsCommandOutput,
   PutEventsRequestEntry,
 } from "@aws-sdk/client-eventbridge";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
@@ -51,16 +48,13 @@ type PropertyDBType = {
   images?: string[];
 };
 
-class RequestApprovalFunction implements LambdaInterface {
+class RequestApprovalFunction {
   /**
    * Request approval for a particular property
    * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
    * @param {Object} event - API Gateway Lambda Proxy Input Format
    * @returns {Promise<void>}
    */
-  @tracer.captureLambdaHandler()
-  @metrics.logMetrics({ captureColdStartMetric: true })
-  @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: SQSEvent,
     context: Context
@@ -75,7 +69,6 @@ class RequestApprovalFunction implements LambdaInterface {
    * @param _context The Lambda context
    * @returns {Promise<void>}
    */
-  @tracer.captureMethod()
   private async requestApproval(
     event: SQSRecord,
     _context: Context
@@ -86,7 +79,7 @@ class RequestApprovalFunction implements LambdaInterface {
     const propertyId: string = data["property_id"];
     let PK: string, SK: string;
 
-    logger.info(`Requesting approval for property ${propertyId}`);
+    console.log(`Requesting approval for property ${propertyId}`);
 
     try {
       // Form the PK and SK from the property id.
@@ -103,25 +96,24 @@ class RequestApprovalFunction implements LambdaInterface {
       PK = `PROPERTY#${pkDetails}`;
       SK = `${street}#${number}`.replace(" ", "-").toLowerCase();
     } catch (error: any) {
-      tracer.addErrorAsMetadata(error as Error);
-      logger.error(`Error during parameter setup: ${JSON.stringify(error)}`);
+      console.log(`Error during parameter setup: ${JSON.stringify(error)}`);
       return;
     }
 
-    logger.info(`Looking for property with PK ${PK} and SK ${SK}`);
+    console.log(`Looking for property with PK ${PK} and SK ${SK}`);
 
     try {
       const property: PropertyDBType = await this.getPropertyFor(PK, SK);
 
       // If property is already being approved or approved already
       if (property.status in ["APPROVED"]) {
-        logger.info(
+        console.log(
           `Property already in status ${property.status}; no action taken`
         );
         return;
       }
 
-      logger.info(`Requesting property approval for ${propertyId}`);
+      console.log(`Requesting property approval for ${propertyId}`);
 
       const eventDetail = {
         property_id: propertyId,
@@ -139,9 +131,7 @@ class RequestApprovalFunction implements LambdaInterface {
 
       await this.firePropertyEvent(eventDetail, "unicorn.web");
     } catch (error: any) {
-      tracer.addErrorAsMetadata(error as Error);
-      logger.error(`${error}`);
-      metrics.addMetric('ApprovalsRequested', MetricUnits.Count, 1);
+      console.log(`${error}`);
       return;
     }
   }
@@ -161,13 +151,13 @@ class RequestApprovalFunction implements LambdaInterface {
       TableName: DDB_TABLE,
     };
     const data: GetItemCommandOutput = await ddbClient.send(new GetItemCommand(getItemCommandInput));
-    logger.info('input', { getItemCommandInput });
-    logger.info('data', { data });
+    console.log('input', { getItemCommandInput });
+    console.log('data', { data });
     if (data.Item === undefined) {
       throw new Error(`No item found for PK ${PK} and SK ${SK}`);
     }
     const result: PropertyDBType = unmarshall(data.Item) as PropertyDBType;
-    logger.info('result', { result });
+    console.log('result', { result });
     return result;
   }
 
@@ -200,7 +190,7 @@ class RequestApprovalFunction implements LambdaInterface {
     // Send the command
     const eventsPutEventsCommandOutput: PutEventsCommandOutput =
       await eventsClient.send(eventsPutEventsCommand);
-    logger.info(`EventBridge Response: ${JSON.stringify(eventsPutEventsCommandOutput)}`);
+    console.log(`EventBridge Response: ${JSON.stringify(eventsPutEventsCommandOutput)}`);
     if (eventsPutEventsCommandOutput.$metadata.httpStatusCode != 200) {
       let error: Error = {
         name: "PropertyApprovalError",
@@ -208,7 +198,7 @@ class RequestApprovalFunction implements LambdaInterface {
       };
       throw error;
     }
-    logger.info(`Published approval request for ${propertyId}`);
+    console.log(`Published approval request for ${propertyId}`);
   }
 }
 

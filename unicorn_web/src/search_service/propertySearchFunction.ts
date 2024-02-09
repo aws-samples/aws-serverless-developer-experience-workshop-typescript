@@ -6,9 +6,6 @@ import {
   AttributeValue,
   Context,
 } from "aws-lambda";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
-import { logger, metrics, tracer } from "./powertools";
 import {
   DynamoDBClient,
   GetItemCommand,
@@ -39,7 +36,7 @@ type PropertyDBType = {
   status: string;
 };
 
-class PropertySearchFunction implements LambdaInterface {
+class PropertySearchFunction {
   /**
    * Search for properties
    * Event doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format
@@ -49,15 +46,12 @@ class PropertySearchFunction implements LambdaInterface {
    * @returns {Object} object - API Gateway Lambda Proxy Output Format
    *
    */
-  @tracer.captureLambdaHandler()
-  @metrics.logMetrics({ captureColdStartMetric: true })
-  @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: APIGatewayProxyEvent,
     context: Context
   ): Promise<APIGatewayProxyResult> {
     // Inspect request path.
-    logger.info(`Handling request for ${event.resource}`);
+    console.log(`Handling request for ${event.resource}`);
     if (event.resource == "/search/{country}/{city}") {
       return await this.listPropertiesByCity(event, context);
     } else if (event.resource == "/search/{country}/{city}/{street}") {
@@ -83,14 +77,13 @@ class PropertySearchFunction implements LambdaInterface {
    * @param context
    * @returns
    */
-  @tracer.captureMethod()
   private async listPropertiesByCity(
     event: APIGatewayProxyEvent,
     context: Context
   ): Promise<APIGatewayProxyResult> {
     const country = event.pathParameters?.country;
     const city = event.pathParameters?.city;
-    logger.info(
+    console.log(
       `List properties by city: country = ${country}; city = ${city}`
     );
 
@@ -136,7 +129,7 @@ class PropertySearchFunction implements LambdaInterface {
       if (obj.status == "APPROVED") {
         results.push(obj);
       } else {
-        logger.warn(`Property ${JSON.stringify(obj)} is NOT APPROVED`);
+        console.log(`Property ${JSON.stringify(obj)} is NOT APPROVED`);
       }
     }
     return results;
@@ -149,7 +142,6 @@ class PropertySearchFunction implements LambdaInterface {
    * @param context
    * @returns
    */
-  @tracer.captureMethod()
   private async listPropertiesByStreet(
     event: APIGatewayProxyEvent,
     context: Context
@@ -157,7 +149,7 @@ class PropertySearchFunction implements LambdaInterface {
     const country = event.pathParameters?.country;
     const city = event.pathParameters?.city;
     const street = event.pathParameters?.street;
-    logger.info(
+    console.log(
       `List properties by street: country = ${country}; city = ${city}; street = ${street}`
     );
 
@@ -201,7 +193,6 @@ class PropertySearchFunction implements LambdaInterface {
    * @param context
    * @returns
    */
-  @tracer.captureMethod()
   private async propertyDetails(
     event: APIGatewayProxyEvent,
     context: Context
@@ -216,7 +207,7 @@ class PropertySearchFunction implements LambdaInterface {
     console.log(`number: ${number}`);
     console.log(`PROJECT PROPS: ${PROJECTION_PROPERTIES}`);
 
-    logger.info(
+    console.log(
       `Get property details for: country = ${country}; city = ${city}; street = ${street}; number = ${number}`
     );
 
@@ -244,7 +235,7 @@ class PropertySearchFunction implements LambdaInterface {
     } else {
       const dataObj = unmarshall(data.Item) as PropertyDBType;
       if (dataObj.status !== `APPROVED`) {
-        logger.warn(
+        console.log(
           `Property for ${JSON.stringify(event.pathParameters)} is NOT APPROVED`
         );
         return {

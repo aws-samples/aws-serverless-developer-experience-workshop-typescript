@@ -1,17 +1,12 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import { EventBridgeEvent, Context } from "aws-lambda";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
-import { logger, metrics, tracer } from "./powertools";
 import {
   DynamoDBClient,
   UpdateItemCommand,
   UpdateItemCommandInput,
   UpdateItemCommandOutput,
 } from "@aws-sdk/client-dynamodb";
-import { ContractStatusChanged } from "../schema/unicorn_contracts/contractstatuschanged/ContractStatusChanged";
-import { Marshaller } from "../schema/unicorn_contracts/contractstatuschanged/marshaller/Marshaller";
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
@@ -23,35 +18,38 @@ export interface ContractStatusError extends Error {
   object: any;
 }
 
-class ContractStatusChangedFunction implements LambdaInterface {
+// Remove ContractStatusChanged type and ContractStatusEnum
+type ContractStatusChanged = {
+  contractLastModifiedOn: string;
+  contractId: string;
+  propertyId: string;
+  contractStatus: ContractStatusEnum;
+};
+
+enum ContractStatusEnum {
+  DRAFT = "DRAFT",
+  APPROVED = "APPROVED",
+}
+
+class ContractStatusChangedFunction {
   /**
    * Handle the contract status changed event from the EventBridge instance.
    * @param {Object} event - EventBridge Event Input Format
    * @returns {void}
    *
    */
-  @tracer.captureLambdaHandler()
-  @metrics.logMetrics({ captureColdStartMetric: true })
-  @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: EventBridgeEvent<string, ContractStatusChanged>,
     context: Context
   ): Promise<void> {
-    logger.info(`Contract status changed: ${JSON.stringify(event.detail)}`);
+    console.log(`Contract status changed: ${JSON.stringify(event.detail)}`);
+    // Construct the entry to insert into database.
+    let statusEntry: ContractStatusChanged = event.detail;
+
     try {
-      // Construct the entry to insert into database.
-      let statusEntry: ContractStatusChanged = Marshaller.unmarshal(
-        event.detail,
-        "ContractStatusChanged"
-      );
-
-      logger.info(`Unmarshalled entry: ${JSON.stringify(statusEntry)}`);
-
-      // Build the Command objects
-      await this.saveContractStatus(statusEntry);
+      // Call saveContractStatus with the entry
     } catch (error: any) {
-      tracer.addErrorAsMetadata(error as Error);
-      logger.error(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
+      console.log(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
     }
   }
 
@@ -59,9 +57,8 @@ class ContractStatusChangedFunction implements LambdaInterface {
    * Update the ContractStatus entry in the database
    * @param statusEntry
    */
-  @tracer.captureMethod()
   private async saveContractStatus(statusEntry: ContractStatusChanged) {
-    logger.info(
+    console.log(
       `Updating status: ${statusEntry.contractStatus} for ${statusEntry.propertyId}`
     );
     const ddbUpdateCommandInput: UpdateItemCommandInput = {
@@ -75,13 +72,13 @@ class ContractStatusChangedFunction implements LambdaInterface {
         ":m": { S: statusEntry.contractLastModifiedOn },
       },
     };
-    logger.info(`Constructed command ${JSON.stringify(ddbUpdateCommandInput)}`);
+    console.log(`Constructed command ${JSON.stringify(ddbUpdateCommandInput)}`);
     const ddbUpdateCommand = new UpdateItemCommand(ddbUpdateCommandInput);
 
     // Send the command
     const ddbUpdateCommandOutput: UpdateItemCommandOutput =
       await ddbClient.send(ddbUpdateCommand);
-    logger.info(
+    console.log(
       `Updated status: ${statusEntry.contractStatus} for ${statusEntry.propertyId}`
     );
     if (ddbUpdateCommandOutput.$metadata.httpStatusCode != 200) {

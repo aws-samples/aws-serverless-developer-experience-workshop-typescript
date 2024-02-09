@@ -2,27 +2,23 @@
 stackName		:= $(shell yq -oy '.default.global.parameters.stack_name' samconfig.yaml)
 
 
-#### Build/Deploy Tasks
-ci: deps clean build deploy
-deps:
-	pnpm i
-
-build:
-	sam build -c $(DOCKER_OPTS)
-
-deploy: deps build
-	sam deploy --no-confirm-changeset
-
-
-
 #### Test Variables
 apiUrl			= $(call cf_output,$(stackName),ApiUrl)
 ddbPropertyId 	= $(call get_ddb_key,create_contract_valid_payload_1)
 
 
+#### Build/Deploy Tasks
+ci: clean build deploy
+
+build:
+	sam validate --lint
+	cfn-lint template.yaml -a cfn_lint_serverless.rules
+	sam build -c $(DOCKER_OPTS)
+
+deploy: build
+	sam deploy --no-confirm-changeset
 
 #### Tests
-
 test: unit-test integration-test
 
 unit-test:
@@ -63,7 +59,7 @@ logs:
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} \; 2>/dev/null || true
 	find . -type f -name requirements.txt -exec rm -f {} \; 2>/dev/null || true
-	pnpm exec jest --clearCache
+	npx jest --clearCache
 	rm -rf .pytest_cache/ .aws-sam/ htmlcov/ .coverage node_modules/ || true
 
 delete:

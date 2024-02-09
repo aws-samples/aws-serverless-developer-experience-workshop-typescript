@@ -48,21 +48,13 @@ Globals:
     Runtime: nodejs18.x
     MemorySize: 128
     Timeout: 15 
-    Tracing: Active
     Architectures:
       - x86_64
     Environment:
       Variables:
         DYNAMODB_TABLE: !Ref ContractsTable
         SERVICE_NAMESPACE: "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
-        POWERTOOLS_LOGGER_CASE: PascalCase
-        POWERTOOLS_SERVICE_NAME: "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
-        POWERTOOLS_TRACE_DISABLED: "false" # Explicitly disables tracing, default
-        POWERTOOLS_LOGGER_LOG_EVENT: !If [IsProd, "false", "true"] # Logs incoming event, default
-        POWERTOOLS_LOGGER_SAMPLE_RATE: !If [IsProd, "0.1", "0"] # Debug log sampling percentage, default
-        POWERTOOLS_METRICS_NAMESPACE: "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
-        POWERTOOLS_LOG_LEVEL: INFO # Log level for Logger (INFO, DEBUG, etc.), default
-        LOG_LEVEL: INFO # Log level for Logger
+
     Tags:
       stage: !Ref Stage
       project: !FindInMap [Constants, ProjectName, Value]
@@ -114,13 +106,7 @@ Resources:
         EntryPoints: 
           - src/contracts_service/contractEventHandler.ts
 
-  ContractEventHandlerFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${ContractEventHandlerFunction}"
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+  # Add ContractEventHandlerFunctionLogGroup
 
   #### API GATEWAY REST API
   UnicornContractsApi:
@@ -130,7 +116,6 @@ Resources:
       StageName: !Ref Stage
       EndpointConfiguration:
         Type: REGIONAL
-      TracingEnabled: true
       MethodSettings:
         - MetricsEnabled: true
           ResourcePath: /*
@@ -359,37 +344,28 @@ Resources:
 
   #### EVENT BRIDGE PIPES
   # Pipe to transform a changed Contracts table record to ContractStatusChanged and publish it via the UnicornContractsEventBus
-  ContractsTableStreamToEventPipe:
-    Type: AWS::Pipes::Pipe
-    Properties:
-      RoleArn: !GetAtt ContractsTableStreamToEventPipeRole.Arn
-      Source: !GetAtt ContractsTable.StreamArn
-      SourceParameters:
-        DynamoDBStreamParameters:
-          MaximumRetryAttempts: 3
-          DeadLetterConfig:
-            Arn: !GetAtt ContractsTableStreamToEventPipeDLQ.Arn
-          StartingPosition: LATEST
-          OnPartialBatchItemFailure: AUTOMATIC_BISECT
-          BatchSize: 1
-        FilterCriteria:
-          Filters:
-            - Pattern: !ToJsonString
-                eventName: [INSERT, MODIFY]
-                dynamodb:
-                  NewImage:
-                    contract_status:
-                      S: [DRAFT, APPROVED]
-      Target: !GetAtt UnicornContractsEventBus.Arn
-      TargetParameters:
-        EventBridgeEventBusParameters:
-          Source: "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
-          DetailType: ContractStatusChanged
-        InputTemplate: !ToJsonString
-          property_id: "<$.dynamodb.NewImage.property_id.S>"
-          contract_id: "<$.dynamodb.NewImage.contract_id.S>"
-          contract_status: "<$.dynamodb.NewImage.contract_status.S>"
-          contract_last_modified_on: "<$.dynamodb.NewImage.contract_last_modified_on.S>"
+  # ContractsTableStreamToEventPipe:
+  #   Type: AWS::Pipes::Pipe
+  #   Properties:
+  #     RoleArn: !GetAtt ContractsTableStreamToEventPipeRole.Arn
+  #     Source: !GetAtt ContractsTable.StreamArn
+  #     SourceParameters:
+  #       DynamoDBStreamParameters:
+  #       MaximumRetryAttempts: 3
+  #       DeadLetterConfig:
+  #         Arn: !GetAtt ContractsTableStreamToEventPipeDLQ.Arn
+  #         StartingPosition: LATEST
+  #         OnPartialBatchItemFailure: AUTOMATIC_BISECT
+  #         BatchSize: 1
+  #       FilterCriteria:
+  #         Filters:
+  #           - Pattern: # Add the filter pattern here
+  #     Target: !GetAtt UnicornContractsEventBus.Arn
+  #     TargetParameters:
+  #       EventBridgeEventBusParameters:
+  #         Source: "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
+  #         DetailType: ContractStatusChanged
+  #       InputTemplate: # Add the InputTemplate here
 
   # IAM Role for Event Bridge Pipe
   ContractsTableStreamToEventPipeRole:

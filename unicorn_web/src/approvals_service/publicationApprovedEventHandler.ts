@@ -1,48 +1,41 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import { EventBridgeEvent, Context } from "aws-lambda";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
-import { logger, metrics, tracer } from "./powertools";
 import {
   DynamoDBClient,
   UpdateItemCommand,
   UpdateItemCommandInput,
 } from "@aws-sdk/client-dynamodb";
-import { PublicationEvaluationCompleted } from "../schema/unicorn_properties/publicationevaluationcompleted/PublicationEvaluationCompleted";
-import { Marshaller } from "../schema/unicorn_properties/publicationevaluationcompleted/marshaller/Marshaller";
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
 const DDB_TABLE = process.env.DYNAMODB_TABLE;
 
-class PublicationApprovedFunction implements LambdaInterface {
+// Remove PublicationEvaluationCompleted
+type PublicationEvaluationCompleted = {
+  evaluationResult: string;
+  propertyId: string;
+};
+
+class PublicationApprovedFunction {
   /**
    * Handle the contract status changed event from the EventBridge instance.
    * @param {EventBridgeEvent} event - EventBridge Event Input Format
    * @returns {void}
    *
    */
-  @tracer.captureLambdaHandler()
-  @metrics.logMetrics({ captureColdStartMetric: true })
-  @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: EventBridgeEvent<string, PublicationEvaluationCompleted>,
     context: Context
   ): Promise<void> {
-    logger.info(`Property status changed: ${JSON.stringify(event.detail)}`);
+    console.log(`Property status changed: ${JSON.stringify(event.detail)}`);
     // Construct the entry to insert into database.
-    const propertyEvaluation: PublicationEvaluationCompleted =
-      Marshaller.unmarshal(event.detail, "PublicationEvaluationCompleted");
-    logger.info(`Unmarshalled entry: ${JSON.stringify(propertyEvaluation)}`);
-
+    const propertyEvaluation = event.detail;
     try {
-      await this.publicationApproved(propertyEvaluation);
+      // Call publicationApproved with the entry
     } catch (error: any) {
-      tracer.addErrorAsMetadata(error as Error);
-      logger.error(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
+      console.log(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
     }
-    metrics.addMetric('ContractUpdated', MetricUnits.Count, 1);
   }
 
   /**
@@ -53,12 +46,10 @@ class PublicationApprovedFunction implements LambdaInterface {
    * @param {PublicationEvaluationCompleted} event - The EventBridge event when a contract changes
    * @returns {Promise<void>} - A promise that resolves when all records have been processed.
    */
-  @tracer.captureMethod()
   private async publicationApproved(
     propertyEvaluation: PublicationEvaluationCompleted
   ) {
-    tracer.putAnnotation("propertyId", propertyEvaluation.propertyId);
-    logger.info(
+    console.log(
       `Updating status: ${propertyEvaluation.evaluationResult} for ${propertyEvaluation.propertyId}`
     );
     const propertyId = propertyEvaluation.propertyId;
@@ -75,7 +66,7 @@ class PublicationApprovedFunction implements LambdaInterface {
         `Unable to update status for property PK ${PK} and SK ${SK}`
       );
     }
-    logger.info(`Updated status for property PK ${PK} and SK ${SK}`);
+    console.log(`Updated status for property PK ${PK} and SK ${SK}`);
   }
 
   private getDynamoDBKeys(property_id: string) {

@@ -48,7 +48,6 @@ Globals:
     Runtime: nodejs18.x
     MemorySize: 128
     Timeout: 15
-    Tracing: Active
     Architectures:
       - x86_64
     Environment:
@@ -56,12 +55,6 @@ Globals:
         DYNAMODB_TABLE: !Ref WebTable
         EVENT_BUS: !Ref UnicornWebEventBus
         SERVICE_NAMESPACE: "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}"
-        POWERTOOLS_SERVICE_NAME: "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}"
-        POWERTOOLS_TRACE_DISABLED: "false" # Explicitly disables tracing, default
-        POWERTOOLS_LOGGER_LOG_EVENT: !If [IsProd, "false", "true"] # Logs incoming event, default
-        POWERTOOLS_LOGGER_SAMPLE_RATE: !If [IsProd, "0.1", "0"] # Debug log sampling percentage, default
-        POWERTOOLS_METRICS_NAMESPACE: "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}"
-        POWERTOOLS_LOG_LEVEL: INFO # Log level for Logger (INFO, DEBUG, etc.), default
         LOG_LEVEL: INFO # Log level for Logger
     Tags:
       stage: !Ref Stage
@@ -92,8 +85,7 @@ Resources:
     Properties:
       Handler: propertySearchFunction.lambdaHandler
       Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref WebTable
+        # IAM Policies go here 
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
@@ -168,10 +160,7 @@ Resources:
             RuleName: unicorn.web-PublicationEvaluationCompleted
             EventBusName: !Ref UnicornWebEventBus
             Pattern:
-              source:
-                - "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
-              detail-type:
-                - PublicationEvaluationCompleted
+              # EventBridge Rule Patterns go here
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
@@ -198,7 +187,6 @@ Resources:
       StageName: !Ref Stage
       EndpointConfiguration:
         Type: REGIONAL
-      TracingEnabled: true
       MethodSettings:
         - MetricsEnabled: true
           ResourcePath: /*
