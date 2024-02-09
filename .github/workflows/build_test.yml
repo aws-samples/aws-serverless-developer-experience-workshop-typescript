@@ -33,7 +33,7 @@ jobs:
 
     - name: Deploy Shared Namespaces
       working-directory: unicorn_shared
-      run: make deploy-namespaces
+      run: aws cloudformation update-stack --stack-name uni-prop-namespaces --template-body file://uni-prop-namespaces.yaml --capabilities CAPABILITY_AUTO_EXPAND
 
   uniorn-service:
     needs: shared-infrastructure
