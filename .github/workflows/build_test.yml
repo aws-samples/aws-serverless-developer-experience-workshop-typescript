@@ -27,11 +27,6 @@ jobs:
         role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Cleanup old infrastructure
-      working-directory: unicorn_shared
-      run: make delete-namespaces |
-           make delete-images
-
     - name: Deploy Shared Images
       working-directory: unicorn_shared
       run: make deploy-images
