@@ -57,7 +57,7 @@ describe("Unit tests for contract status checking", function () {
         const key = cmd.Key ?? {};
         const expressionAttributeValues = cmd.ExpressionAttributeValues ?? {};
         expect(key["property_id"].S).toEqual(
-          "PROPERTY/australia#sydney/low#23"
+          "PROPERTY/australia#sydney/low#23",
         );
         expect(expressionAttributeValues[":t"].S).toEqual("tasktoken1");
         return {
@@ -101,7 +101,7 @@ describe("Unit tests for contract status checking", function () {
         const cmd = (input as GetItemCommandInput) ?? {};
         const key = cmd["Key"] ?? {};
         expect(key["property_id"].S).toEqual(
-          "PROPERTY/australia#sydney/low#23"
+          "PROPERTY/australia#sydney/low#23",
         );
         return {
           $metadata: {
@@ -124,7 +124,7 @@ describe("Unit tests for contract status checking", function () {
         const key = cmd.Key ?? {};
         const expressionAttributeValues = cmd.ExpressionAttributeValues ?? {};
         expect(key["property_id"].S).toEqual(
-          "PROPERTY/australia#sydney/low#23"
+          "PROPERTY/australia#sydney/low#23",
         );
         expect(expressionAttributeValues[":t"].S).toEqual("tasktoken1");
         return {
@@ -167,7 +167,7 @@ describe("Unit tests for contract status checking", function () {
         const cmd = (input as GetItemCommandInput) ?? {};
         const key = cmd["Key"] ?? {};
         expect(key["property_id"].S).toEqual(
-          "PROPERTY/australia#sydney/low#23"
+          "PROPERTY/australia#sydney/low#23",
         );
         return {
           $metadata: {
@@ -185,7 +185,7 @@ describe("Unit tests for contract status checking", function () {
         const key = cmd.Key ?? {};
         const expressionAttributeValues = cmd.ExpressionAttributeValues ?? {};
         expect(key["property_id"].S).toEqual(
-          "PROPERTY/australia#sydney/low#23"
+          "PROPERTY/australia#sydney/low#23",
         );
         expect(expressionAttributeValues[":t"].S).toEqual("tasktoken1");
         return {

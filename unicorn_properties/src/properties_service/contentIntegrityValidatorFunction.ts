@@ -23,7 +23,7 @@ class ContentIntegrityValidatorFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: any,
-    context: Context
+    context: Context,
   ): Promise<StepFunctionsResponse> {
     logger.info(`Step Function event triggered ${JSON.stringify(event)}`);
     try {
@@ -49,7 +49,7 @@ class ContentIntegrityValidatorFunction implements LambdaInterface {
     } catch (error: any) {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(
-        `Error during Validation of Content Integrity: ${JSON.stringify(error)}`
+        `Error during Validation of Content Integrity: ${JSON.stringify(error)}`,
       );
       return {
         statusCode: 500,

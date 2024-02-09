@@ -28,7 +28,7 @@ class PublicationApprovedFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: EventBridgeEvent<string, PublicationEvaluationCompleted>,
-    context: Context
+    context: Context,
   ): Promise<void> {
     logger.info(`Property status changed: ${JSON.stringify(event.detail)}`);
     // Construct the entry to insert into database.
@@ -42,7 +42,7 @@ class PublicationApprovedFunction implements LambdaInterface {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
     }
-    metrics.addMetric('ContractUpdated', MetricUnits.Count, 1);
+    metrics.addMetric("ContractUpdated", MetricUnits.Count, 1);
   }
 
   /**
@@ -55,11 +55,11 @@ class PublicationApprovedFunction implements LambdaInterface {
    */
   @tracer.captureMethod()
   private async publicationApproved(
-    propertyEvaluation: PublicationEvaluationCompleted
+    propertyEvaluation: PublicationEvaluationCompleted,
   ) {
     tracer.putAnnotation("propertyId", propertyEvaluation.propertyId);
     logger.info(
-      `Updating status: ${propertyEvaluation.evaluationResult} for ${propertyEvaluation.propertyId}`
+      `Updating status: ${propertyEvaluation.evaluationResult} for ${propertyEvaluation.propertyId}`,
     );
     const propertyId = propertyEvaluation.propertyId;
     const { PK, SK } = this.getDynamoDBKeys(propertyId);
@@ -69,10 +69,12 @@ class PublicationApprovedFunction implements LambdaInterface {
       TableName: DDB_TABLE,
     };
 
-    const data = await ddbClient.send(new UpdateItemCommand(updateItemCommandInput));
+    const data = await ddbClient.send(
+      new UpdateItemCommand(updateItemCommandInput),
+    );
     if (data.$metadata.httpStatusCode !== 200) {
       throw new Error(
-        `Unable to update status for property PK ${PK} and SK ${SK}`
+        `Unable to update status for property PK ${PK} and SK ${SK}`,
       );
     }
     logger.info(`Updated status for property PK ${PK} and SK ${SK}`);
@@ -93,7 +95,7 @@ class PublicationApprovedFunction implements LambdaInterface {
     const PK = `PROPERTY#${pkDetails}`;
     const SK = `${street}#${number}`.replace(" ", "-").toLowerCase();
 
-    return { PK, SK }
+    return { PK, SK };
   }
 }
 

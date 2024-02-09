@@ -1,10 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import {
-  Context,
-  SQSEvent,
-  SQSRecord,
-} from "aws-lambda";
+import { Context, SQSEvent, SQSRecord } from "aws-lambda";
 import type { LambdaInterface } from "@aws-lambda-powertools/commons";
 import { logger, metrics, tracer } from "./powertools";
 import {
@@ -61,10 +57,7 @@ class RequestApprovalFunction implements LambdaInterface {
   @tracer.captureLambdaHandler()
   @metrics.logMetrics({ captureColdStartMetric: true })
   @logger.injectLambdaContext({ logEvent: true })
-  public async handler(
-    event: SQSEvent,
-    context: Context
-  ): Promise<void> {
+  public async handler(event: SQSEvent, context: Context): Promise<void> {
     for (const sqsRecord of event.Records) {
       await this.requestApproval(sqsRecord, context);
     }
@@ -78,7 +71,7 @@ class RequestApprovalFunction implements LambdaInterface {
   @tracer.captureMethod()
   private async requestApproval(
     event: SQSRecord,
-    _context: Context
+    _context: Context,
   ): Promise<void> {
     // Parse the body.
     const data = JSON.parse(event.body);
@@ -116,7 +109,7 @@ class RequestApprovalFunction implements LambdaInterface {
       // If property is already being approved or approved already
       if (property.status in ["APPROVED"]) {
         logger.info(
-          `Property already in status ${property.status}; no action taken`
+          `Property already in status ${property.status}; no action taken`,
         );
         return;
       }
@@ -141,7 +134,7 @@ class RequestApprovalFunction implements LambdaInterface {
     } catch (error: any) {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(`${error}`);
-      metrics.addMetric('ApprovalsRequested', MetricUnits.Count, 1);
+      metrics.addMetric("ApprovalsRequested", MetricUnits.Count, 1);
       return;
     }
   }
@@ -154,20 +147,22 @@ class RequestApprovalFunction implements LambdaInterface {
    */
   private async getPropertyFor(
     PK: string,
-    SK: string
+    SK: string,
   ): Promise<PropertyDBType> {
     const getItemCommandInput: GetItemCommandInput = {
       Key: { PK: { S: PK }, SK: { S: SK } },
       TableName: DDB_TABLE,
     };
-    const data: GetItemCommandOutput = await ddbClient.send(new GetItemCommand(getItemCommandInput));
-    logger.info('input', { getItemCommandInput });
-    logger.info('data', { data });
+    const data: GetItemCommandOutput = await ddbClient.send(
+      new GetItemCommand(getItemCommandInput),
+    );
+    logger.info("input", { getItemCommandInput });
+    logger.info("data", { data });
     if (data.Item === undefined) {
       throw new Error(`No item found for PK ${PK} and SK ${SK}`);
     }
     const result: PropertyDBType = unmarshall(data.Item) as PropertyDBType;
-    logger.info('result', { result });
+    logger.info("result", { result });
     return result;
   }
 
@@ -178,7 +173,7 @@ class RequestApprovalFunction implements LambdaInterface {
    */
   private async firePropertyEvent(
     eventDetail: any,
-    source: string
+    source: string,
   ): Promise<void> {
     const propertyId = eventDetail.property_id;
 
@@ -194,13 +189,15 @@ class RequestApprovalFunction implements LambdaInterface {
       Entries: [eventsPutEventsCommandInputEntry],
     };
     const eventsPutEventsCommand = new PutEventsCommand(
-      eventsPutEventsCommandInput
+      eventsPutEventsCommandInput,
     );
 
     // Send the command
     const eventsPutEventsCommandOutput: PutEventsCommandOutput =
       await eventsClient.send(eventsPutEventsCommand);
-    logger.info(`EventBridge Response: ${JSON.stringify(eventsPutEventsCommandOutput)}`);
+    logger.info(
+      `EventBridge Response: ${JSON.stringify(eventsPutEventsCommandOutput)}`,
+    );
     if (eventsPutEventsCommandOutput.$metadata.httpStatusCode != 200) {
       let error: Error = {
         name: "PropertyApprovalError",

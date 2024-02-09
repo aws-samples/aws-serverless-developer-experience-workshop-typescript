@@ -35,14 +35,14 @@ class ContractStatusChangedFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: EventBridgeEvent<string, ContractStatusChanged>,
-    context: Context
+    context: Context,
   ): Promise<void> {
     logger.info(`Contract status changed: ${JSON.stringify(event.detail)}`);
     try {
       // Construct the entry to insert into database.
       let statusEntry: ContractStatusChanged = Marshaller.unmarshal(
         event.detail,
-        "ContractStatusChanged"
+        "ContractStatusChanged",
       );
 
       logger.info(`Unmarshalled entry: ${JSON.stringify(statusEntry)}`);
@@ -62,7 +62,7 @@ class ContractStatusChangedFunction implements LambdaInterface {
   @tracer.captureMethod()
   private async saveContractStatus(statusEntry: ContractStatusChanged) {
     logger.info(
-      `Updating status: ${statusEntry.contractStatus} for ${statusEntry.propertyId}`
+      `Updating status: ${statusEntry.contractStatus} for ${statusEntry.propertyId}`,
     );
     const ddbUpdateCommandInput: UpdateItemCommandInput = {
       TableName: DDB_TABLE,
@@ -82,7 +82,7 @@ class ContractStatusChangedFunction implements LambdaInterface {
     const ddbUpdateCommandOutput: UpdateItemCommandOutput =
       await ddbClient.send(ddbUpdateCommand);
     logger.info(
-      `Updated status: ${statusEntry.contractStatus} for ${statusEntry.propertyId}`
+      `Updated status: ${statusEntry.contractStatus} for ${statusEntry.propertyId}`,
     );
     if (ddbUpdateCommandOutput.$metadata.httpStatusCode != 200) {
       const error: ContractStatusError = {

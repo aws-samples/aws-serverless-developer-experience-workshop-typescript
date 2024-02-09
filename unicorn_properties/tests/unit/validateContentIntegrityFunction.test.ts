@@ -34,7 +34,7 @@ describe("Unit tests for contract status checking", function () {
     const response = await lambdaHandler(baselineStepFunctionEvent, context);
     const expectedResponse = { statusCode: 200, validation_result: "PASS" };
     expect(response.validation_result).toEqual(
-      expectedResponse.validation_result
+      expectedResponse.validation_result,
     );
     expect(response.statusCode).toEqual(200);
   });
@@ -49,7 +49,7 @@ describe("Unit tests for contract status checking", function () {
     const response = await lambdaHandler(baselineStepFunctionEvent, context);
     const expectedResponse = { statusCode: 200, validation_result: "FAIL" };
     expect(response.validation_result).toEqual(
-      expectedResponse.validation_result
+      expectedResponse.validation_result,
     );
     expect(response.statusCode).toEqual(200);
   });
@@ -67,7 +67,7 @@ describe("Unit tests for contract status checking", function () {
     const response = await lambdaHandler(baselineStepFunctionEvent, context);
     const expectedResponse = { statusCode: 200, validation_result: "FAIL" };
     expect(response.validation_result).toEqual(
-      expectedResponse.validation_result
+      expectedResponse.validation_result,
     );
     expect(response.statusCode).toEqual(200);
   });
@@ -84,7 +84,7 @@ describe("Unit tests for contract status checking", function () {
     const response = await lambdaHandler(baselineStepFunctionEvent, context);
     const expectedResponse = { statusCode: 200, validation_result: "FAIL" };
     expect(response.validation_result).toEqual(
-      expectedResponse.validation_result
+      expectedResponse.validation_result,
     );
     expect(response.statusCode).toEqual(200);
   });

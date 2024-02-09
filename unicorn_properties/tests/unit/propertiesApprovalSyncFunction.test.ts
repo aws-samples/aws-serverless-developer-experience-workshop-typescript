@@ -79,7 +79,7 @@ describe("Unit tests for contract creation", function () {
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
       baselineDynamoDBEvent,
-      context
+      context,
     );
     expect(response.batchItemFailures.length).toEqual(0);
   });
@@ -103,7 +103,7 @@ describe("Unit tests for contract creation", function () {
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
       baselineDynamoDBEvent,
-      context
+      context,
     );
     // Expect no errors.
     expect(response.batchItemFailures.length).toEqual(0);
@@ -129,7 +129,7 @@ describe("Unit tests for contract creation", function () {
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
       baselineDynamoDBEvent,
-      context
+      context,
     );
     // Expect no errors.
     expect(response.batchItemFailures.length).toEqual(0);
@@ -184,7 +184,7 @@ describe("Unit tests for contract creation", function () {
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
       noTaskTokenEvent,
-      context
+      context,
     );
     // Expect no errors.
     expect(response.batchItemFailures.length).toEqual(0);
@@ -253,7 +253,7 @@ describe("Unit tests for contract creation", function () {
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
       noTaskTokenEvent,
-      context
+      context,
     );
     // Expect no errors.
     expect(response.batchItemFailures.length).toEqual(0);
@@ -325,7 +325,7 @@ describe("Unit tests for contract creation", function () {
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
       noTaskTokenEvent,
-      context
+      context,
     );
     // Expect no errors.
     expect(response.batchItemFailures.length).toEqual(0);

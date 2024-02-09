@@ -54,7 +54,7 @@ class PropertySearchFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: APIGatewayProxyEvent,
-    context: Context
+    context: Context,
   ): Promise<APIGatewayProxyResult> {
     // Inspect request path.
     logger.info(`Handling request for ${event.resource}`);
@@ -86,12 +86,12 @@ class PropertySearchFunction implements LambdaInterface {
   @tracer.captureMethod()
   private async listPropertiesByCity(
     event: APIGatewayProxyEvent,
-    context: Context
+    context: Context,
   ): Promise<APIGatewayProxyResult> {
     const country = event.pathParameters?.country;
     const city = event.pathParameters?.city;
     logger.info(
-      `List properties by city: country = ${country}; city = ${city}`
+      `List properties by city: country = ${country}; city = ${city}`,
     );
 
     const PK = `PROPERTY#${country}#${city}`;
@@ -152,13 +152,13 @@ class PropertySearchFunction implements LambdaInterface {
   @tracer.captureMethod()
   private async listPropertiesByStreet(
     event: APIGatewayProxyEvent,
-    context: Context
+    context: Context,
   ): Promise<APIGatewayProxyResult> {
     const country = event.pathParameters?.country;
     const city = event.pathParameters?.city;
     const street = event.pathParameters?.street;
     logger.info(
-      `List properties by street: country = ${country}; city = ${city}; street = ${street}`
+      `List properties by street: country = ${country}; city = ${city}; street = ${street}`,
     );
 
     const PK = `PROPERTY#${country}#${city}`;
@@ -204,7 +204,7 @@ class PropertySearchFunction implements LambdaInterface {
   @tracer.captureMethod()
   private async propertyDetails(
     event: APIGatewayProxyEvent,
-    context: Context
+    context: Context,
   ): Promise<APIGatewayProxyResult> {
     const country = event.pathParameters?.country;
     const city = event.pathParameters?.city;
@@ -217,7 +217,7 @@ class PropertySearchFunction implements LambdaInterface {
     console.log(`PROJECT PROPS: ${PROJECTION_PROPERTIES}`);
 
     logger.info(
-      `Get property details for: country = ${country}; city = ${city}; street = ${street}; number = ${number}`
+      `Get property details for: country = ${country}; city = ${city}; street = ${street}; number = ${number}`,
     );
 
     const PK = `PROPERTY#${country}#${city}`;
@@ -245,7 +245,7 @@ class PropertySearchFunction implements LambdaInterface {
       const dataObj = unmarshall(data.Item) as PropertyDBType;
       if (dataObj.status !== `APPROVED`) {
         logger.warn(
-          `Property for ${JSON.stringify(event.pathParameters)} is NOT APPROVED`
+          `Property for ${JSON.stringify(event.pathParameters)} is NOT APPROVED`,
         );
         return {
           statusCode: 404,

@@ -38,7 +38,7 @@ describe("Unit tests for contract status checking", function () {
         let cmd = (input as GetItemCommandInput) ?? {};
         let key = cmd["Key"] ?? {};
         expect(key["property_id"].S).toEqual(
-          "PROPERTY/australia#sydney/low#23"
+          "PROPERTY/australia#sydney/low#23",
         );
         return {
           $metadata: {
@@ -78,7 +78,7 @@ describe("Unit tests for contract status checking", function () {
         let cmd = (input as GetItemCommandInput) ?? {};
         let key = cmd["Key"] ?? {};
         expect(key["property_id"].S).toEqual(
-          "PROPERTY/australia#sydney/low#23"
+          "PROPERTY/australia#sydney/low#23",
         );
         return {
           $metadata: {
@@ -103,7 +103,7 @@ describe("Unit tests for contract status checking", function () {
     } catch (error) {
       expect(error).toBeInstanceOf(ContractStatusNotFoundException);
       expect((error as ContractStatusNotFoundException).statusCode).toEqual(
-        400
+        400,
       );
     }
   });
