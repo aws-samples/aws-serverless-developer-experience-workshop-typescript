@@ -13,7 +13,7 @@ describe("Testing draft contract event handling", () => {
       "DRAFT",
     );
 
-    await sleep(2000); // Sleep for 2 seconds
+    await sleep(5000);
 
     const ddbResp = await ddb.send(
       new GetItemCommand({
@@ -23,7 +23,7 @@ describe("Testing draft contract event handling", () => {
         },
       }),
     );
-
+    console.log(ddbResp);
     expect(ddbResp.Item).toBeTruthy();
     if (!ddbResp.Item) throw Error("Contract not found");
     expect(ddbResp.Item.contract_status?.S).toBe("DRAFT");

@@ -20,7 +20,7 @@ import {
 } from "@aws-sdk/client-cloudwatch-logs";
 
 const evb = new EventBridgeClient({});
-const propertiesBus = "UnicornPropertiesEventBus"; // Replace with your actual event bus name
+const propertiesBus = "UnicornPropertiesBus-local"; // Replace with your actual event bus name
 
 export const sleep = async (ms: number) =>
   new Promise((resolve) => {
