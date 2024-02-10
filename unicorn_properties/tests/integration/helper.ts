@@ -28,10 +28,10 @@ export const sleep = async (ms: number) =>
   });
 
 export async function* getCloudWatchLogsValues(
-  propertyId: string,
+  propertyId: string
 ): AsyncGenerator<any, void, unknown> {
   const groupName = await findOutputValue(
-    "UnicornPropertiesCatchAllLogGroupName",
+    "UnicornPropertiesCatchAllLogGroupName"
   );
 
   // Initialize the CloudWatch Logs client
@@ -44,11 +44,11 @@ export async function* getCloudWatchLogsValues(
       orderBy: "LastEventTime",
       descending: true,
       limit: 3,
-    }),
+    })
   );
 
   const latestLogStreamNames = (streamResponse.logStreams || []).map(
-    (s) => s.logStreamName || "",
+    (s) => s.logStreamName || ""
   );
 
   // Fetch log events from that stream
@@ -58,9 +58,9 @@ export async function* getCloudWatchLogsValues(
         new GetLogEventsCommand({
           logGroupName: groupName,
           logStreamName: name,
-        }),
+        })
       );
-    }),
+    })
   );
 
   // Filter log events that match the required `propertyId`
@@ -77,7 +77,7 @@ export async function* getCloudWatchLogsValues(
 export async function sendContractStatusChanged(
   propertyId: string,
   contractId: string,
-  contractStatus: string,
+  contractStatus: string
 ) {
   try {
     await evb.send(
@@ -95,7 +95,7 @@ export async function sendContractStatusChanged(
             }),
           },
         ],
-      }),
+      })
     );
 
     await sleep(2000); // Sleep for 2 seconds
@@ -107,7 +107,7 @@ export async function sendContractStatusChanged(
 export async function sendPublicationApprovalRequested(
   propertyId: string,
   contractId: string,
-  contractStatus: string,
+  contractStatus: string
 ) {
   try {
     await evb.send(
@@ -125,7 +125,7 @@ export async function sendPublicationApprovalRequested(
             }),
           },
         ],
-      }),
+      })
     );
 
     await sleep(2000); // Sleep for 2 seconds
@@ -180,11 +180,11 @@ export const findOutputValue = async (outputKey: string) => {
     region: process.env.AWS_DEFAULT_REGION,
   });
   const stackResources: DescribeStacksCommandOutput = await cloudformation.send(
-    new DescribeStacksCommand({ StackName: "uni-prop-local-properties" }),
+    new DescribeStacksCommand({ StackName: "uni-prop-local-properties" })
   );
   if (stackResources.Stacks === undefined || stackResources.Stacks?.length < 1)
     throw new Error(
-      "Could not find stack resources named: uni-prop-local-properties ",
+      "Could not find stack resources named: uni-prop-local-properties "
     );
 
   if (
@@ -192,12 +192,12 @@ export const findOutputValue = async (outputKey: string) => {
     stackResources.Stacks[0].Outputs?.length < 1
   ) {
     throw new Error(
-      "Could not find stack outputs for stack named: uni-prop-local-properties",
+      "Could not find stack outputs for stack named: uni-prop-local-properties"
     );
   }
 
   const outputValue = stackResources.Stacks[0].Outputs.find(
-    (output) => output.OutputKey === outputKey,
+    (output) => output.OutputKey === outputKey
   )?.OutputValue;
   if (outputValue === undefined)
     throw new Error(`Could not find stack output named: ${outputKey}`);
