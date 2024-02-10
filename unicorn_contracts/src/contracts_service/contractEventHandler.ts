@@ -11,6 +11,7 @@ import {
   PutItemCommandInput,
   PutItemCommandOutput,
   PutItemCommand,
+  ReturnValue,
 } from "@aws-sdk/client-dynamodb";
 import { randomUUID } from "crypto";
 import type { LambdaInterface } from "@aws-lambda-powertools/commons";
@@ -35,7 +36,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
   @tracer.captureLambdaHandler()
   @metrics.logMetrics({
     captureColdStartMetric: true,
-    throwOnEmptyMetrics: true,
+    throwOnEmptyMetrics: false,
   })
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(event: SQSEvent, context: Context): Promise<void> {
@@ -120,7 +121,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
       ddbPutCommand
     );
     if (ddbPutCommandOutput.$metadata.httpStatusCode != 200) {
-      let error: ContractError = {
+      const error: ContractError = {
         propertyId: dbEntry.property_id,
         name: "ContractDBSaveError",
         message:
@@ -131,7 +132,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
       throw error;
     }
 
-    tracer.putAnnotation("ContractStatus", contract.contract_status);
+    tracer.putAnnotation("ContractStatus", dbEntry.contract_status);
 
     logger.info("Inserted record for contract", {
       contractId,
@@ -171,6 +172,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
         ":m": { S: dbEntry.contract_last_modified_on as string },
         ":DRAFT": { S: ContractStatusEnum.DRAFT },
       },
+      ReturnValues: ReturnValue.ALL_NEW,
     };
 
     const ddbUpdateCommand = new UpdateItemCommand(ddbUpdateCommandInput);
@@ -190,10 +192,13 @@ class ContractEventHandlerFunction implements LambdaInterface {
       throw error;
     }
 
-    tracer.putAnnotation("ContractStatus", dbEntry.contract_status);
+    tracer.putAnnotation(
+      "ContractStatus",
+      ddbUpdateCommandOutput?.Attributes?.contract_id?.S ?? "undefined"
+    );
 
     logger.info("Updated record for contract", {
-      contractId: dbEntry.contract_id,
+      contractId: ddbUpdateCommandOutput?.Attributes?.contract_id?.S,
       metdata: ddbUpdateCommandOutput.$metadata,
     });
     metrics.addMetric("ContractUpdated", MetricUnits.Count, 1);
