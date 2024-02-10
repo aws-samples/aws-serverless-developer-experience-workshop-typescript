@@ -464,16 +464,16 @@ Resources:
         Stage: !Ref Stage
 
   # CloudFormation Stack with the Cross-service EventBus Rules for Web Service
-  SubscriptionsStack:
-    Type: AWS::Serverless::Application
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-    DependsOn:
-      - UnicornWebEventBusArnParam
-    Properties:
-      Location: "integration/subscriptions.yaml"
-      Parameters:
-        Stage: !Ref Stage
+  # SubscriptionsStack:
+  #   Type: AWS::Serverless::Application
+  #   UpdateReplacePolicy: Delete
+  #   DeletionPolicy: Delete
+  #   DependsOn:
+  #     - UnicornWebEventBusArnParam
+  #   Properties:
+  #     Location: "integration/subscriptions.yaml"
+  #     Parameters:
+  #       Stage: !Ref Stage
 
 Outputs:
   #### API GATEWAY OUTPUTS
