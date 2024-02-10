@@ -88,8 +88,8 @@ class PublicationApprovedFunction implements LambdaInterface {
     }
     const country = components[0];
     const city = components[1];
-    const street = components[3];
-    const number = components[4];
+    const street = components[2];
+    const number = components[3];
 
     const pkDetails = `${country}#${city}`.replace(" ", "-").toLowerCase();
     const PK = `PROPERTY#${pkDetails}`;
