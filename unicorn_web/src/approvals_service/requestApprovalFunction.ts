@@ -7,8 +7,6 @@ import {
   DynamoDBClient,
   GetItemCommand,
   GetItemCommandInput,
-  UpdateItemCommandInput,
-  UpdateItemCommand,
   GetItemCommandOutput,
 } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
@@ -29,8 +27,6 @@ const DDB_TABLE = process.env.DYNAMODB_TABLE;
 const eventsClient = new EventBridgeClient({});
 const EVENT_BUS = process.env.EVENT_BUS;
 
-const PROJECTION_PROPERTIES =
-  "country, city, street, contract, #num, description, listprice, currency, #status, images";
 
 type PropertyDBType = {
   PK: string;
@@ -71,7 +67,7 @@ class RequestApprovalFunction implements LambdaInterface {
   @tracer.captureMethod()
   private async requestApproval(
     event: SQSRecord,
-    _context: Context,
+    _context: Context
   ): Promise<void> {
     // Parse the body.
     const data = JSON.parse(event.body);
@@ -95,7 +91,7 @@ class RequestApprovalFunction implements LambdaInterface {
       const pkDetails = `${country}#${city}`.replace(" ", "-").toLowerCase();
       PK = `PROPERTY#${pkDetails}`;
       SK = `${street}#${number}`.replace(" ", "-").toLowerCase();
-    } catch (error: any) {
+    } catch (error) {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(`Error during parameter setup: ${JSON.stringify(error)}`);
       return;
@@ -109,7 +105,7 @@ class RequestApprovalFunction implements LambdaInterface {
       // If property is already being approved or approved already
       if (property.status in ["APPROVED"]) {
         logger.info(
-          `Property already in status ${property.status}; no action taken`,
+          `Property already in status ${property.status}; no action taken`
         );
         return;
       }
@@ -131,7 +127,7 @@ class RequestApprovalFunction implements LambdaInterface {
       };
 
       await this.firePropertyEvent(eventDetail, "unicorn.web");
-    } catch (error: any) {
+    } catch (error) {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(`${error}`);
       metrics.addMetric("ApprovalsRequested", MetricUnits.Count, 1);
@@ -147,14 +143,14 @@ class RequestApprovalFunction implements LambdaInterface {
    */
   private async getPropertyFor(
     PK: string,
-    SK: string,
+    SK: string
   ): Promise<PropertyDBType> {
     const getItemCommandInput: GetItemCommandInput = {
       Key: { PK: { S: PK }, SK: { S: SK } },
       TableName: DDB_TABLE,
     };
     const data: GetItemCommandOutput = await ddbClient.send(
-      new GetItemCommand(getItemCommandInput),
+      new GetItemCommand(getItemCommandInput)
     );
     logger.info("input", { getItemCommandInput });
     logger.info("data", { data });
@@ -172,8 +168,8 @@ class RequestApprovalFunction implements LambdaInterface {
    * @param source
    */
   private async firePropertyEvent(
-    eventDetail: any,
-    source: string,
+    eventDetail: string,
+    source: string
   ): Promise<void> {
     const propertyId = eventDetail.property_id;
 
@@ -189,17 +185,17 @@ class RequestApprovalFunction implements LambdaInterface {
       Entries: [eventsPutEventsCommandInputEntry],
     };
     const eventsPutEventsCommand = new PutEventsCommand(
-      eventsPutEventsCommandInput,
+      eventsPutEventsCommandInput
     );
 
     // Send the command
     const eventsPutEventsCommandOutput: PutEventsCommandOutput =
       await eventsClient.send(eventsPutEventsCommand);
     logger.info(
-      `EventBridge Response: ${JSON.stringify(eventsPutEventsCommandOutput)}`,
+      `EventBridge Response: ${JSON.stringify(eventsPutEventsCommandOutput)}`
     );
     if (eventsPutEventsCommandOutput.$metadata.httpStatusCode != 200) {
-      let error: Error = {
+      const error: Error = {
         name: "PropertyApprovalError",
         message: `EventBridge Response invalid for ${propertyId}: ${eventsPutEventsCommandOutput.$metadata.httpStatusCode}`,
       };

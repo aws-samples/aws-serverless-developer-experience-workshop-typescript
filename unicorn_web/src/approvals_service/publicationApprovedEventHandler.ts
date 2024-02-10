@@ -28,7 +28,7 @@ class PublicationApprovedFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: EventBridgeEvent<string, PublicationEvaluationCompleted>,
-    context: Context,
+    context: Context
   ): Promise<void> {
     logger.info(`Property status changed: ${JSON.stringify(event.detail)}`);
     // Construct the entry to insert into database.
@@ -55,26 +55,34 @@ class PublicationApprovedFunction implements LambdaInterface {
    */
   @tracer.captureMethod()
   private async publicationApproved(
-    propertyEvaluation: PublicationEvaluationCompleted,
+    propertyEvaluation: PublicationEvaluationCompleted
   ) {
     tracer.putAnnotation("propertyId", propertyEvaluation.propertyId);
     logger.info(
-      `Updating status: ${propertyEvaluation.evaluationResult} for ${propertyEvaluation.propertyId}`,
+      `Updating status: ${propertyEvaluation.evaluationResult} for ${propertyEvaluation.propertyId}`
     );
     const propertyId = propertyEvaluation.propertyId;
     const { PK, SK } = this.getDynamoDBKeys(propertyId);
     const updateItemCommandInput: UpdateItemCommandInput = {
       Key: { PK: { S: PK }, SK: { S: SK } },
-      AttributeUpdates: { status: { Value: { S: status }, Action: "PUT" } },
+      ExpressionAttributeNames: {
+        "#s": "status",
+      },
+      ExpressionAttributeValues: {
+        ":t": {
+          S: propertyEvaluation.evaluationResult,
+        },
+      },
+      UpdateExpression: "SET #s = :t",
       TableName: DDB_TABLE,
     };
 
     const data = await ddbClient.send(
-      new UpdateItemCommand(updateItemCommandInput),
+      new UpdateItemCommand(updateItemCommandInput)
     );
     if (data.$metadata.httpStatusCode !== 200) {
       throw new Error(
-        `Unable to update status for property PK ${PK} and SK ${SK}`,
+        `Unable to update status for property PK ${PK} and SK ${SK}`
       );
     }
     logger.info(`Updated status for property PK ${PK} and SK ${SK}`);
