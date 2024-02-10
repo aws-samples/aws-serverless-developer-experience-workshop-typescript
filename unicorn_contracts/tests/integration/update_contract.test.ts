@@ -36,11 +36,11 @@ describe("Testing updating contracts", () => {
     expect(json).toEqual({ message: "OK" });
     await sleep(10000);
     const event = await getCloudWatchLogsValues(
-      "usa/anytown/main-street/111",
+      "usa/anytown/main-street/111"
     ).next();
     expect(event.value["detail-type"]).toEqual("ContractStatusChanged");
     expect(event.value["detail"].property_id).toEqual(
-      "usa/anytown/main-street/111",
+      "usa/anytown/main-street/111"
     );
     expect(event.value["detail"].contract_status).toEqual("APPROVED");
   }, 30000);

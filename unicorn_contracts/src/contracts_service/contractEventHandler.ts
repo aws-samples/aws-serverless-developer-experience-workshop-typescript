@@ -43,7 +43,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
     // Parse SQS records
     for (const sqsRecord of event.Records) {
       const contract = this.parseRecord(sqsRecord);
-      tracer.putMetadata("property_id", contract);
+      tracer.putMetadata("Contract", contract);
       switch (sqsRecord.messageAttributes.HttpMethod.stringValue) {
         case "POST":
           logger.info("Creating a contract", { contract });
