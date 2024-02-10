@@ -37,13 +37,13 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: DynamoDBStreamEvent,
-    context: Context,
+    context: Context
   ): Promise<DynamoDBBatchResponse> {
     logger.info(
-      `DynamodDB stream processing triggered ${JSON.stringify(event)}`,
+      `DynamodDB stream processing triggered ${JSON.stringify(event)}`
     );
     // Track results.
-    let results: DynamoDBBatchResponse = { batchItemFailures: [] };
+    const results: DynamoDBBatchResponse = { batchItemFailures: [] };
 
     // Check the contract id and approval state
     for (let i = 0; i < event.Records.length; i++) {
@@ -67,30 +67,30 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
           if (newImage.contract_status === "APPROVED") {
             // Let's send an update! Use the token from the merged image though.
             logger.info(
-              `Sending CONTRACT APPROVED task success to token ${mergedImage.sfn_wait_approved_task_token}`,
+              `Sending CONTRACT APPROVED task success to token ${mergedImage.sfn_wait_approved_task_token}`
             );
             await this.sendTaskSuccess(
-              mergedImage.sfn_wait_approved_task_token,
+              mergedImage.sfn_wait_approved_task_token
             );
             logger.info(
-              `Sent task success to token ${mergedImage.sfn_wait_approved_task_token}`,
+              `Sent task success to token ${mergedImage.sfn_wait_approved_task_token}`
             );
           } else {
             logger.warn(
-              `Contract ${mergedImage.contract_id} is not in APPROVED state. Skipping`,
+              `Contract ${mergedImage.contract_id} is not in APPROVED state. Skipping`
             );
           }
         } else {
           // Nothing to do, just an updated contract with no property approval workflow yet.
           logger.info(
-            `Contract ${mergedImage.contract_id} has no property approval requested yet`,
+            `Contract ${mergedImage.contract_id} has no property approval requested yet`
           );
         }
-      } catch (error: any) {
+      } catch (error) {
         logger.error(
           `Failure during handling of event ${i}: ${JSON.stringify(
-            record,
-          )} - error was ${JSON.stringify(error)}`,
+            record
+          )} - error was ${JSON.stringify(error)}`
         );
         // Save the contract ID that caused the error.
         results.batchItemFailures.push({
@@ -108,13 +108,13 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
    * @returns
    */
   private unmarshallContractStatus(
-    input: { [key: string]: AttributeValue } | undefined,
+    input: { [key: string]: AttributeValue } | undefined
   ): ContractStatus | undefined {
     if (input === undefined) {
       return undefined;
     }
 
-    let result: ContractStatus = { property_id: "" };
+    const result: ContractStatus = { property_id: "" };
     result.contract_id = input["contract_id"].S;
     result.property_id = input["property_id"].S ?? "";
     result.contract_status = input["contract_status"].S;

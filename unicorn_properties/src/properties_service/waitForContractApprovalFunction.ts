@@ -13,10 +13,7 @@ import {
   UpdateItemCommandOutput,
 } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
-import {
-  SFNClient,
-  SendTaskSuccessCommand,
-  SendTaskSuccessCommandInput,
+import { SFNClient
 } from "@aws-sdk/client-sfn";
 
 // Empty configuration for DynamoDB
@@ -56,7 +53,7 @@ class ContractStatusCheckerFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: any,
-    context: Context,
+    context: Context
   ): Promise<StepFunctionsResponse> {
     logger.info(`Step Function event triggered ${JSON.stringify(event)}`);
     try {
@@ -90,7 +87,7 @@ class ContractStatusCheckerFunction implements LambdaInterface {
     } catch (error: any) {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(
-        `Error during Contract Status Check: ${JSON.stringify(error)}`,
+        `Error during Contract Status Check: ${JSON.stringify(error)}`
       );
       return {
         statusCode: 500,
@@ -106,7 +103,7 @@ class ContractStatusCheckerFunction implements LambdaInterface {
    */
   @tracer.captureMethod()
   private async getContractStatusItemFor(
-    propertyId: string,
+    propertyId: string
   ): Promise<ContractStatus | undefined> {
     const getItemCommandInput: GetItemCommandInput = {
       Key: { property_id: { S: propertyId } },

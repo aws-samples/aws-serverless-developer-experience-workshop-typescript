@@ -23,12 +23,12 @@ class ContentIntegrityValidatorFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: any,
-    context: Context,
+    context: Context
   ): Promise<StepFunctionsResponse> {
     logger.info(`Step Function event triggered ${JSON.stringify(event)}`);
     try {
       // Get the task token and contract id from the input
-      let input = event;
+      const input = event;
       // Check the content sentiment.
       if (input.contentSentiment.Sentiment === "POSITIVE") {
         // Check the imageModerations
@@ -49,7 +49,7 @@ class ContentIntegrityValidatorFunction implements LambdaInterface {
     } catch (error: any) {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(
-        `Error during Validation of Content Integrity: ${JSON.stringify(error)}`,
+        `Error during Validation of Content Integrity: ${JSON.stringify(error)}`
       );
       return {
         statusCode: 500,
