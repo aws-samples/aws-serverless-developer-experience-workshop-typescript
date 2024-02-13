@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import { Duration, RemovalPolicy, Stack, StackProps, App, Tags, CfnOutput, Fn } from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb'
@@ -13,14 +12,18 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import { CfnPipe } from 'aws-cdk-lib/aws-pipes';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
-
 import { LogsRetentionPeriod, Stage, isProd, UNICORN_CONTRACTS_NAMESPACE, UNICORN_PROPERTIES_NAMESPACE, UNICORN_WEB_NAMESPACE } from 'unicorn_shared';
+import { SubscriberPoliciesStack } from './subscriber-policies';
+import { EventsSchemaStack } from './event-schemas';
+import { IntegrationCredentials } from 'aws-cdk-lib/aws-apigatewayv2';
+import { SqsDestination } from 'aws-cdk-lib/aws-lambda-destinations';
 
 interface UnicornConstractsStackProps extends StackProps {
   stage: Stage,
 }
 
 export class UnicornConstractsStack extends Stack {
+  public readonly eventBus: events.EventBus;
   constructor(scope: App, id: string, props: UnicornConstractsStackProps) {
     super(scope, id, props);
 
@@ -29,7 +32,7 @@ export class UnicornConstractsStack extends Stack {
     /*
       EVENT BUS
     */
-    const eventBus = new events.EventBus(this, `UnicornContractstBus-${props.stage}`, {
+    this.eventBus = new events.EventBus(this, `UnicornContractstBus-${props.stage}`, {
       eventBusName: `UnicornContractstBus-${props.stage}`
     });
 
@@ -40,12 +43,12 @@ export class UnicornConstractsStack extends Stack {
       retention: retentionPeriod
     })
     const eventBusPolicy = new events.EventBusPolicy(this, 'ContractEventsBusPublishPolicy', {
-      eventBus: eventBus,
+      eventBus: this.eventBus,
       statementId: `OnlyContactsServiceCanPublishToEventBus-${props.stage}`,
       statement: new iam.PolicyStatement({
         principals: [new iam.AccountRootPrincipal()],
         actions: ['events:PutEvents'],
-        resources: [eventBus.eventBusArn],
+        resources: [this.eventBus.eventBusArn],
         conditions: { StringEquals: { 'events:Source': UNICORN_CONTRACTS_NAMESPACE } }
       }).toJSON(),
     });
@@ -53,7 +56,7 @@ export class UnicornConstractsStack extends Stack {
     // Catchall rule used for development purposes.
     const catchAllRule = new events.Rule(this, 'contracts.catchall', {
       description: "Catch all events published by the contracts service.",
-      eventBus: eventBus,
+      eventBus: this.eventBus,
       eventPattern: {
         source: [UNICORN_PROPERTIES_NAMESPACE, UNICORN_WEB_NAMESPACE, UNICORN_CONTRACTS_NAMESPACE],
         account: [this.account]
@@ -68,12 +71,12 @@ export class UnicornConstractsStack extends Stack {
     const eventBusParam = new ssm.StringParameter(this,
       'UnicornContractsEventBusNameParam', {
       parameterName: `/uni-prop/${props.stage}/UnicornContractsEventBus`,
-      stringValue: eventBus.eventBusName
+      stringValue: this.eventBus.eventBusName
     });
 
     const eventBusArnParam = new ssm.StringParameter(this, 'UnicornContractsEventBusArnParam', {
       parameterName: `/uni-prop/${props.stage}/UnicornContractsEventBusArn`,
-      stringValue: eventBus.eventBusArn
+      stringValue: this.eventBus.eventBusArn
     });
 
     /*
@@ -105,7 +108,7 @@ export class UnicornConstractsStack extends Stack {
 
     pipeDLQ.grantSendMessages(pipeRole);
     table.grantStreamRead(pipeRole);
-    eventBus.grantPutEventsTo(pipeRole);
+    this.eventBus.grantPutEventsTo(pipeRole);
 
     const pipe = new CfnPipe(this, 'ContractsTableStreamToEventPipe', {
       roleArn: pipeRole.roleArn,
@@ -133,7 +136,7 @@ export class UnicornConstractsStack extends Stack {
           ]
         }
       },
-      target: eventBus.eventBusArn,
+      target: this.eventBus.eventBusArn,
       targetParameters: {
         eventBridgeEventBusParameters: {
           source: UNICORN_CONTRACTS_NAMESPACE,
@@ -230,7 +233,6 @@ export class UnicornConstractsStack extends Stack {
       accountId: this.account
     };
 
-
     const api = new apigateway.RestApi(this, 'UnicornContractsApi', {
       cloudWatchRole: true,
       cloudWatchRoleRemovalPolicy: RemovalPolicy.DESTROY,
@@ -250,11 +252,46 @@ export class UnicornConstractsStack extends Stack {
       endpointTypes: [apigateway.EndpointType.REGIONAL],
     })
 
-    const contractsApiResource = api.root.addResource('contracts', {
-      defaultIntegration: new apigateway.AwsIntegration({ service: 'sqs', path: ingestQueue.queueName, region: this.region }),
+    apiRole.addToPolicy(new iam.PolicyStatement({
+      actions: ['sqs:SendMessage', 'sqs:GetQueueUrl'],
+      resources: [ingestQueue.queueArn]
+    }))
+
+    const sqsIntegration = new apigateway.AwsIntegration({
+      service: 'sqs',
+      region: this.region,
+      integrationHttpMethod: 'POST',
+      path: ingestQueue.queueName,
+      options: {
+        credentialsRole: apiRole,
+        integrationResponses: [{ statusCode: '200' }],
+        requestParameters: {
+          'integration.request.header.Content-Type':
+            "'application/x-www-form-urlencoded'"
+        },
+        passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
+        requestTemplates: {
+          "application/json":
+            "Action=SendMessage&MessageBody=$input.body"
+        },
+      },
+    });
+
+    const contractsApiResource = api.root.addResource('contracts');
+    contractsApiResource.addMethod('POST', sqsIntegration, { methodResponses: [{ statusCode: '200' }] });
+    contractsApiResource.addMethod('PUT', sqsIntegration, { methodResponses: [{ statusCode: '200' }] });
+
+    /* Events Schema */
+    const schemaStack = new EventsSchemaStack(this, `uni-prop-${props.stage}-contracts-EventSchemaSack`, {
+      stage: props.stage,
+      namespace: UNICORN_CONTRACTS_NAMESPACE,
+    });
+    /* Subscriptions */
+    const subscriberStack = new SubscriberPoliciesStack(this, `uni-prop-${props.stage}-contracts-SubscriptionsStack`, {
+      stage: props.stage,
+      eventBus: this.eventBus,
+      namespace: UNICORN_CONTRACTS_NAMESPACE,
     })
-    contractsApiResource.addMethod('POST');
-    contractsApiResource.addMethod('PUT');
 
     /*
       Outputs
@@ -297,7 +334,7 @@ export class UnicornConstractsStack extends Stack {
     /*
      EVENT BRIDGE OUTPUTS
     */
-    new CfnOutput(this, 'UnicornContractsEventBusName', { value: eventBus.eventBusName });
+    new CfnOutput(this, 'UnicornContractsEventBusName', { value: this.eventBus.eventBusName });
 
     /*
      CLOUDWATCH LOGS OUTPUTS
@@ -306,5 +343,7 @@ export class UnicornConstractsStack extends Stack {
       description: "Log all events on the service's EventBridge Bus",
       value: catchAllLogGroup.logGroupArn
     })
+
+
   }
 }
