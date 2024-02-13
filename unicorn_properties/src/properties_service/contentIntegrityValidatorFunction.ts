@@ -28,7 +28,7 @@ class ContentIntegrityValidatorFunction implements LambdaInterface {
     logger.info(`Step Function event triggered ${JSON.stringify(event)}`);
     try {
       // Get the task token and contract id from the input
-      let input = event;
+      const input = event;
       // Check the content sentiment.
       if (input.contentSentiment.Sentiment === "POSITIVE") {
         // Check the imageModerations

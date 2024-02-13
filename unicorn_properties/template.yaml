@@ -44,8 +44,6 @@ Conditions:
 
 Globals:
   Function: 
-    Tracing: Active
-    Timeout: 15
     Runtime: nodejs18.x
     MemorySize: 128
     Timeout: 15

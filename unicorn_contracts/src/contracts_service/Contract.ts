@@ -3,7 +3,7 @@
 
 /**
  * Defines the structure of a contract in the database.
- * 
+ *
  * @property address - The address of the contract.
  * @property property_id - The ID of the property associated with the contract.
  * @property contract_id - The ID of the contract.
@@ -12,7 +12,7 @@
  * @property contract_created - The date the contract was created.
  * @property contract_last_modified_on - The date the contract was last modified.
  */
-export type ContractDBType = {  
+export type ContractDBType = {
   address?: string;
   property_id: string;
   contract_id?: string;
@@ -22,10 +22,9 @@ export type ContractDBType = {
   contract_last_modified_on?: string;
 };
 
-
 /**
  * Enumerates the possible status values for a contract.
- * 
+ *
  * @enum {string}
  * @property APPROVED - The contract has been approved.
  * @property CANCELLED - The contract has been cancelled.
@@ -36,15 +35,14 @@ export type ContractDBType = {
 export enum ContractStatusEnum {
   APPROVED = "APPROVED",
   CANCELLED = "CANCELLED",
-  DRAFT = 'DRAFT',
+  DRAFT = "DRAFT",
   CLOSED = "CLOSED",
-  EXPIRED = "EXPIRED"
+  EXPIRED = "EXPIRED",
 }
-
 
 /**
  * Defines an interface for a contract error that extends the base Error interface.
- * 
+ *
  * @interface ContractError
  * @extends Error
  * @property propertyId - The ID of the property associated with the error.
@@ -55,10 +53,9 @@ export interface ContractError extends Error {
   object?: any;
 }
 
-
 /**
  * Defines an interface for a contract response.
- * 
+ *
  * @interface ContractResponse
  * @property propertyId - The ID of the property associated with the response.
  * @property metadata - Additional metadata associated with the response.
@@ -67,6 +64,3 @@ export interface ContractResponse {
   propertyId: string;
   metadata: any;
 }
-
-
-

@@ -83,7 +83,7 @@ class ContractExistsCheckerFunction implements LambdaInterface {
       } else {
         contractExists = true;
       }
-    } catch (error: any) {
+    } catch (error) {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(
         `Error during Contract Status Check: ${JSON.stringify(error)}`
