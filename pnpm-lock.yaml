@@ -32,6 +32,9 @@ importers:
 
   unicorn_contracts:
     dependencies:
+      '@aws-cdk/region-info':
+        specifier: ^2.127.0
+        version: 2.127.0
       '@aws-lambda-powertools/commons':
         specifier: ^2.20.0
         version: 2.20.0
