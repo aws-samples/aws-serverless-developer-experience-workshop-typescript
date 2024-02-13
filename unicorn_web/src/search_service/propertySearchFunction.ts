@@ -3,7 +3,6 @@
 import {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
-  AttributeValue,
   Context,
 } from "aws-lambda";
 import type { LambdaInterface } from "@aws-lambda-powertools/commons";
@@ -14,7 +13,6 @@ import {
   GetItemCommand,
   GetItemCommandInput,
   QueryCommandInput,
-  Condition,
   QueryCommand,
   QueryCommandOutput,
 } from "@aws-sdk/client-dynamodb";

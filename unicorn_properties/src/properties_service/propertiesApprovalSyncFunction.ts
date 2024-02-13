@@ -43,7 +43,7 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
       `DynamodDB stream processing triggered ${JSON.stringify(event)}`
     );
     // Track results.
-    let results: DynamoDBBatchResponse = { batchItemFailures: [] };
+    const results: DynamoDBBatchResponse = { batchItemFailures: [] };
 
     // Check the contract id and approval state
     for (let i = 0; i < event.Records.length; i++) {
@@ -86,7 +86,7 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
             `Contract ${mergedImage.contract_id} has no property approval requested yet`
           );
         }
-      } catch (error: any) {
+      } catch (error) {
         logger.error(
           `Failure during handling of event ${i}: ${JSON.stringify(
             record
@@ -114,7 +114,7 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
       return undefined;
     }
 
-    let result: ContractStatus = { property_id: "" };
+    const result: ContractStatus = { property_id: "" };
     result.contract_id = input["contract_id"].S;
     result.property_id = input["property_id"].S ?? "";
     result.contract_status = input["contract_status"].S;

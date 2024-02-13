@@ -42,7 +42,7 @@ class PublicationApprovedFunction implements LambdaInterface {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
     }
-    metrics.addMetric('ContractUpdated', MetricUnits.Count, 1);
+    metrics.addMetric("ContractUpdated", MetricUnits.Count, 1);
   }
 
   /**
@@ -65,11 +65,21 @@ class PublicationApprovedFunction implements LambdaInterface {
     const { PK, SK } = this.getDynamoDBKeys(propertyId);
     const updateItemCommandInput: UpdateItemCommandInput = {
       Key: { PK: { S: PK }, SK: { S: SK } },
-      AttributeUpdates: { status: { Value: { S: status }, Action: "PUT" } },
+      ExpressionAttributeNames: {
+        "#s": "status",
+      },
+      ExpressionAttributeValues: {
+        ":t": {
+          S: propertyEvaluation.evaluationResult,
+        },
+      },
+      UpdateExpression: "SET #s = :t",
       TableName: DDB_TABLE,
     };
 
-    const data = await ddbClient.send(new UpdateItemCommand(updateItemCommandInput));
+    const data = await ddbClient.send(
+      new UpdateItemCommand(updateItemCommandInput)
+    );
     if (data.$metadata.httpStatusCode !== 200) {
       throw new Error(
         `Unable to update status for property PK ${PK} and SK ${SK}`
@@ -86,14 +96,14 @@ class PublicationApprovedFunction implements LambdaInterface {
     }
     const country = components[0];
     const city = components[1];
-    const street = components[3];
-    const number = components[4];
+    const street = components[2];
+    const number = components[3];
 
     const pkDetails = `${country}#${city}`.replace(" ", "-").toLowerCase();
     const PK = `PROPERTY#${pkDetails}`;
     const SK = `${street}#${number}`.replace(" ", "-").toLowerCase();
 
-    return { PK, SK }
+    return { PK, SK };
   }
 }
 
