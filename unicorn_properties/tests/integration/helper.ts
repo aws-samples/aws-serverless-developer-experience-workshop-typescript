@@ -17,6 +17,9 @@ import {
   GetLogEventsCommand,
 } from '@aws-sdk/client-cloudwatch-logs';
 
+const evb = new EventBridgeClient({});
+const propertiesBus = "UnicornPropertiesBus-local"; // Replace with your actual event bus name
+
 export const sleep = async (ms: number) =>
   new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -70,6 +73,66 @@ export async function* getCloudWatchLogsValues(
   }
 }
 
+export async function sendContractStatusChanged(
+  propertyId: string,
+  contractId: string,
+  contractStatus: string
+) {
+  try {
+    await evb.send(
+      new PutEventsCommand({
+        Entries: [
+          {
+            Source: "unicorn.contracts",
+            DetailType: "ContractStatusChanged",
+            EventBusName: propertiesBus,
+            Detail: JSON.stringify({
+              contract_last_modified_on: new Date().toLocaleString(),
+              property_id: propertyId,
+              contract_id: contractId,
+              contract_status: contractStatus,
+            }),
+          },
+        ],
+      })
+    );
+
+    await sleep(2000); // Sleep for 2 seconds
+  } catch (error) {
+    console.error("Error sending event:", error);
+  }
+}
+
+export async function sendPublicationApprovalRequested(
+  propertyId: string,
+  contractId: string,
+  contractStatus: string
+) {
+  try {
+    await evb.send(
+      new PutEventsCommand({
+        Entries: [
+          {
+            Source: "unicorn.web",
+            DetailType: "PublicationApprovalRequested",
+            EventBusName: propertiesBus,
+            Detail: JSON.stringify({
+              contract_last_modified_on: new Date().toLocaleString(),
+              property_id: propertyId,
+              contract_id: contractId,
+              contract_status: contractStatus,
+            }),
+          },
+        ],
+      })
+    );
+
+    await sleep(2000); // Sleep for 2 seconds
+  } catch (error) {
+    console.error("Error sending event:", error);
+  }
+}
+
 export async function clearDatabase() {
   const client = new DynamoDBClient({
     region: process.env.AWS_DEFAULT_REGION,
@@ -80,10 +143,37 @@ export async function clearDatabase() {
   );
 
   const scanCommand = new ScanCommand({ TableName: tableName });
-  let itemsToDelete;
   try {
     const scanResponse = await client.send(scanCommand);
-    itemsToDelete = scanResponse.Items;
+    const itemsToDelete = scanResponse.Items;
+
+    if (!itemsToDelete || itemsToDelete.length === 0) {
+      console.log("No items to delete.");
+      return;
+    }
+
+    // Create an array of DeleteRequest objects for batch delete
+    const deleteRequests: BatchWriteCommandInput = {
+      RequestItems: {
+        [tableName]: itemsToDelete.map((item: any) => ({
+          DeleteRequest: {
+            Key: {
+              PK: item.PK,
+              SK: item.SK,
+            },
+          },
+        })),
+      },
+    };
+
+    const batchWriteCommand = new BatchWriteCommand(deleteRequests);
+
+    // Execute the batch write command to delete all items
+    try {
+      const batchWriteResponse = await client.send(batchWriteCommand);
+    } catch (error) {
+      console.error("Error batch deleting items:", error);
+    }
   } catch (error) {
     console.error('Error scanning table:', error);
   }
@@ -111,53 +201,6 @@ export async function clearDatabase() {
     await client.send(batchWriteCommand);
   } catch (error) {
     console.error('Error batch deleting items:', error);
-  }
-
-  if (!itemsToDelete || itemsToDelete.length === 0) {
-    console.log("No items to delete.");
-    return;
-  }
-
-  // Create an array of DeleteRequest objects for batch delete
-  const batchWriteCommand = new BatchWriteCommand({
-    RequestItems: {
-      [tableName]: itemsToDelete.map((item: any) => ({
-        DeleteRequest: {
-          Key: {
-            property_id: item.property_id,
-          },
-        },
-      })),
-    },
-  });
-
-  // Execute the batch write command to delete all items
-  try {
-    const batchWriteResponse = await client.send(batchWriteCommand);
-  } catch (error) {
-    console.error("Error batch deleting items:", error);
-  }
-}
-
-export async function initializeDatabase() {
-  const client = new DynamoDBClient({ region: process.env.AWS_DEFAULT_REGION });
-  const tableName = await findOutputValue("ContractStatusTableName");
-
-  const putItemRequest: PutCommandInput = {
-    TableName: tableName,
-    Item: {
-      contract_last_modified_on: { S: "10/08/2022 19:56:30" },
-      contract_id: { S: "9183453b-d284-4466-a2d9-f00b1d569ad7" },
-      property_id: { S: "usa/anytown/main-street/222" },
-      contract_status: { S: "DRAFT" },
-    },
-  };
-  const putItemCommand = new PutItemCommand(putItemRequest);
-  // Execute the batch write command to delete all items
-  try {
-    const putItemResponse = await client.send(putItemCommand);
-  } catch (error) {
-    console.error("Error itinialising database:", error);
   }
 }
 

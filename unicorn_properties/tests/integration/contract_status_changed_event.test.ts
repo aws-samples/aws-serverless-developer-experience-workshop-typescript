@@ -4,6 +4,7 @@ import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import {
   sleep,
   findOutputValue,
+  sendContractStatusChanged,
   clearDatabase,
   initializeDatabase,
 } from './helper';
@@ -17,6 +18,7 @@ import ContractApprovedEvent from '../events/eventbridge/contract_status_changed
 
 describe('Testing draft contract event handling', () => {
   beforeAll(async () => {
+    // Clear DB
     await clearDatabase();
     await initializeDatabase();
   }, 30000);
@@ -37,10 +39,10 @@ describe('Testing draft contract event handling', () => {
       'uni-prop-local-properties',
       'ContractStatusTableName'
     );
-
-    // Act
-    await evb.send(
-      new PutEventsCommand({ Entries: ContractStatusChangedDraftEvent })
+    await sendContractStatusChanged(
+      "usa/anytown/main-street/111",
+      "f2bedc80-3dc8-4544-9140-9b606d71a6ee",
+      "DRAFT"
     );
     await sleep(10000);
     // Assert
@@ -67,10 +69,22 @@ describe('Testing draft contract event handling', () => {
       'uni-prop-local-properties',
       'ContractStatusTableName'
     );
+    await sendContractStatusChanged(
+      "usa/anytown/main-street/111",
+      "f2bedc80-3dc8-4544-9140-9b606d71a6ee",
+      "APPROVED"
+    );
 
-    // Act
-    await evb.send(new PutEventsCommand({ Entries: ContractApprovedEvent }));
-    await sleep(5000);
+    await sleep(2000); // Sleep for 2 seconds
+
+    const ddbResp = await ddb.send(
+      new GetItemCommand({
+        TableName: contractStatusTableName,
+        Key: {
+          property_id: { S: "usa/anytown/main-street/111" },
+        },
+      })
+    );
 
     // Assert
     const getItemCommand = new GetItemCommand({

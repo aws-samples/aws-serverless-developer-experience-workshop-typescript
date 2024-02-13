@@ -17,13 +17,13 @@ describe('Testing approved property listing searches', () => {
       'UnicornWebTableName'
     );
     const docClient = DynamoDBDocumentClient.from(
-      new DynamoDBClient({ region: process.env.AWS_DEFAULT_REGION })
+      new DynamoDBClient({ region: process.env.AWS_DEFAULT_REGION }),
     );
     await docClient.send(
       new PutCommand({
         TableName: tableName,
         Item: ApprovedProperty,
-      })
+      }),
     );
     // Find API Endpoint
     apiUrl = await findOutputValue(
