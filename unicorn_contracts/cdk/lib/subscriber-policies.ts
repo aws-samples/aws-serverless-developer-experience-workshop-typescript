@@ -1,75 +1,52 @@
-import { App, Stack, StackProps } from "aws-cdk-lib";
+import { Stack } from "aws-cdk-lib";
 import { aws_events as events } from 'aws-cdk-lib';
 import { aws_iam as iam } from 'aws-cdk-lib';
+import { IEventBus } from "aws-cdk-lib/aws-events";
+import { Construct } from "constructs";
 
 import { Stage } from "unicorn_shared";
 
-interface SubscriberPoliciesStackProps extends StackProps {
-  stage: Stage
-}
-
-export class SubscriberPoliciesStack extends Stack {
-  constructor(scope: App, id: string, props: SubscriberPoliciesStackProps) {
-    super(scope, id, props);
-    const eventBusPolicy = new events.EventBusPolicy(this, 'MyEventBusPolicy', {
-      eventBus: eventBus,
-      statement: policyStatement,
-      statementId: 'statementId',
-    });
-  }
+interface SubscriberPoliciesStackProps {
+  stage: Stage,
+  eventBus: IEventBus
+  namespace: string
 }
 
 /*
-# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: MIT-0
-AWSTemplateFormatVersion: "2010-09-09"
-Description: >
   Defines the event bus policies that determine who can create rules on the event bus to
   subscribe to events published by the Contracts Service.
-
-Parameters:
-  Stage:
-    Type: String
-    Default: local
-    AllowedValues:
-      - local
-      - dev
-      - prod
-
-Resources:
-  # This policy defines who can create rules on the event bus. Only principals subscribing to 
-  # Contracts Service events can create rule on the bus. No rules without a defined source.
-  CrossServiceCreateRulePolicy:
-    Type: AWS::Events::EventBusPolicy
-    Properties:
-      EventBusName:
-        Fn::Sub: "{{resolve:ssm:/uni-prop/${Stage}/UnicornContractsEventBus}}"
-      StatementId:
-        Fn::Sub: "OnlyRulesForContractServiceEvents-${Stage}"
-      Statement:
-        Effect: Allow
-        Principal:
-          AWS:
-            Fn::Sub: "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
-        Action:
-          - events:PutRule
-          - events:DeleteRule
-          - events:DescribeRule
-          - events:DisableRule
-          - events:EnableRule
-          - events:PutTargets
-          - events:RemoveTargets
-        Resource:
-          - Fn::Sub:
-              - arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${eventBusName}/*
-              - eventBusName:
-                  Fn::Sub: "{{resolve:ssm:/uni-prop/${Stage}/UnicornContractsEventBus}}"
-        Condition:
-          StringEqualsIfExists:
-            "events:creatorAccount": "${aws:PrincipalAccount}"
-          StringEquals:
-            "events:source":
-              - Fn::Sub: "{{resolve:ssm:/uni-prop/${Stage}/UnicornContractsNamespace}}"
-          "Null":
-            "events:source": "false"
 */
+export class SubscriberPoliciesStack extends Construct {
+  constructor(scope: Construct, id: string, props: SubscriberPoliciesStackProps) {
+    super(scope, id);
+
+    const policyStatement = new iam.PolicyStatement({
+      principals: [new iam.AccountRootPrincipal()],
+      actions: [
+        "events:PutRule",
+        "events:DeleteRule",
+        "events:DescribeRule",
+        "events:DisableRule",
+        "events:EnableRule",
+        "events:PutTargets",
+        "events:RemoveTargets"
+      ],
+      resources: [props.eventBus.eventBusArn],
+      conditions: {
+        "StringEqualsIfExists": {
+          "events:creatorAccount": Stack.of(this).account
+        },
+        "StringEquals": {
+          "events:source": props.namespace
+        }
+      }
+    }).toJSON();
+    const eventBusPolicy = new events.EventBusPolicy(this, 'MyEventBusPolicy', {
+      statementId: `OnlyRulesForContractServiceEvents-${props.stage}`,
+      eventBus: props.eventBus,
+      statement: policyStatement,
+    });
+
+
+  }
+}
