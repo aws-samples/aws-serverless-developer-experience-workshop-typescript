@@ -14,8 +14,12 @@
     "@aws-sdk/client-dynamodb": "^3.506.0",
     "@aws-sdk/client-sfn": "^3.504.0",
     "@aws-sdk/util-dynamodb": "^3.506.0",
+    "aws-cdk": "^2.127.0",
+    "aws-cdk-lib": "^2.127.0",
     "aws-lambda": "^1.0.7",
-    "esbuild": "^0.17.19"
+    "constructs": "^10.3.0",
+    "esbuild": "^0.17.19",
+    "unicorn_shared": "workspace:*"
   },
   "scripts": {
     "lint": "eslint '*.ts' --quiet --fix",
