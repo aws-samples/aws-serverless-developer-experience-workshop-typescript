@@ -15,8 +15,6 @@ import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { LogsRetentionPeriod, Stage, isProd, UNICORN_CONTRACTS_NAMESPACE, UNICORN_PROPERTIES_NAMESPACE, UNICORN_WEB_NAMESPACE } from 'unicorn_shared';
 import { SubscriberPoliciesStack } from './subscriber-policies';
 import { EventsSchemaStack } from './event-schemas';
-import { IntegrationCredentials } from 'aws-cdk-lib/aws-apigatewayv2';
-import { SqsDestination } from 'aws-cdk-lib/aws-lambda-destinations';
 
 interface UnicornConstractsStackProps extends StackProps {
   stage: Stage,
@@ -226,13 +224,6 @@ export class UnicornConstractsStack extends Stack {
     });
     ingestQueue.grantSendMessages(apiRole);
 
-    const openApiParams = {
-      ingestQueueName: ingestQueue.queueName,
-      apiRoleArn: apiRole.roleArn,
-      region: this.region,
-      accountId: this.account
-    };
-
     const api = new apigateway.RestApi(this, 'UnicornContractsApi', {
       cloudWatchRole: true,
       cloudWatchRoleRemovalPolicy: RemovalPolicy.DESTROY,
@@ -264,20 +255,25 @@ export class UnicornConstractsStack extends Stack {
       path: ingestQueue.queueName,
       options: {
         credentialsRole: apiRole,
-        integrationResponses: [{ statusCode: '200' }],
+        integrationResponses: [{
+          statusCode: '200',
+          responseTemplates: {
+            'application/json': '{"message":"OK"}'
+          }
+        }],
         requestParameters: {
           'integration.request.header.Content-Type':
             "'application/x-www-form-urlencoded'"
         },
         passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
         requestTemplates: {
-          "application/json":
-            "Action=SendMessage&MessageBody=$input.body"
+          "application/json": "Action=SendMessage&MessageBody=$input.body&MessageAttribute.1.Name=HttpMethod&MessageAttribute.1.Value.StringValue=$context.httpMethod&MessageAttribute.1.Value.DataType=String"
         },
       },
     });
 
     const contractsApiResource = api.root.addResource('contracts');
+
     contractsApiResource.addMethod('POST', sqsIntegration, { methodResponses: [{ statusCode: '200' }] });
     contractsApiResource.addMethod('PUT', sqsIntegration, { methodResponses: [{ statusCode: '200' }] });
 
