@@ -30,8 +30,8 @@ export class UnicornConstractsStack extends Stack {
     /*
       EVENT BUS
     */
-    this.eventBus = new events.EventBus(this, `UnicornContractstBus-${props.stage}`, {
-      eventBusName: `UnicornContractstBus-${props.stage}`
+    this.eventBus = new events.EventBus(this, `UnicornContractsBus-${props.stage}`, {
+      eventBusName: `UnicornContractsBus-${props.stage}`
     });
 
     // CloudWatch log group used to catch all events

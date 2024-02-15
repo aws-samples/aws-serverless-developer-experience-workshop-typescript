@@ -1,4 +1,4 @@
-import * as path from 'path';
+import * as path from "path";
 import {
   Duration,
   RemovalPolicy,
@@ -21,38 +21,39 @@ import {
   SqsDlq,
 } from "aws-cdk-lib/aws-lambda-event-sources";
 import {
-  UnicornSharedConstruct,
-  logsRetentionPeriod,
+  LogsRetentionPeriod,
   Stage,
   isProd,
-  UNICORN_NAMESPACES,
-  eventBusName,
+  UNICORN_PROPERTIES_NAMESPACE,
+  UNICORN_WEB_NAMESPACE,
+  UNICORN_CONTRACTS_NAMESPACE,
 } from "unicorn_shared";
+import { SubscriberPoliciesStack } from "./subscriber-policies";
+import { EventsSchemaStack } from "./event-schemas";
 import {
   DefinitionBody,
   LogLevel,
   StateMachine,
 } from "aws-cdk-lib/aws-stepfunctions";
-import { CfnSchema } from "aws-cdk-lib/aws-eventschemas";
 
 interface UnicornPropertiesStackProps extends StackProps {
   stage: Stage;
 }
 
-export class UnicornPropertiesStack extends Stack {
+export class UnicornConstractsStack extends Stack {
   constructor(scope: App, id: string, props: UnicornPropertiesStackProps) {
     super(scope, id, props);
 
-    const retentionPeriod = logsRetentionPeriod(props.stage);
+    const retentionPeriod = LogsRetentionPeriod(props.stage);
 
     /*
       EVENT BUS
     */
     const eventBus = new events.EventBus(
       this,
-      `UnicornPropertiesBus-${props.stage}`,
+      `UnicornProperties-${props.stage}`,
       {
-        eventBusName: eventBusName(props.stage, UNICORN_NAMESPACES.PROPERTIES),
+        eventBusName: `UnicornProperties-${props.stage}`,
       }
     );
 
@@ -61,7 +62,7 @@ export class UnicornPropertiesStack extends Stack {
       this,
       "UnicornPropertiesCatchAllLogGroup",
       {
-        logGroupName: `/aws/events/${props.stage}/${UNICORN_NAMESPACES.PROPERTIES}-catchall`,
+        logGroupName: `/aws/events/${props.stage}/${UNICORN_PROPERTIES_NAMESPACE}-catchall`,
         removalPolicy: RemovalPolicy.DESTROY,
         retention: retentionPeriod,
       }
@@ -76,7 +77,7 @@ export class UnicornPropertiesStack extends Stack {
         actions: ["events:PutEvents"],
         resources: [eventBus.eventBusArn],
         conditions: {
-          StringEquals: { "events:Source": UNICORN_NAMESPACES.PROPERTIES },
+          StringEquals: { "events:Source": UNICORN_PROPERTIES_NAMESPACE },
         },
       }).toJSON(),
     });
@@ -87,9 +88,9 @@ export class UnicornPropertiesStack extends Stack {
       eventBus: eventBus,
       eventPattern: {
         source: [
-          UNICORN_NAMESPACES.PROPERTIES,
-          UNICORN_NAMESPACES.WEB,
-          UNICORN_NAMESPACES.CONTRACTS,
+          UNICORN_PROPERTIES_NAMESPACE,
+          UNICORN_WEB_NAMESPACE,
+          UNICORN_CONTRACTS_NAMESPACE,
         ],
         account: [this.account],
       },
@@ -101,7 +102,8 @@ export class UnicornPropertiesStack extends Stack {
      DYNAMODB TABLE
      */
     const table = new dynamodb.TableV2(this, `ContractStatusTable`, {
-      tableName: `uni-prop-${props.stage}-properties-ContractStatusTable`,
+      tableName: `uni-prop-${props.stage}-contracts-ContractStatusTable`,
+
       partitionKey: {
         name: "property_id",
         type: dynamodb.AttributeType.STRING,
@@ -139,13 +141,13 @@ export class UnicornPropertiesStack extends Stack {
       environment: {
         CONTRACT_STATUS_TABLE: table.tableName,
         EVENT_BUS: eventBus.eventBusName,
-        SERVICE_NAMESPACE: UNICORN_NAMESPACES.PROPERTIES,
+        SERVICE_NAMESPACE: UNICORN_PROPERTIES_NAMESPACE,
         POWERTOOLS_LOGGER_CASE: "PascalCase",
-        POWERTOOLS_SERVICE_NAME: UNICORN_NAMESPACES.PROPERTIES,
+        POWERTOOLS_SERVICE_NAME: UNICORN_PROPERTIES_NAMESPACE,
         POWERTOOLS_TRACE_DISABLED: "false", // Explicitly disables tracing, default
         POWERTOOLS_LOGGER_LOG_EVENT: isProd(props.stage) ? "false" : "true", // Logs incoming event, default
         POWERTOOLS_LOGGER_SAMPLE_RATE: isProd(props.stage) ? "0.1" : "0", // Debug log sampling percentage, default
-        POWERTOOLS_METRICS_NAMESPACE: UNICORN_NAMESPACES.PROPERTIES,
+        POWERTOOLS_METRICS_NAMESPACE: UNICORN_PROPERTIES_NAMESPACE,
         POWERTOOLS_LOG_LEVEL: "INFO", // Log level for Logger (INFO, DEBUG, etc.), default
         LOG_LEVEL: "INFO", // Log level for Logger
       },
@@ -160,7 +162,7 @@ export class UnicornPropertiesStack extends Stack {
         ...defaultLambdaOptions,
         entry: path.join(
           __dirname,
-          "../../src/properties_service/contractStatusChangedEventHandler.ts"
+          "../../src/properties_service/contractStatusChanged.ts"
         ),
         logGroup: new logs.LogGroup(
           this,
@@ -180,7 +182,7 @@ export class UnicornPropertiesStack extends Stack {
       ruleName: "unicorn.properties-ContractStatusChanged",
       eventBus: eventBus,
       eventPattern: {
-        source: [UNICORN_NAMESPACES.CONTRACTS],
+        source: [UNICORN_CONTRACTS_NAMESPACE],
         detailType: ["ContractStatusChanged"],
       },
     }).addTarget(
@@ -241,7 +243,7 @@ export class UnicornPropertiesStack extends Stack {
 
     const waitForContractApprovalFunction = new nodejs.NodejsFunction(
       this,
-      `WaitForContractApprovalFunction`,
+      `waitForContractApprovalFunction`,
       {
         ...defaultLambdaOptions,
         entry: path.join(
@@ -250,7 +252,7 @@ export class UnicornPropertiesStack extends Stack {
         ),
         logGroup: new logs.LogGroup(
           this,
-          "WaitForContractApprovalFunctionLogGroup",
+          "waitForContractApprovalFunctionLogGroup",
           {
             retention: retentionPeriod,
           }
@@ -262,7 +264,7 @@ export class UnicornPropertiesStack extends Stack {
     // Part of the ApprovalStateMachine, validates if all outputs of content checking steps are OK
     const contentIntegrityValidatorFunction = new nodejs.NodejsFunction(
       this,
-      `ContentIntegrityValidatorFunction`,
+      `contentIntegrityValidatorFunction`,
       {
         ...defaultLambdaOptions,
         entry: path.join(
@@ -271,7 +273,7 @@ export class UnicornPropertiesStack extends Stack {
         ),
         logGroup: new logs.LogGroup(
           this,
-          "ContentIntegrityValidatorFunctionLogGroup",
+          "contentIntegrityValidatorFunctionLogGroup",
           {
             retention: retentionPeriod,
           }
@@ -309,7 +311,7 @@ export class UnicornPropertiesStack extends Stack {
           contentIntegrityValidatorFunction.functionArn,
         ImageUploadBucketName: imagesBucketName,
         EventBusName: eventBus.eventBusName,
-        ServiceName: UNICORN_NAMESPACES.PROPERTIES,
+        ServiceName: UNICORN_PROPERTIES_NAMESPACE,
       },
       tracingEnabled: true,
       logs: {
@@ -323,9 +325,11 @@ export class UnicornPropertiesStack extends Stack {
           iam.ManagedPolicy.fromAwsManagedPolicyName(
             "AWSXRayDaemonWriteAccess"
           ),
-          iam.ManagedPolicy.fromAwsManagedPolicyName("ComprehendFullAccess"),
           iam.ManagedPolicy.fromAwsManagedPolicyName(
-            "AmazonRekognitionFullAccess"
+            "ComprehendBasicAccessPolicy"
+          ),
+          iam.ManagedPolicy.fromAwsManagedPolicyName(
+            "RekognitionDetectOnlyPolicy"
           ),
         ],
         inlinePolicies: {
@@ -341,7 +345,7 @@ export class UnicornPropertiesStack extends Stack {
                   "logs:PutResourcePolicy",
                   "logs:DescribeResourcePolicies",
                   "logs:DescribeLogGroups",
-                  "cloudwatch:PutMetricData",
+                  "cloudwatch:PutMetricData]",
                 ],
                 resources: ["*"],
               }),
@@ -368,122 +372,13 @@ export class UnicornPropertiesStack extends Stack {
       ruleName: "unicorn.properties-PublicationApprovalRequested",
       eventBus: eventBus,
       eventPattern: {
-        source: [UNICORN_NAMESPACES.WEB],
+        source: [UNICORN_WEB_NAMESPACE],
         detailType: ["PublicationApprovalRequested"],
       },
     }).addTarget(
       new targets.SfnStateMachine(stateMachine, {
         deadLetterQueue: eventBusDLQ,
       })
-    );
-    /* Events Schema */
-    const eventRegistryName = `${UNICORN_NAMESPACES.PROPERTIES}-${props.stage}`;
-
-    const publicationEvaluationCompletedSchema = new CfnSchema(
-      this,
-      "PublicationEvaluationCompletedSchema",
-      {
-        type: "OpenApi3",
-        registryName: eventRegistryName,
-        schemaName: `${eventRegistryName}@PublicationEvaluationCompleted`,
-           description:
-                    'The schema for when a property evaluation is completed",
-        content: JSON.stringify({
-          openapi: "3.0.0",
-          info: {
-            version: "1.0.0",
-            title: "PublicationEvaluationCompleted",
-          },
-          paths: {},
-          components: {
-            schemas: {
-              AWSEvent: {
-                type: "object",
-                required: [
-                  "detail-type",
-                  "resources",
-                  "detail",
-                  "id",
-                  "source",
-                  "time",
-                  "region",
-                  "version",
-                  "account",
-                ],
-                "x-amazon-events-detail-type": "PublicationEvaluationCompleted",
-                "x-amazon-events-source": "${EventRegistry.RegistryName}",
-                properties: {
-                  detail: {
-                    $ref: "#/components/schemas/PublicationEvaluationCompleted",
-                  },
-                  account: {
-                    type: "string",
-                  },
-                  "detail-type": {
-                    type: "string",
-                  },
-                  id: {
-                    type: "string",
-                  },
-                  region: {
-                    type: "string",
-                  },
-                  resources: {
-                    type: "array",
-                    items: {
-                      type: "string",
-                    },
-                  },
-                  source: {
-                    type: "string",
-                  },
-                  time: {
-                    type: "string",
-                    format: "date-time",
-                  },
-                  version: {
-                    type: "string",
-                  },
-                },
-              },
-              PublicationEvaluationCompleted: {
-                type: "object",
-                required: ["property_id", "evaluation_result"],
-                properties: {
-                  property_id: {
-                    type: "string",
-                  },
-                  evaluation_result: {
-                    type: "string",
-                  },
-                },
-              },
-            },
-          },
-        }),
-      }
-    );
-
-    const schemaStack = new UnicornSharedConstruct.EventsSchemaConstruct(
-      this,
-      `uni-prop-${props.stage}-properties-EventSchemaSack`,
-      {
-        name: eventRegistryName,
-        namespace: UNICORN_NAMESPACES.PROPERTIES,
-        schemas: [publicationEvaluationCompletedSchema],
-      }
-    );
-
-    /* Subscriptions */
-    // Update this policy as you get new subscribers by adding their namespace to events:source
-    const subscriberStack = new UnicornSharedConstruct.SubscriberPoliciesConstruct(
-      this,
-      `uni-prop-${props.stage}-properties-SubscriptionsStack`,
-      {
-        stage: props.stage,
-        eventBus: eventBus,
-        sources: [UNICORN_NAMESPACES.PROPERTIES],
-      }
     );
 
     /*
@@ -496,7 +391,7 @@ export class UnicornPropertiesStack extends Stack {
       description: "DynamoDB table storing contract status information",
     });
 
-    // LAMBDA FUNCTIONS OUTPUTS
+    // #### LAMBDA FUNCTIONS OUTPUTS
     new CfnOutput(this, "ContractStatusChangedHandlerFunctionName", {
       value: contractStatusChangedHandlerFunction.functionName,
     });
@@ -532,7 +427,7 @@ export class UnicornPropertiesStack extends Stack {
       value: waitForContractApprovalFunction.functionArn,
     });
 
-    // STEPFUNCTIONS OUTPUTS
+    // #### STEPFUNCTIONS OUTPUTS
     new CfnOutput(this, "ApprovalStateMachineName", {
       value: stateMachine.stateMachineName,
     });
@@ -540,12 +435,12 @@ export class UnicornPropertiesStack extends Stack {
       value: stateMachine.stateMachineArn,
     });
 
-    // EVENT BRIDGE OUTPUTS
+    // #### EVENT BRIDGE OUTPUTS
     new CfnOutput(this, "UnicornPropertiesEventBusName", {
       value: eventBus.eventBusName,
     });
 
-    // CLOUDWATCH LOGS OUTPUTS
+    // #### CLOUDWATCH LOGS OUTPUTS
     new CfnOutput(this, "UnicornPropertiesCatchAllLogGroupArn", {
       value: catchAllLogGroup.logGroupArn,
     });
