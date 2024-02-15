@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { UnicornConstractsStack } from '../lib/unicorn-contracts';
+import { UnicornConstractsStack } from '../lib/unicorn-properties';
 import { Stage, UNICORN_CONTRACTS_NAMESPACE } from 'unicorn_shared';
 
 const app = new cdk.App();
