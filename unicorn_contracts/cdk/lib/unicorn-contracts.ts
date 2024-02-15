@@ -436,7 +436,6 @@ export class UnicornConstractsStack extends Stack {
       namespace: UNICORN_NAMESPACES.CONTRACTS,
       schemas: [contractStatusChangedSchema]
     });
-    contractStatusChangedSchema.addDependency(schemaStack.registry);
 
     /* Subscriptions */
     const subscriberStack = new UnicornConstructs.SubscriberPoliciesConstruct(this, `uni-prop-${props.stage}-contracts-SubscriptionsStack`, {

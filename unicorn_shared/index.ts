@@ -6,9 +6,8 @@ export { UnicornConstructs };
 export enum UNICORN_NAMESPACES {
   CONTRACTS = "unicorn.contracts",
   PROPERTIES = "unicorn.properties",
-  WEB = "unicorn.web"
+  WEB = "unicorn.web",
 }
-
 
 /** The different stages for the app. */
 export enum Stage {
@@ -41,6 +40,8 @@ export const eventBusName = (stage: Stage, namespace: UNICORN_NAMESPACES) => {
     case UNICORN_NAMESPACES.WEB:
       return `UnicornWeb-${stage}`;
     default:
-      throw new Error(`Error generatinig Event Bus Name Unknown namespace: ${namespace}`);
+      throw new Error(
+        `Error generatinig Event Bus Name Unknown namespace: ${namespace}`
+      );
   }
 };
