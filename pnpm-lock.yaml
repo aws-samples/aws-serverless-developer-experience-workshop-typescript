@@ -32,9 +32,6 @@ importers:
 
   unicorn_contracts:
     dependencies:
-      '@aws-cdk/region-info':
-        specifier: ^2.127.0
-        version: 2.127.0
       '@aws-lambda-powertools/commons':
         specifier: ^2.20.0
         version: 2.20.0
@@ -303,20 +300,20 @@ importers:
         specifier: ^1.18.0
         version: 1.18.0
       '@aws-sdk/client-dynamodb':
-        specifier: ^3.506.0
-        version: 3.511.0
+        specifier: ^3.514.0
+        version: 3.514.0
       '@aws-sdk/client-sfn':
-        specifier: ^3.504.0
-        version: 3.513.0
+        specifier: ^3.514.0
+        version: 3.514.0
       '@aws-sdk/util-dynamodb':
-        specifier: ^3.506.0
-        version: 3.511.0(@aws-sdk/client-dynamodb@3.511.0)
+        specifier: ^3.514.0
+        version: 3.514.0(@aws-sdk/client-dynamodb@3.514.0)
       aws-cdk:
-        specifier: ^2.127.0
-        version: 2.127.0
+        specifier: ^2.128.0
+        version: 2.128.0
       aws-cdk-lib:
-        specifier: ^2.127.0
-        version: 2.127.0(constructs@10.3.0)
+        specifier: ^2.128.0
+        version: 2.128.0(constructs@10.3.0)
       aws-lambda:
         specifier: ^1.0.7
         version: 1.0.7
@@ -331,17 +328,17 @@ importers:
         version: link:../unicorn_shared
     devDependencies:
       '@aws-sdk/client-cloudformation':
-        specifier: ^3.504.0
-        version: 3.511.0
+        specifier: ^3.514.0
+        version: 3.514.0
       '@aws-sdk/client-cloudwatch-logs':
-        specifier: ^3.504.0
-        version: 3.511.0
+        specifier: ^3.514.0
+        version: 3.514.0
       '@aws-sdk/client-eventbridge':
-        specifier: ^3.504.0
-        version: 3.511.0
+        specifier: ^3.514.0
+        version: 3.514.0
       '@aws-sdk/lib-dynamodb':
-        specifier: ^3.506.0
-        version: 3.511.0(@aws-sdk/client-dynamodb@3.511.0)
+        specifier: ^3.514.0
+        version: 3.514.0(@aws-sdk/client-dynamodb@3.514.0)
       '@types/aws-lambda':
         specifier: ^8.10.133
         version: 8.10.133
@@ -349,7 +346,7 @@ importers:
         specifier: ^29.5.12
         version: 29.5.12
       '@types/node':
-        specifier: ^18.19.14
+        specifier: ^18.19.15
         version: 18.19.15
       '@typescript-eslint/eslint-plugin':
         specifier: ^5.62.0
@@ -391,8 +388,11 @@ importers:
   unicorn_shared:
     dependencies:
       aws-cdk-lib:
-        specifier: ^2.122.0
-        version: 2.122.0(constructs@10.3.0)
+        specifier: ^2.128.0
+        version: 2.128.0(constructs@10.3.0)
+      constructs:
+        specifier: ^10.3.0
+        version: 10.3.0
     devDependencies:
       '@types/node':
         specifier: 20.10.8
