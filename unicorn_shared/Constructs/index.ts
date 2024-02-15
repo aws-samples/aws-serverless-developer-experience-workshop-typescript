@@ -2,7 +2,7 @@ import { aws_events as events } from "aws-cdk-lib";
 import { aws_iam as iam } from "aws-cdk-lib";
 import { Stack } from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { Stage, UNICORN_NAMESPACES } from '../index';
+import { Stage, UNICORN_NAMESPACES, eventBusName } from '../index';
 import {
     CfnRegistry,
     CfnRegistryPolicy,
@@ -26,18 +26,17 @@ interface EventSchemaStackProps {
  */
 
 export class EventsSchemaConstruct extends Construct {
-    public readonly registry: CfnRegistry;
     constructor(scope: Construct, id: string, props: EventSchemaStackProps) {
         super(scope, id);
 
-        this.registry = new CfnRegistry(this, `${props.namespace}`, {
+        const registry = new CfnRegistry(this, `${props.namespace}`, {
             description: `Event schemas for ${props.namespace}`,
             registryName: props.name,
         });
+        props.schemas.forEach((s) => s.node.addDependency(registry));
 
         const schemaArns = props.schemas.map((s) => s.attrSchemaArn);
-
-        new CfnRegistryPolicy(this, "RegistryPolicy", {
+        const registryPolicy = new CfnRegistryPolicy(this, "RegistryPolicy", {
             registryName: props.name,
             policy: new PolicyDocument({
                 statements: [
@@ -53,13 +52,14 @@ export class EventsSchemaConstruct extends Construct {
                             "schemas:ListSchemaVersions",
                             "schemas:SearchSchemas",
                         ],
-                        resources: [...schemaArns, this.registry.attrRegistryArn]
+                        resources: [...schemaArns, registry.attrRegistryArn]
                         //- Fn::GetAtt: EventRegistry.RegistryArn
                         //- Fn::Sub: "arn:${AWS::Partition}:schemas:${AWS::Region}:${AWS::AccountId}:schema/${EventRegistry.RegistryName}*"
                     }),
                 ],
-            }).toString(),
+            })
         });
+        props.schemas.forEach((s) => registryPolicy.node.addDependency(s));
     }
 }
 
@@ -105,7 +105,7 @@ export class SubscriberPoliciesConstruct extends Construct {
             },
         }).toJSON();
         const eventBusPolicy = new events.EventBusPolicy(this, "MyEventBusPolicy", {
-            statementId: `OnlyRulesForContractServiceEvents-${props.stage}`,
+            statementId: `${props.eventBus.eventBusName}-${props.stage}-policy`,
             eventBus: props.eventBus,
             statement: policyStatement,
         });
