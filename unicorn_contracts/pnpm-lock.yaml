@@ -47,6 +47,9 @@ dependencies:
 
   .:
     devDependencies:
+      eslint:
+        specifier: ^8.56.0
+        version: 8.56.0
       husky:
         specifier: ^9.0.10
         version: 9.0.10
