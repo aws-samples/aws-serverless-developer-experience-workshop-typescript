@@ -1,8 +1,14 @@
 import { RetentionDays } from "aws-cdk-lib/aws-logs";
+import * as UnicornConstructs from "./Constructs";
 
-export const UNICORN_CONTRACTS_NAMESPACE: string = "unicorn.contracts";
-export const UNICORN_PROPERTIES_NAMESPACE: string = "unicorn.properties";
-export const UNICORN_WEB_NAMESPACE: string = "unicorn.wev";
+export { UnicornConstructs };
+
+export enum UNICORN_NAMESPACES {
+  CONTRACTS = "unicorn.contracts",
+  PROPERTIES = "unicorn.properties",
+  WEB = "unicorn.web"
+}
+
 
 /** The different stages for the app. */
 export enum Stage {
@@ -13,7 +19,7 @@ export enum Stage {
 
 export const isProd = (stage: Stage) => stage === Stage.prod;
 
-export const LogsRetentionPeriod = (stage: Stage) => {
+export const logsRetentionPeriod = (stage: Stage) => {
   switch (stage) {
     case Stage.local:
       return RetentionDays.ONE_DAY;
@@ -23,5 +29,18 @@ export const LogsRetentionPeriod = (stage: Stage) => {
       return RetentionDays.TWO_WEEKS;
     default:
       return RetentionDays.ONE_DAY;
+  }
+};
+
+export const eventBusName = (stage: Stage, namespace: UNICORN_NAMESPACES) => {
+  switch (namespace) {
+    case UNICORN_NAMESPACES.CONTRACTS:
+      return `UnicornContracts-${stage}`;
+    case UNICORN_NAMESPACES.PROPERTIES:
+      return `UnicornProperties-${stage}`;
+    case UNICORN_NAMESPACES.WEB:
+      return `UnicornWeb-${stage}`;
+    default:
+      throw new Error(`Error generatinig Event Bus Name Unknown namespace: ${namespace}`);
   }
 };

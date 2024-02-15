@@ -15,7 +15,7 @@ Metadata:
         - ES6000 # Rule disabled because SQS DLQs don't need a RedrivePolicy
         - WS2001 # Rule disabled because check does not support !ToJsonString transform
         - ES1001 # Rule disabled because our Lambda functions don't need DestinationConfig.OnFailure
-        - W3002 # Rule disabled as nested templates are being packaged 
+        - W3002 # Rule disabled as nested templates are being packaged
 
 Parameters:
   Stage:
@@ -27,7 +27,7 @@ Parameters:
       - prod
 
 Mappings:
-  LogsRetentionPeriodMap:
+  logsRetentionPeriodMap:
     local:
       Days: 3
     dev:
@@ -100,7 +100,7 @@ Resources:
         Minify: false
         Target: "es2020"
         Sourcemap: true
-        EntryPoints: 
+        EntryPoints:
           - src/search_service/propertySearchFunction.ts
 
   # Log group for the SearchFunction
@@ -110,7 +110,7 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       LogGroupName: !Sub "/aws/lambda/${SearchFunction}"
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+      RetentionInDays: !FindInMap [logsRetentionPeriodMap, !Ref Stage, Days]
 
   # Process queued API requests to approve properties from UnicornWebIngestQueue
   RequestApprovalFunction:
@@ -137,7 +137,7 @@ Resources:
         Minify: false
         Target: "es2020"
         Sourcemap: true
-        EntryPoints: 
+        EntryPoints:
           - src/approvals_service/requestApprovalFunction.ts
 
   # Log group for the RequestApprovalFunction
@@ -147,7 +147,7 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       LogGroupName: !Sub "/aws/lambda/${RequestApprovalFunction}"
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+      RetentionInDays: !FindInMap [logsRetentionPeriodMap, !Ref Stage, Days]
 
   # Respond to PublicationEvaluationCompleted events from Unicorn Web EventBus
   PublicationApprovedEventHandlerFunction:
@@ -178,7 +178,7 @@ Resources:
         Minify: false
         Target: "es2020"
         Sourcemap: true
-        EntryPoints: 
+        EntryPoints:
           - src/approvals_service/publicationApprovedEventHandler.ts
 
   # Log group for the PublicationApprovedEventHandlerFunction
@@ -188,7 +188,7 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       LogGroupName: !Sub "/aws/lambda/${PublicationApprovedEventHandlerFunction}"
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+      RetentionInDays: !FindInMap [logsRetentionPeriodMap, !Ref Stage, Days]
 
   #### API GATEWAY REST API
   UnicornWebApi:
@@ -235,7 +235,7 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+      RetentionInDays: !FindInMap [logsRetentionPeriodMap, !Ref Stage, Days]
 
   # API Gateway Account Configuration, to enable Logs to be sent to CloudWatch
   UnicornWebApiGwAccountConfig:
@@ -409,7 +409,7 @@ Resources:
         - "/aws/events/${Stage}/${NS}-catchall"
         - Stage: !Ref Stage
           NS: "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}"
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+      RetentionInDays: !FindInMap [logsRetentionPeriodMap, !Ref Stage, Days]
 
   # Permissions to allow EventBridge to send logs to CloudWatch
   EventBridgeCloudWatchLogGroupPolicy:
