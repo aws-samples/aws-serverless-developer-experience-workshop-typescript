@@ -93,18 +93,16 @@ export class SubscriberPoliciesConstruct extends Construct {
             ],
             resources: [props.eventBus.eventBusArn],
             conditions: {
-                StringEqualsIfExists: {
-                    "events:creatorAccount": Stack.of(this).account,
-                },
                 StringEquals: {
                     "events:source": props.sources
                 },
-                Null: {
-                    "event:source": false
+                StringEqualsIfExists: {
+                    "events:creatorAccount": Stack.of(this).account
                 }
             },
         }).toJSON();
-        const eventBusPolicy = new events.EventBusPolicy(this, "MyEventBusPolicy", {
+
+        const eventBusPolicy = new events.EventBusPolicy(this, `EventBusPolicy`, {
             statementId: `${props.eventBus.eventBusName}-${props.stage}-policy`,
             eventBus: props.eventBus,
             statement: policyStatement,
