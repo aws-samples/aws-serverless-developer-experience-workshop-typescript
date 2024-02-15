@@ -39,7 +39,7 @@ interface UnicornPropertiesStackProps extends StackProps {
   stage: Stage;
 }
 
-export class UnicornConstractsStack extends Stack {
+export class UnicornPropertiesStack extends Stack {
   constructor(scope: App, id: string, props: UnicornPropertiesStackProps) {
     super(scope, id, props);
 
@@ -101,8 +101,7 @@ export class UnicornConstractsStack extends Stack {
      DYNAMODB TABLE
      */
     const table = new dynamodb.TableV2(this, `ContractStatusTable`, {
-      tableName: `uni-prop-${props.stage}-contracts-ContractStatusTable`,
-
+      tableName: `ContractStatusTable`,
       partitionKey: {
         name: "property_id",
         type: dynamodb.AttributeType.STRING,
@@ -161,7 +160,7 @@ export class UnicornConstractsStack extends Stack {
         ...defaultLambdaOptions,
         entry: path.join(
           __dirname,
-          "../../src/properties_service/contractStatusChanged.ts"
+          "../../src/properties_service/contractStatusChangedEventHandler.ts"
         ),
         logGroup: new logs.LogGroup(
           this,
@@ -325,10 +324,10 @@ export class UnicornConstractsStack extends Stack {
             "AWSXRayDaemonWriteAccess"
           ),
           iam.ManagedPolicy.fromAwsManagedPolicyName(
-            "ComprehendBasicAccessPolicy"
+            "ComprehendFullAccess"
           ),
           iam.ManagedPolicy.fromAwsManagedPolicyName(
-            "RekognitionDetectOnlyPolicy"
+            "AmazonRekognitionFullAccess"
           ),
         ],
         inlinePolicies: {
@@ -344,7 +343,7 @@ export class UnicornConstractsStack extends Stack {
                   "logs:PutResourcePolicy",
                   "logs:DescribeResourcePolicies",
                   "logs:DescribeLogGroups",
-                  "cloudwatch:PutMetricData]",
+                  "cloudwatch:PutMetricData",
                 ],
                 resources: ["*"],
               }),
@@ -465,17 +464,16 @@ export class UnicornConstractsStack extends Stack {
       })
     });
 
-    const schemaStack = new UnicornConstructs.EventsSchemaConstruct(this, `uni-prop-${props.stage}-contracts-EventSchemaSack`, {
+    const schemaStack = new UnicornConstructs.EventsSchemaConstruct(this, `uni-prop-${props.stage}-properties-EventSchemaSack`, {
       name: eventRegistryName,
       namespace: UNICORN_NAMESPACES.PROPERTIES,
       schemas: [publicationEvaluationCompletedSchema]
     });
-    publicationEvaluationCompletedSchema.addDependency(schemaStack.registry);
 
 
     /* Subscriptions */
     // Update this policy as you get new subscribers by adding their namespace to events:source
-    const subscriberStack = new UnicornConstructs.SubscriberPoliciesConstruct(this, `uni-prop-${props.stage}-contracts-SubscriptionsStack`, {
+    const subscriberStack = new UnicornConstructs.SubscriberPoliciesConstruct(this, `uni-prop-${props.stage}-properties-SubscriptionsStack`, {
       stage: props.stage,
       eventBus: eventBus,
       sources: [UNICORN_NAMESPACES.PROPERTIES]

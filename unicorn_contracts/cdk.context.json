@@ -1,5 +1,0 @@
-{
-  "ssm:account=819998446679:parameterName=/uni-prop/local/UnicornContractsNamespace:region=ap-southeast-2": "unicorn.contracts",
-  "ssm:account=819998446679:parameterName=/uni-prop/local/UnicornPropertiesNamespace:region=ap-southeast-2": "unicorn.properties",
-  "ssm:account=819998446679:parameterName=/uni-prop/local/UnicornWebNamespace:region=ap-southeast-2": "unicorn.web"
-}
