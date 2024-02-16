@@ -22,10 +22,10 @@
     "unicorn_shared": "workspace:*"
   },
   "scripts": {
-    "lint": "eslint '*.ts' --quiet --fix",
-    "compile": "tsc",
-    "test": "jest",
-    "deploy": "sam build && sam deploy --no-confirm-changeset"
+    "lint": "eslint  --ext .ts --quiet --fix",
+    "build": "tsc",
+    "test": "jest --runInBand",
+    "deploy": "cdk deploy uni-prop-local-properties --require-approval never"
   },
   "devDependencies": {
     "@aws-sdk/client-cloudformation": "^3.514.0",
