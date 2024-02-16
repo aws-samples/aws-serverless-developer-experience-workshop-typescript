@@ -23,7 +23,7 @@ export const sleep = async (ms: number) =>
   });
 
 export async function* getCloudWatchLogsValues(
-  propertyId: string,
+  propertyId: string
 ): AsyncGenerator<any, void, unknown> {
   const groupName = (
     await findOutputValue("UnicornContractsCatchAllLogGroupArn")
@@ -41,11 +41,11 @@ export async function* getCloudWatchLogsValues(
       orderBy: "LastEventTime",
       descending: true,
       limit: 3,
-    }),
+    })
   );
 
   const latestLogStreamNames = (streamResponse.logStreams || []).map(
-    (s) => s.logStreamName || "",
+    (s) => s.logStreamName || ""
   );
 
   // Fetch log events from that stream
@@ -55,9 +55,9 @@ export async function* getCloudWatchLogsValues(
         new GetLogEventsCommand({
           logGroupName: groupName,
           logStreamName: name,
-        }),
+        })
       );
-    }),
+    })
   );
 
   // Filter log events that match the required `propertyId`
@@ -73,41 +73,40 @@ export async function* getCloudWatchLogsValues(
 
 export async function clearDatabase() {
   const client = new DynamoDBClient({ region: process.env.AWS_DEFAULT_REGION });
-  const tableName = await findOutputValue("ContractsTableName");
+  const tableName = await findOutputValue("ContractStatusTableName");
 
   const scanCommand = new ScanCommand({ TableName: tableName });
+  let itemsToDelete;
   try {
     const scanResponse = await client.send(scanCommand);
-    const itemsToDelete = scanResponse.Items;
-
-    if (!itemsToDelete || itemsToDelete.length === 0) {
-      console.log("No items to delete.");
-      return;
-    }
-
-    // Create an array of DeleteRequest objects for batch delete
-    const deleteRequests: BatchWriteCommandInput = {
-      RequestItems: {
-        [tableName]: itemsToDelete.map((item: any) => ({
-          DeleteRequest: {
-            Key: {
-              property_id: item.property_id,
-            },
-          },
-        })),
-      },
-    };
-
-    const batchWriteCommand = new BatchWriteCommand(deleteRequests);
-
-    // Execute the batch write command to delete all items
-    try {
-      const batchWriteResponse = await client.send(batchWriteCommand);
-    } catch (error) {
-      console.error("Error batch deleting items:", error);
-    }
+    itemsToDelete = scanResponse.Items;
   } catch (error) {
     console.error("Error scanning table:", error);
+  }
+
+  if (!itemsToDelete || itemsToDelete.length === 0) {
+    console.log("No items to delete.");
+    return;
+  }
+
+  // Create an array of DeleteRequest objects for batch delete
+  const batchWriteCommand = new BatchWriteCommand({
+    RequestItems: {
+      [tableName]: itemsToDelete.map((item: any) => ({
+        DeleteRequest: {
+          Key: {
+            property_id: item.property_id,
+          },
+        },
+      })),
+    },
+  });
+
+  // Execute the batch write command to delete all items
+  try {
+    const batchWriteResponse = await client.send(batchWriteCommand);
+  } catch (error) {
+    console.error("Error batch deleting items:", error);
   }
 }
 
@@ -130,11 +129,11 @@ export const findOutputValue = async (outputKey: string) => {
     region: process.env.AWS_DEFAULT_REGION,
   });
   const stackResources: DescribeStacksCommandOutput = await cloudformation.send(
-    new DescribeStacksCommand({ StackName: "uni-prop-local-contracts" }),
+    new DescribeStacksCommand({ StackName: "uni-prop-local-contracts" })
   );
   if (stackResources.Stacks === undefined || stackResources.Stacks?.length < 1)
     throw new Error(
-      "Could not find stack resources named: uni-prop-local-contracts ",
+      "Could not find stack resources named: uni-prop-local-contracts "
     );
 
   if (
@@ -142,12 +141,12 @@ export const findOutputValue = async (outputKey: string) => {
     stackResources.Stacks[0].Outputs?.length < 1
   ) {
     throw new Error(
-      "Could not find stack outputs for stack named: uni-prop-local-contracts",
+      "Could not find stack outputs for stack named: uni-prop-local-contracts"
     );
   }
 
   const outputValue = stackResources.Stacks[0].Outputs.find(
-    (output) => output.OutputKey === outputKey,
+    (output) => output.OutputKey === outputKey
   )?.OutputValue;
   if (outputValue === undefined)
     throw new Error(`Could not find stack output named: ${outputKey}`);
