@@ -50,7 +50,7 @@ export class UnicornPropertiesStack extends Stack {
     */
     const eventBus = new events.EventBus(
       this,
-      `UnicornProperties-${props.stage}`,
+      `UnicornPropertiesBus-${props.stage}`,
       {
         eventBusName: eventBusName(props.stage, UNICORN_NAMESPACES.PROPERTIES),
       }
@@ -101,7 +101,7 @@ export class UnicornPropertiesStack extends Stack {
      DYNAMODB TABLE
      */
     const table = new dynamodb.TableV2(this, `ContractStatusTable`, {
-      tableName: `ContractStatusTable`,
+      tableName: `uni-prop-${props.stage}-properties-ContractStatusTable`,
       partitionKey: {
         name: "property_id",
         type: dynamodb.AttributeType.STRING,
