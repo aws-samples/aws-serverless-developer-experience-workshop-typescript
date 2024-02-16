@@ -98,6 +98,9 @@ export class SubscriberPoliciesConstruct extends Construct {
                 },
                 StringEqualsIfExists: {
                     "events:creatorAccount": Stack.of(this).account
+                },
+                Null: {
+                    "events:source": "false"
                 }
             },
         }).toJSON();
