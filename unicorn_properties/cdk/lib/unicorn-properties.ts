@@ -241,7 +241,7 @@ export class UnicornPropertiesStack extends Stack {
 
     const waitForContractApprovalFunction = new nodejs.NodejsFunction(
       this,
-      `waitForContractApprovalFunction`,
+      `WaitForContractApprovalFunction`,
       {
         ...defaultLambdaOptions,
         entry: path.join(
@@ -250,7 +250,7 @@ export class UnicornPropertiesStack extends Stack {
         ),
         logGroup: new logs.LogGroup(
           this,
-          "waitForContractApprovalFunctionLogGroup",
+          "WaitForContractApprovalFunctionLogGroup",
           {
             retention: retentionPeriod,
           }
@@ -262,7 +262,7 @@ export class UnicornPropertiesStack extends Stack {
     // Part of the ApprovalStateMachine, validates if all outputs of content checking steps are OK
     const contentIntegrityValidatorFunction = new nodejs.NodejsFunction(
       this,
-      `contentIntegrityValidatorFunction`,
+      `ContentIntegrityValidatorFunction`,
       {
         ...defaultLambdaOptions,
         entry: path.join(
@@ -271,7 +271,7 @@ export class UnicornPropertiesStack extends Stack {
         ),
         logGroup: new logs.LogGroup(
           this,
-          "contentIntegrityValidatorFunctionLogGroup",
+          "ContentIntegrityValidatorFunctionLogGroup",
           {
             retention: retentionPeriod,
           }
