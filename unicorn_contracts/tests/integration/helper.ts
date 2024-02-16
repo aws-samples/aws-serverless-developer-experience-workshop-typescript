@@ -111,6 +111,31 @@ export async function clearDatabase() {
   } catch (error) {
     console.error('Error batch deleting items:', error);
   }
+
+  if (!itemsToDelete || itemsToDelete.length === 0) {
+    console.log("No items to delete.");
+    return;
+  }
+
+  // Create an array of DeleteRequest objects for batch delete
+  const batchWriteCommand = new BatchWriteCommand({
+    RequestItems: {
+      [tableName]: itemsToDelete.map((item: any) => ({
+        DeleteRequest: {
+          Key: {
+            property_id: item.property_id,
+          },
+        },
+      })),
+    },
+  });
+
+  // Execute the batch write command to delete all items
+  try {
+    const batchWriteResponse = await client.send(batchWriteCommand);
+  } catch (error) {
+    console.error("Error batch deleting items:", error);
+  }
 }
 
 export const initialiseDatabase = async () => {

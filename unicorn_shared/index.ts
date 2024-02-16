@@ -34,11 +34,11 @@ export const logsRetentionPeriod = (stage: Stage) => {
 export const eventBusName = (stage: Stage, namespace: UNICORN_NAMESPACES) => {
   switch (namespace) {
     case UNICORN_NAMESPACES.CONTRACTS:
-      return `UnicornContracts-${stage}`;
+      return `UnicornContractsBus-${stage}`;
     case UNICORN_NAMESPACES.PROPERTIES:
-      return `UnicornProperties-${stage}`;
+      return `UnicornPropertiesBus-${stage}`;
     case UNICORN_NAMESPACES.WEB:
-      return `UnicornWeb-${stage}`;
+      return `UnicornWebBus-${stage}`;
     default:
       throw new Error(
         `Error generatinig Event Bus Name Unknown namespace: ${namespace}`
