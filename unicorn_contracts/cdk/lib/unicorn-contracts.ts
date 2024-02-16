@@ -117,7 +117,7 @@ export class UnicornConstractsStack extends Stack {
       Persist Contracts information in DynamoDB
     */
     const table = new dynamodb.TableV2(this, `ContractsTable`, {
-      tableName: `uni-prop-${props.stage}-contracts-ContractStatusTable`,
+      tableName: `uni-prop-${props.stage}-contracts-ContractsTable`,
       partitionKey: {
         name: "property_id",
         type: dynamodb.AttributeType.STRING,
