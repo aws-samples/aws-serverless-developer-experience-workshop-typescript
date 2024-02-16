@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { UnicornConstractsStack } from '../lib/unicorn-contracts';
+import { UnicornWebStack } from '../lib/unicorn-web';
 import { Stage, UNICORN_NAMESPACES } from 'unicorn_shared';
 
 const app = new cdk.App();
@@ -10,12 +10,12 @@ const generateTags = (stage: Stage) => {
     return {
         stage: stage,
         project: "AWS_Serverless_Developer_Experience",
-        namespace: UNICORN_NAMESPACES.CONTRACTS
+        namespace: UNICORN_NAMESPACES.WEB
     }
 }
 
 Object.values(Stage).map((stage) => {
-    const contractsStack = new UnicornConstractsStack(app, `uni-prop-${stage}-contracts`, {
+    const webStack = new UnicornWebStack(app, `uni-prop-${stage}-web`, {
         stage: stage,
         tags: generateTags(stage),
     });
