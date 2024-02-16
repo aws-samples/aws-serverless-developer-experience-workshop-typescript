@@ -26,7 +26,7 @@ import {
   Stage,
   isProd,
   UNICORN_NAMESPACES,
-  eventBusName
+  eventBusName,
 } from "unicorn_shared";
 import {
   DefinitionBody,
@@ -323,9 +323,7 @@ export class UnicornPropertiesStack extends Stack {
           iam.ManagedPolicy.fromAwsManagedPolicyName(
             "AWSXRayDaemonWriteAccess"
           ),
-          iam.ManagedPolicy.fromAwsManagedPolicyName(
-            "ComprehendFullAccess"
-          ),
+          iam.ManagedPolicy.fromAwsManagedPolicyName("ComprehendFullAccess"),
           iam.ManagedPolicy.fromAwsManagedPolicyName(
             "AmazonRekognitionFullAccess"
           ),
@@ -381,104 +379,111 @@ export class UnicornPropertiesStack extends Stack {
     /* Events Schema */
     const eventRegistryName = `${UNICORN_NAMESPACES.PROPERTIES}-${props.stage}`;
 
-    const publicationEvaluationCompletedSchema = new CfnSchema(this, 'PublicationEvaluationCompletedSchema', {
-      type: 'OpenApi3',
-      registryName: eventRegistryName,
-      schemaName: `${eventRegistryName}@PublicationEvaluationCompleted`,
-      description: 'The schema for when a property evaluation is completed',
-      content: JSON.stringify({
-        "openapi": "3.0.0",
-        "info": {
-          "version": "1.0.0",
-          "title": "PublicationEvaluationCompleted"
-        },
-        "paths": {},
-        "components": {
-          "schemas": {
-            "AWSEvent": {
-              "type": "object",
-              "required": [
-                "detail-type",
-                "resources",
-                "detail",
-                "id",
-                "source",
-                "time",
-                "region",
-                "version",
-                "account"
-              ],
-              "x-amazon-events-detail-type": "PublicationEvaluationCompleted",
-              "x-amazon-events-source": "${EventRegistry.RegistryName}",
-              "properties": {
-                "detail": {
-                  "$ref": "#/components/schemas/PublicationEvaluationCompleted"
+    const publicationEvaluationCompletedSchema = new CfnSchema(
+      this,
+      "PublicationEvaluationCompletedSchema",
+      {
+        type: "OpenApi3",
+        registryName: eventRegistryName,
+        schemaName: `${eventRegistryName}@PublicationEvaluationCompleted`,
+        description: "The schema for when a property evaluation is completed",
+        content: JSON.stringify({
+          openapi: "3.0.0",
+          info: {
+            version: "1.0.0",
+            title: "PublicationEvaluationCompleted",
+          },
+          paths: {},
+          components: {
+            schemas: {
+              AWSEvent: {
+                type: "object",
+                required: [
+                  "detail-type",
+                  "resources",
+                  "detail",
+                  "id",
+                  "source",
+                  "time",
+                  "region",
+                  "version",
+                  "account",
+                ],
+                "x-amazon-events-detail-type": "PublicationEvaluationCompleted",
+                "x-amazon-events-source": "${EventRegistry.RegistryName}",
+                properties: {
+                  detail: {
+                    $ref: "#/components/schemas/PublicationEvaluationCompleted",
+                  },
+                  account: {
+                    type: "string",
+                  },
+                  "detail-type": {
+                    type: "string",
+                  },
+                  id: {
+                    type: "string",
+                  },
+                  region: {
+                    type: "string",
+                  },
+                  resources: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                    },
+                  },
+                  source: {
+                    type: "string",
+                  },
+                  time: {
+                    type: "string",
+                    format: "date-time",
+                  },
+                  version: {
+                    type: "string",
+                  },
                 },
-                "account": {
-                  "type": "string"
+              },
+              PublicationEvaluationCompleted: {
+                type: "object",
+                required: ["property_id", "evaluation_result"],
+                properties: {
+                  property_id: {
+                    type: "string",
+                  },
+                  evaluation_result: {
+                    type: "string",
+                  },
                 },
-                "detail-type": {
-                  "type": "string"
-                },
-                "id": {
-                  "type": "string"
-                },
-                "region": {
-                  "type": "string"
-                },
-                "resources": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
-                "source": {
-                  "type": "string"
-                },
-                "time": {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                "version": {
-                  "type": "string"
-                }
-              }
+              },
             },
-            "PublicationEvaluationCompleted": {
-              "type": "object",
-              "required": [
-                "property_id",
-                "evaluation_result"
-              ],
-              "properties": {
-                "property_id": {
-                  "type": "string"
-                },
-                "evaluation_result": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      })
-    });
+          },
+        }),
+      }
+    );
 
-    const schemaStack = new UnicornConstructs.EventsSchemaConstruct(this, `uni-prop-${props.stage}-properties-EventSchemaSack`, {
-      name: eventRegistryName,
-      namespace: UNICORN_NAMESPACES.PROPERTIES,
-      schemas: [publicationEvaluationCompletedSchema]
-    });
-
+    const schemaStack = new UnicornConstructs.EventsSchemaConstruct(
+      this,
+      `uni-prop-${props.stage}-properties-EventSchemaSack`,
+      {
+        name: eventRegistryName,
+        namespace: UNICORN_NAMESPACES.PROPERTIES,
+        schemas: [publicationEvaluationCompletedSchema],
+      }
+    );
 
     /* Subscriptions */
     // Update this policy as you get new subscribers by adding their namespace to events:source
-    const subscriberStack = new UnicornConstructs.SubscriberPoliciesConstruct(this, `uni-prop-${props.stage}-properties-SubscriptionsStack`, {
-      stage: props.stage,
-      eventBus: eventBus,
-      sources: [UNICORN_NAMESPACES.PROPERTIES]
-    })
-
+    const subscriberStack = new UnicornConstructs.SubscriberPoliciesConstruct(
+      this,
+      `uni-prop-${props.stage}-properties-SubscriptionsStack`,
+      {
+        stage: props.stage,
+        eventBus: eventBus,
+        sources: [UNICORN_NAMESPACES.PROPERTIES],
+      }
+    );
 
     /*
     Outputs

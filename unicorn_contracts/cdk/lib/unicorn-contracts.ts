@@ -5,9 +5,7 @@ import {
   Stack,
   StackProps,
   App,
-  Tags,
   CfnOutput,
-  Fn,
 } from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
@@ -253,12 +251,9 @@ export class UnicornConstractsStack extends Stack {
     eventHandlerLogs.grantWrite(contractEventHandlerLambda);
     table.grantReadWriteData(contractEventHandlerLambda);
     ingestQueue.grantConsumeMessages(contractEventHandlerLambda);
-    const eventSource = new SqsEventSource(ingestQueue, {
-      enabled: true,
-      batchSize: 1,
-      maxConcurrency: 5,
-    });
-    contractEventHandlerLambda.addEventSource(eventSource);
+    contractEventHandlerLambda.addEventSource(
+      new SqsEventSource(ingestQueue, { batchSize: 1, maxConcurrency: 5 })
+    );
 
     /*
       API GATEWAY REST API
@@ -340,109 +335,121 @@ export class UnicornConstractsStack extends Stack {
     /* Events Schema */
     const eventRegistryName = `${UNICORN_NAMESPACES.CONTRACTS}-${props.stage}`;
 
-    const contractStatusChangedSchema = new CfnSchema(this, 'ContractStatusChangedEventSchema', {
-      type: 'OpenApi3',
-      registryName: eventRegistryName,
-      description: 'The schema for a request to publish a property',
-      schemaName: `${eventRegistryName}@ContractStatusChanged`,
-      content: JSON.stringify({
-        "openapi": "3.0.0",
-        "info": {
-          "version": "1.0.0",
-          "title": "ContractStatusChanged"
-        },
-        "paths": {},
-        "components": {
-          "schemas": {
-            "AWSEvent": {
-              "type": "object",
-              "required": [
-                "detail-type",
-                "resources",
-                "detail",
-                "id",
-                "source",
-                "time",
-                "region",
-                "version",
-                "account"
-              ],
-              "x-amazon-events-detail-type": "ContractStatusChanged",
-              "x-amazon-events-source": eventRegistryName,
-              "properties": {
-                "detail": {
-                  "$ref": "#/components/schemas/ContractStatusChanged"
+    const contractStatusChangedSchema = new CfnSchema(
+      this,
+      "ContractStatusChangedEventSchema",
+      {
+        type: "OpenApi3",
+        registryName: eventRegistryName,
+        description: "The schema for a request to publish a property",
+        schemaName: `${eventRegistryName}@ContractStatusChanged`,
+        content: JSON.stringify({
+          openapi: "3.0.0",
+          info: {
+            version: "1.0.0",
+            title: "ContractStatusChanged",
+          },
+          paths: {},
+          components: {
+            schemas: {
+              AWSEvent: {
+                type: "object",
+                required: [
+                  "detail-type",
+                  "resources",
+                  "detail",
+                  "id",
+                  "source",
+                  "time",
+                  "region",
+                  "version",
+                  "account",
+                ],
+                "x-amazon-events-detail-type": "ContractStatusChanged",
+                "x-amazon-events-source": eventRegistryName,
+                properties: {
+                  detail: {
+                    $ref: "#/components/schemas/ContractStatusChanged",
+                  },
+                  account: {
+                    type: "string",
+                  },
+                  "detail-type": {
+                    type: "string",
+                  },
+                  id: {
+                    type: "string",
+                  },
+                  region: {
+                    type: "string",
+                  },
+                  resources: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                    },
+                  },
+                  source: {
+                    type: "string",
+                  },
+                  time: {
+                    type: "string",
+                    format: "date-time",
+                  },
+                  version: {
+                    type: "string",
+                  },
                 },
-                "account": {
-                  "type": "string"
+              },
+              ContractStatusChanged: {
+                type: "object",
+                required: [
+                  "contract_last_modified_on",
+                  "contract_id",
+                  "contract_status",
+                  "property_id",
+                ],
+                properties: {
+                  contract_id: {
+                    type: "string",
+                  },
+                  contract_last_modified_on: {
+                    type: "string",
+                    format: "string",
+                  },
+                  contract_status: {
+                    type: "string",
+                  },
+                  property_id: {
+                    type: "string",
+                  },
                 },
-                "detail-type": {
-                  "type": "string"
-                },
-                "id": {
-                  "type": "string"
-                },
-                "region": {
-                  "type": "string"
-                },
-                "resources": {
-                  "type": "array",
-                  "items": {
-                    "type": "object"
-                  }
-                },
-                "source": {
-                  "type": "string"
-                },
-                "time": {
-                  "type": "string",
-                  "format": "date-time"
-                },
-                "version": {
-                  "type": "string"
-                }
-              }
+              },
             },
-            "ContractStatusChanged": {
-              "type": "object",
-              "required": [
-                "contract_last_modified_on",
-                "contract_id",
-                "contract_status",
-                "property_id"
-              ],
-              "properties": {
-                "contract_id": {
-                  "type": "string"
-                },
-                "contract_last_modified_on": {
-                  "type": "string",
-                  "format": "string"
-                },
-                "contract_status": {
-                  "type": "string"
-                },
-                "property_id": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      })
-    });
-    const schemaStack = new UnicornConstructs.EventsSchemaConstruct(this, `uni-prop-${props.stage}-contracts-EventSchemaSack`, {
-      name: eventRegistryName,
-      namespace: UNICORN_NAMESPACES.CONTRACTS,
-      schemas: [contractStatusChangedSchema]
-    });
+          },
+        }),
+      }
+    );
+    const schemaStack = new UnicornConstructs.EventsSchemaConstruct(
+      this,
+      `uni-prop-${props.stage}-contracts-EventSchemaSack`,
+      {
+        name: eventRegistryName,
+        namespace: UNICORN_NAMESPACES.CONTRACTS,
+        schemas: [contractStatusChangedSchema],
+      }
+    );
 
     /* Subscriptions */
-    const subscriberStack = new UnicornConstructs.SubscriberPoliciesConstruct(this, `uni-prop-${props.stage}-contracts-SubscriptionsStack`, {
-      stage: props.stage,
-      eventBus: eventBus,
-      sources: [UNICORN_NAMESPACES.CONTRACTS],
-    })
+    const subscriberStack = new UnicornConstructs.SubscriberPoliciesConstruct(
+      this,
+      `uni-prop-${props.stage}-contracts-SubscriptionsStack`,
+      {
+        stage: props.stage,
+        eventBus: eventBus,
+        sources: [UNICORN_NAMESPACES.CONTRACTS],
+      }
+    );
 
     /*
       Outputs
