@@ -2,7 +2,7 @@ import { aws_events as events } from "aws-cdk-lib";
 import { aws_iam as iam } from "aws-cdk-lib";
 import { Stack } from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { Stage, UNICORN_NAMESPACES, eventBusName } from '../index';
+import { Stage, UNICORN_NAMESPACES, eventBusName } from "../index";
 import {
     CfnRegistry,
     CfnRegistryPolicy,
@@ -15,7 +15,7 @@ import {
 } from "aws-cdk-lib/aws-iam";
 
 interface EventSchemaStackProps {
-    name: string,
+    name: string;
     namespace: string;
     schemas: CfnSchema[];
 }
@@ -52,12 +52,12 @@ export class EventsSchemaConstruct extends Construct {
                             "schemas:ListSchemaVersions",
                             "schemas:SearchSchemas",
                         ],
-                        resources: [...schemaArns, registry.attrRegistryArn]
+                        resources: [...schemaArns, registry.attrRegistryArn],
                         //- Fn::GetAtt: EventRegistry.RegistryArn
                         //- Fn::Sub: "arn:${AWS::Partition}:schemas:${AWS::Region}:${AWS::AccountId}:schema/${EventRegistry.RegistryName}*"
                     }),
                 ],
-            })
+            }),
         });
         props.schemas.forEach((s) => registryPolicy.node.addDependency(s));
     }
@@ -94,14 +94,14 @@ export class SubscriberPoliciesConstruct extends Construct {
             resources: [props.eventBus.eventBusArn],
             conditions: {
                 StringEquals: {
-                    "events:source": props.sources
+                    "events:source": props.sources,
                 },
                 StringEqualsIfExists: {
-                    "events:creatorAccount": Stack.of(this).account
+                    "events:creatorAccount": Stack.of(this).account,
                 },
                 Null: {
-                    "events:source": "false"
-                }
+                    "events:source": "false",
+                },
             },
         }).toJSON();
 
