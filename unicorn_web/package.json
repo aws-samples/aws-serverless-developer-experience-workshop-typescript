@@ -27,7 +27,7 @@
     "lint": "eslint  --ext .ts --quiet --fix",
     "build": "tsc",
     "test": "jest --runInBand",
-    "deploy": "cdk deploy uni-prop-local-contracts --require-approval never"
+    "deploy": "cdk deploy uni-prop-local-web --require-approval never"
   },
   "devDependencies": {
     "@aws-sdk/client-cloudformation": "^3.514.0",
