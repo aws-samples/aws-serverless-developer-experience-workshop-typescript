@@ -5,9 +5,7 @@ import {
   Stack,
   StackProps,
   App,
-  Tags,
   CfnOutput,
-  Fn,
 } from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as apigateway from "aws-cdk-lib/aws-apigateway";
@@ -16,10 +14,8 @@ import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as events from "aws-cdk-lib/aws-events";
 import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
-import * as ssm from "aws-cdk-lib/aws-ssm";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
-import { CfnPipe } from "aws-cdk-lib/aws-pipes";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import {
   UnicornConstructs,
@@ -60,7 +56,7 @@ export class UnicornWebStack extends Stack {
       "ContractEventsBusPublishPolicy",
       {
         eventBus: eventBus,
-        statementId: `OnlyContactsServiceCanPublishToEventBus-${props.stage}`,
+        statementId: `OnlyWebServiceCanPublishToEventBus-${props.stage}`,
         statement: new iam.PolicyStatement({
           principals: [new iam.AccountRootPrincipal()],
           actions: ["events:PutEvents"],
@@ -78,7 +74,6 @@ export class UnicornWebStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
       retention: retentionPeriod,
     });
-
 
     // Catchall rule used for development purposes.
     const catchAllRule = new events.Rule(this, "web.catchall", {
@@ -108,12 +103,11 @@ export class UnicornWebStack extends Stack {
       },
       sortKey: {
         name: "SK",
-        type: dynamodb.AttributeType.STRING
+        type: dynamodb.AttributeType.STRING,
       },
       removalPolicy: RemovalPolicy.DESTROY,
       dynamoStream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
     });
-
 
     /*
       DEAD LETTER QUEUES
@@ -140,7 +134,6 @@ export class UnicornWebStack extends Stack {
       visibilityTimeout: Duration.seconds(20),
     });
 
-
     /*
       Lambda Functions
     */
@@ -163,7 +156,7 @@ export class UnicornWebStack extends Stack {
         POWERTOOLS_LOG_LEVEL: "INFO", // Log level for Logger (INFO, DEBUG, etc.), default
         LOG_LEVEL: "INFO", // Log level for Logger
       },
-    }
+    };
 
     // Handle Search and Property details requests from API
     const searchFunction = new nodejs.NodejsFunction(
@@ -175,15 +168,10 @@ export class UnicornWebStack extends Stack {
           __dirname,
           "../../src/search_service/propertySearchFunction.ts"
         ),
-        logGroup: new logs.LogGroup(
-          this,
-          "PropertySearchFunctionLogs",
-          {
-            removalPolicy: RemovalPolicy.DESTROY,
-            retention: retentionPeriod,
-          }
-        ),
-
+        logGroup: new logs.LogGroup(this, "PropertySearchFunctionLogs", {
+          removalPolicy: RemovalPolicy.DESTROY,
+          retention: retentionPeriod,
+        }),
       }
     );
     table.grantReadData(searchFunction);
@@ -198,20 +186,17 @@ export class UnicornWebStack extends Stack {
           __dirname,
           "../../src/approvals_service/requestApprovalFunction.ts"
         ),
-        logGroup: new logs.LogGroup(
-          this,
-          "RequestApprovalFunctionLogs",
-          {
-            removalPolicy: RemovalPolicy.DESTROY,
-            retention: retentionPeriod,
-          }
-        ),
-
+        logGroup: new logs.LogGroup(this, "RequestApprovalFunctionLogs", {
+          removalPolicy: RemovalPolicy.DESTROY,
+          retention: retentionPeriod,
+        }),
       }
     );
     eventBus.grantPutEventsTo(requestApprovalFunction);
     table.grantReadData(requestApprovalFunction);
-    requestApprovalFunction.addEventSource(new SqsEventSource(ingestQueue, { batchSize: 1, maxConcurrency: 5 }));
+    requestApprovalFunction.addEventSource(
+      new SqsEventSource(ingestQueue, { batchSize: 1, maxConcurrency: 5 })
+    );
 
     // Respond to PublicationEvaluationCompleted events from Unicorn Web EventBus
     const publicationApprovedEventHandlerFunction = new nodejs.NodejsFunction(
@@ -223,13 +208,10 @@ export class UnicornWebStack extends Stack {
           __dirname,
           "../../src/approvals_service/publicationApprovedEventHandler.ts"
         ),
-        logGroup: new logs.LogGroup(
-          this,
-          "PublicationApprovedLogs", {
+        logGroup: new logs.LogGroup(this, "PublicationApprovedLogs", {
           removalPolicy: RemovalPolicy.DESTROY,
           retention: retentionPeriod,
-        }
-        ),
+        }),
       }
     );
     /*
@@ -247,7 +229,8 @@ export class UnicornWebStack extends Stack {
         detailType: ["PublicationEvaluationCompleted"],
       },
     }).addTarget(
-      new targets.LambdaFunction(publicationApprovedEventHandlerFunction));
+      new targets.LambdaFunction(publicationApprovedEventHandlerFunction)
+    );
 
     /*
       API GATEWAY REST API
@@ -260,9 +243,6 @@ export class UnicornWebStack extends Stack {
     const apiRole = new iam.Role(this, "UnicornwebApiIntegrationRole", {
       roleName: "UnicornwebApiIntegrationRole",
       assumedBy: new iam.ServicePrincipal("apigateway.amazonaws.com"),
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonAPIGatewayPushToCloudWatchLogs')
-      ]
     });
     ingestQueue.grantSendMessages(apiRole);
     searchFunction.grantInvoke(apiRole);
@@ -321,19 +301,15 @@ export class UnicornWebStack extends Stack {
       },
     });
 
-    const requestApprovalResource = api.root.addResource("request_approval").addMethod("POST", sqsIntegration, {
-      methodResponses: [{ statusCode: "200" }]
-    });
+    const requestApprovalResource = api.root
+      .addResource("request_approval")
+      .addMethod("POST", sqsIntegration, {
+        methodResponses: [{ statusCode: "200" }],
+      });
 
-    // /search
-    const searchResource = api.root.addResource("search")
-    searchResource.addResource('{country}').addMethod("GET", new apigateway.LambdaIntegration(searchFunction));
-    // ListPropertiesByCity
-    // searchResource.addResource('{country}/{city}').addMethod("GET", new apigateway.LambdaIntegration(searchFunction));
-    // ListPropertiesBySteet
-    // searchResource.addResource('{country}/{city}/{street}').addMethod("GET", new apigateway.LambdaIntegration(searchFunction));
-    // ListPropertiesBySteetNumber
-    // searchResource.addResource('{country}/{city}/{street}/{number}').addMethod("GET", new apigateway.LambdaIntegration(searchFunction));
+    const searchResource = api.root.addResource("search", {
+      defaultIntegration: new apigateway.LambdaIntegration(searchFunction),
+    });
 
     /* Events Schema */
     const eventRegistryName = `${UNICORN_NAMESPACES.WEB}-${props.stage}`;
@@ -345,137 +321,128 @@ export class UnicornWebStack extends Stack {
         type: "OpenApi3",
         registryName: eventRegistryName,
         schemaName: `${eventRegistryName}@PublicationApprovalRequested`,
-        description: 'The schema for a request to publish a property',
-        content: JSON.stringify(
-          {
-            "openapi": "3.0.0",
-            "info": {
-              "version": "1.0.0",
-              "title": "PublicationApprovalRequested"
+        description: "The schema for a request to publish a property",
+        content: JSON.stringify({
+          openapi: "3.0.0",
+          info: {
+            version: "1.0.0",
+            title: "PublicationApprovalRequested",
+          },
+          paths: {},
+          components: {
+            schemas: {
+              AWSEvent: {
+                type: "object",
+                required: [
+                  "detail-type",
+                  "resources",
+                  "detail",
+                  "id",
+                  "source",
+                  "time",
+                  "region",
+                  "version",
+                  "account",
+                ],
+                "x-amazon-events-detail-type": "PublicationApprovalRequested",
+                "x-amazon-events-source": eventRegistryName,
+                properties: {
+                  detail: {
+                    $ref: "#/components/schemas/PublicationApprovalRequested",
+                  },
+                  account: {
+                    type: "string",
+                  },
+                  "detail-type": {
+                    type: "string",
+                  },
+                  id: {
+                    type: "string",
+                  },
+                  region: {
+                    type: "string",
+                  },
+                  resources: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                    },
+                  },
+                  source: {
+                    type: "string",
+                  },
+                  time: {
+                    type: "string",
+                    format: "date-time",
+                  },
+                  version: {
+                    type: "string",
+                  },
+                },
+              },
+              PublicationApprovalRequested: {
+                type: "object",
+                required: [
+                  "images",
+                  "address",
+                  "listprice",
+                  "contract",
+                  "description",
+                  "currency",
+                  "property_id",
+                  "status",
+                ],
+                properties: {
+                  address: {
+                    $ref: "#/components/schemas/Address",
+                  },
+                  contract: {
+                    type: "string",
+                  },
+                  currency: {
+                    type: "string",
+                  },
+                  description: {
+                    type: "string",
+                  },
+                  images: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                    },
+                  },
+                  listprice: {
+                    type: "string",
+                  },
+                  property_id: {
+                    type: "string",
+                  },
+                  status: {
+                    type: "string",
+                  },
+                },
+              },
+              Address: {
+                type: "object",
+                required: ["country", "number", "city", "street"],
+                properties: {
+                  city: {
+                    type: "string",
+                  },
+                  country: {
+                    type: "string",
+                  },
+                  number: {
+                    type: "string",
+                  },
+                  street: {
+                    type: "string",
+                  },
+                },
+              },
             },
-            "paths": {},
-            "components": {
-              "schemas": {
-                "AWSEvent": {
-                  "type": "object",
-                  "required": [
-                    "detail-type",
-                    "resources",
-                    "detail",
-                    "id",
-                    "source",
-                    "time",
-                    "region",
-                    "version",
-                    "account"
-                  ],
-                  "x-amazon-events-detail-type": "PublicationApprovalRequested",
-                  "x-amazon-events-source": eventRegistryName,
-                  "properties": {
-                    "detail": {
-                      "$ref": "#/components/schemas/PublicationApprovalRequested"
-                    },
-                    "account": {
-                      "type": "string"
-                    },
-                    "detail-type": {
-                      "type": "string"
-                    },
-                    "id": {
-                      "type": "string"
-                    },
-                    "region": {
-                      "type": "string"
-                    },
-                    "resources": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "source": {
-                      "type": "string"
-                    },
-                    "time": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "version": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "PublicationApprovalRequested": {
-                  "type": "object",
-                  "required": [
-                    "images",
-                    "address",
-                    "listprice",
-                    "contract",
-                    "description",
-                    "currency",
-                    "property_id",
-                    "status"
-                  ],
-                  "properties": {
-                    "address": {
-                      "$ref": "#/components/schemas/Address"
-                    },
-                    "contract": {
-                      "type": "string"
-                    },
-                    "currency": {
-                      "type": "string"
-                    },
-                    "description": {
-                      "type": "string"
-                    },
-                    "images": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "listprice": {
-                      "type": "string"
-                    },
-                    "property_id": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "Address": {
-                  "type": "object",
-                  "required": [
-                    "country",
-                    "number",
-                    "city",
-                    "street"
-                  ],
-                  "properties": {
-                    "city": {
-                      "type": "string"
-                    },
-                    "country": {
-                      "type": "string"
-                    },
-                    "number": {
-                      "type": "string"
-                    },
-                    "street": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-
-        )
+          },
+        }),
       }
     );
     const schemaStack = new UnicornConstructs.EventsSchemaConstruct(
@@ -500,33 +467,46 @@ export class UnicornWebStack extends Stack {
       }
     );
 
-
     /*
       OUTPUTS
     */
 
     // API GATEWAY OUTPUTS
-    new CfnOutput(this, 'ApiUrl', {
+    new CfnOutput(this, "ApiUrl", {
       description: "Web service API endpoint",
-      value: api.url
+      value: api.url,
     });
 
     // API ACTIONS OUTPUTS
-    new CfnOutput(this, 'ApiSearchProperties', {
+    new CfnOutput(this, "ApiSearchProperties", {
       description: "GET request to list all properties in a given city",
-      value: `${api.url}/search`
+      value: `${api.url}search`,
     });
 
-    new CfnOutput(this, 'ApiPropertyApproval', {
+    new CfnOutput(this, "ApiSearchPropertiesByCity", {
+      description: "GET request to list all properties in a given city",
+      value: `${api.url}search/{country}/{city}`,
+    });
+    new CfnOutput(this, "ApiSearchPropertiesByStreet", {
+      description: "GET request to list all properties in a given street",
+      value: `${api.url}search/{country}/{city}/{street}`,
+    });
+
+    new CfnOutput(this, "ApiPropertyDetails", {
+      description: "GET request to get the full details of a single property",
+      value: `${api.url}search/{country}/{city}/{street}/{number}`,
+    });
+
+    new CfnOutput(this, "ApiPropertyApproval", {
       description: "POST request to add a property to the database",
-      value: `${api.url}/require_approval`
+      value: `${api.url}request_approval`,
     });
 
     // SQS OUTPUTS
     new CfnOutput(this, "IngestQueueUrl", {
-      description: " URL for the Ingest SQS Queue",
-      value: ingestQueue.queueUrl
-    })
+      description: "URL for the Ingest SQS Queue",
+      value: ingestQueue.queueUrl,
+    });
 
     // DYNAMODB OUTPUTS
     new CfnOutput(this, "WebTableName", {
@@ -542,15 +522,12 @@ export class UnicornWebStack extends Stack {
       value: searchFunction.functionArn,
     });
 
-
     new CfnOutput(this, "PublicationApprovedEventHandlerFunctionName", {
       value: publicationApprovedEventHandlerFunction.functionName,
     });
     new CfnOutput(this, "PublicationApprovedEventHandlerFunctionArn", {
       value: publicationApprovedEventHandlerFunction.functionArn,
     });
-
-
 
     // EVENT BRIDGE OUTPUTS
     new CfnOutput(this, "UnicornWebEventBusName", {
@@ -560,8 +537,7 @@ export class UnicornWebStack extends Stack {
     // CLOUDWATCH LOGS OUTPUTS
     new CfnOutput(this, "UnicornWebCatchAllLogGroupArn", {
       value: catchAllLogGroup.logGroupArn,
-      description: "Log all events on the service's EventBridge Bus"
+      description: "Log all events on the service's EventBridge Bus",
     });
-
   }
 }
