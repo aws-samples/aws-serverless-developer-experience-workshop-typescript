@@ -51,22 +51,18 @@ export class UnicornWebStack extends Stack {
     );
 
     // Event bus policy to restrict who can publish events (should only be services from UnicornWebNamespace)
-    const eventBusPolicy = new events.EventBusPolicy(
-      this,
-      "ContractEventsBusPublishPolicy",
-      {
-        eventBus: eventBus,
-        statementId: `OnlyWebServiceCanPublishToEventBus-${props.stage}`,
-        statement: new iam.PolicyStatement({
-          principals: [new iam.AccountRootPrincipal()],
-          actions: ["events:PutEvents"],
-          resources: [eventBus.eventBusArn],
-          conditions: {
-            StringEquals: { "events:Source": UNICORN_NAMESPACES.WEB },
-          },
-        }).toJSON(),
-      }
-    );
+    new events.EventBusPolicy(this, "ContractEventsBusPublishPolicy", {
+      eventBus: eventBus,
+      statementId: `OnlyWebServiceCanPublishToEventBus-${props.stage}`,
+      statement: new iam.PolicyStatement({
+        principals: [new iam.AccountRootPrincipal()],
+        actions: ["events:PutEvents"],
+        resources: [eventBus.eventBusArn],
+        conditions: {
+          StringEquals: { "events:Source": UNICORN_NAMESPACES.WEB },
+        },
+      }).toJSON(),
+    });
 
     // CloudWatch log group used to catch all events
     const catchAllLogGroup = new logs.LogGroup(this, "CatchAllLogGroup", {
@@ -186,6 +182,10 @@ export class UnicornWebStack extends Stack {
           __dirname,
           "../../src/approvals_service/requestApprovalFunction.ts"
         ),
+        environment: {
+          ...defaultLambdaOptions.environment,
+          EVENT_BUS: eventBus.eventBusName,
+        },
         logGroup: new logs.LogGroup(this, "RequestApprovalFunctionLogs", {
           removalPolicy: RemovalPolicy.DESTROY,
           retention: retentionPeriod,
@@ -235,19 +235,19 @@ export class UnicornWebStack extends Stack {
     /*
       API GATEWAY REST API
     */
-    const apiLogs = new logs.LogGroup(this, "UnicornwebApiLogGroup", {
+    const apiLogs = new logs.LogGroup(this, "UnicornWebApiLogGroup", {
       removalPolicy: RemovalPolicy.DESTROY,
       retention: retentionPeriod,
     });
 
-    const apiRole = new iam.Role(this, "UnicornwebApiIntegrationRole", {
-      roleName: "UnicornwebApiIntegrationRole",
+    const apiRole = new iam.Role(this, "UnicornWebApiIntegrationRole", {
+      roleName: "UnicornWebApiIntegrationRole",
       assumedBy: new iam.ServicePrincipal("apigateway.amazonaws.com"),
     });
     ingestQueue.grantSendMessages(apiRole);
     searchFunction.grantInvoke(apiRole);
 
-    const api = new apigateway.RestApi(this, "UnicornwebApi", {
+    const api = new apigateway.RestApi(this, "UnicornWebApi", {
       cloudWatchRole: true,
       cloudWatchRoleRemovalPolicy: RemovalPolicy.DESTROY,
       deployOptions: {
@@ -266,13 +266,6 @@ export class UnicornWebStack extends Stack {
       },
       endpointTypes: [apigateway.EndpointType.REGIONAL],
     });
-
-    apiRole.addToPolicy(
-      new iam.PolicyStatement({
-        actions: ["sqs:SendMessage", "sqs:GetQueueUrl"],
-        resources: [ingestQueue.queueArn],
-      })
-    );
 
     const sqsIntegration = new apigateway.AwsIntegration({
       service: "sqs",
@@ -301,15 +294,29 @@ export class UnicornWebStack extends Stack {
       },
     });
 
-    const requestApprovalResource = api.root
-      .addResource("request_approval")
-      .addMethod("POST", sqsIntegration, {
-        methodResponses: [{ statusCode: "200" }],
-      });
+    api.root.addResource("request_approval").addMethod("POST", sqsIntegration, {
+      methodResponses: [{ statusCode: "200" }],
+    });
 
     const searchResource = api.root.addResource("search", {
       defaultIntegration: new apigateway.LambdaIntegration(searchFunction),
     });
+    const listPropertiesByCountry = searchResource.addResource("{country}");
+    listPropertiesByCountry.addMethod("GET");
+    const listPropertiesByCity = listPropertiesByCountry.addResource("{city}");
+    listPropertiesByCity.addMethod("GET");
+    const listPropertiesByStreet = listPropertiesByCity.addResource("{street}");
+    listPropertiesByStreet.addMethod("GET");
+
+    const propertiesResource = api.root.addResource("properties");
+    const propertyByCountry = propertiesResource.addResource("{country}");
+    const propertyByCity = propertyByCountry.addResource("{city}");
+    const propertyByStreet = propertyByCity.addResource("{street}");
+    propertyByStreet
+      .addResource("{number}", {
+        defaultIntegration: new apigateway.LambdaIntegration(searchFunction),
+      })
+      .addMethod("GET");
 
     /* Events Schema */
     const eventRegistryName = `${UNICORN_NAMESPACES.WEB}-${props.stage}`;
@@ -445,7 +452,7 @@ export class UnicornWebStack extends Stack {
         }),
       }
     );
-    const schemaStack = new UnicornConstructs.EventsSchemaConstruct(
+    new UnicornConstructs.EventsSchemaConstruct(
       this,
       `uni-prop-${props.stage}-web-EventSchemaSack`,
       {
@@ -457,7 +464,7 @@ export class UnicornWebStack extends Stack {
 
     /* Subscriptions */
     // Update this policy as you get new subscribers by adding their namespace to events:source
-    const subscriberStack = new UnicornConstructs.SubscriberPoliciesConstruct(
+    new UnicornConstructs.SubscriberPoliciesConstruct(
       this,
       `uni-prop-${props.stage}-web-SubscriptionsStack`,
       {
@@ -494,7 +501,7 @@ export class UnicornWebStack extends Stack {
 
     new CfnOutput(this, "ApiPropertyDetails", {
       description: "GET request to get the full details of a single property",
-      value: `${api.url}search/{country}/{city}/{street}/{number}`,
+      value: `${api.url}properties/{country}/{city}/{street}/{number}`,
     });
 
     new CfnOutput(this, "ApiPropertyApproval", {
@@ -535,6 +542,11 @@ export class UnicornWebStack extends Stack {
     });
 
     // CLOUDWATCH LOGS OUTPUTS
+    new CfnOutput(this, "UnicornWebCatchAllLogGroupName", {
+      value: catchAllLogGroup.logGroupName,
+      description: "Log all events on the service's EventBridge Bus",
+    });
+
     new CfnOutput(this, "UnicornWebCatchAllLogGroupArn", {
       value: catchAllLogGroup.logGroupArn,
       description: "Log all events on the service's EventBridge Bus",

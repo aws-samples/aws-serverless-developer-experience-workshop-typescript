@@ -14,13 +14,13 @@ describe("Testing approved property listing searches", () => {
     // Create an approved property listing
     const tableName = await findOutputValue("WebTableName");
     const docClient = DynamoDBDocumentClient.from(
-      new DynamoDBClient({ region: process.env.AWS_DEFAULT_REGION }),
+      new DynamoDBClient({ region: process.env.AWS_DEFAULT_REGION })
     );
     await docClient.send(
       new PutCommand({
         TableName: tableName,
         Item: ApprovedProperty,
-      }),
+      })
     );
     // Find API Endpoint
     apiUrl = await findOutputValue("ApiUrl");
@@ -77,7 +77,7 @@ describe("Testing approved property listing searches", () => {
       `${apiUrl}properties/au/anytown/main-street/1337`,
       {
         method: "GET",
-      },
+      }
     );
     const json = await response.json();
     expect(json).toEqual({
