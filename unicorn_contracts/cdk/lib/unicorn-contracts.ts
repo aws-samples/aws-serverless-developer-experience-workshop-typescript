@@ -61,7 +61,7 @@ export class UnicornConstractsStack extends Stack {
       "ContractEventsBusPublishPolicy",
       {
         eventBus: eventBus,
-        statementId: `OnlyContactsServiceCanPublishToEventBus-${props.stage}`,
+        statementId: `OnlyContractsServiceCanPublishToEventBus-${props.stage}`,
         statement: new iam.PolicyStatement({
           principals: [new iam.AccountRootPrincipal()],
           actions: ["events:PutEvents"],
