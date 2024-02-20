@@ -56,6 +56,20 @@ interface PropertyDetailsEvent {
   description: string;
 }
 
+type PropertyDetailsEvent = {
+  property_id: string;
+  address: {
+    country: string;
+    city: string;
+    street: string;
+    number: string;
+  };
+  status: "PENDING";
+  listprice?: number;
+  images?: string[];
+  description: string;
+};
+
 class RequestApprovalFunction implements LambdaInterface {
   /**
    * Request approval for a particular property
