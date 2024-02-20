@@ -195,7 +195,7 @@ class RequestApprovalFunction implements LambdaInterface {
    * @param source
    */
   private async firePropertyEvent(
-    eventDetail: string,
+    eventDetail: PropertyDetailsEvent,
     source: string
   ): Promise<void> {
     const propertyId = eventDetail.property_id;

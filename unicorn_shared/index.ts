@@ -1,19 +1,19 @@
-import { RetentionDays } from "aws-cdk-lib/aws-logs";
-import * as UnicornConstructs from "./Constructs";
+import { RetentionDays } from 'aws-cdk-lib/aws-logs';
+import * as UnicornConstructs from './Constructs';
 
 export { UnicornConstructs };
 
 export enum UNICORN_NAMESPACES {
-  CONTRACTS = "unicorn.contracts",
-  PROPERTIES = "unicorn.properties",
-  WEB = "unicorn.web",
+  CONTRACTS = 'unicorn.contracts',
+  PROPERTIES = 'unicorn.properties',
+  WEB = 'unicorn.web',
 }
 
 /** The different stages for the app. */
 export enum Stage {
-  local = "local",
-  dev = "dev",
-  prod = "prod",
+  local = 'local',
+  dev = 'dev',
+  prod = 'prod',
 }
 
 export const isProd = (stage: Stage) => stage === Stage.prod;
