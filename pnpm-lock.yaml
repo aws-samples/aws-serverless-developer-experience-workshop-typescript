@@ -11,6 +11,9 @@ importers:
       eslint:
         specifier: ^8.56.0
         version: 8.56.0
+      eslint-config-prettier:
+        specifier: ^8.10.0
+        version: 8.10.0(eslint@8.56.0)
       husky:
         specifier: ^9.0.10
         version: 9.0.10
