@@ -27,7 +27,6 @@ const DDB_TABLE = process.env.DYNAMODB_TABLE;
 const eventsClient = new EventBridgeClient({});
 const EVENT_BUS = process.env.EVENT_BUS;
 
-
 type PropertyDBType = {
   PK: string;
   SK: string;
@@ -41,6 +40,20 @@ type PropertyDBType = {
   currency: string;
   status: string;
   images?: string[];
+};
+
+type PropertyDetailsEvent = {
+  property_id: string;
+  address: {
+    country: string;
+    city: string;
+    street: string;
+    number: string;
+  };
+  status: "PENDING";
+  listprice?: number;
+  images?: string[];
+  description: string;
 };
 
 class RequestApprovalFunction implements LambdaInterface {
@@ -112,7 +125,7 @@ class RequestApprovalFunction implements LambdaInterface {
 
       logger.info(`Requesting property approval for ${propertyId}`);
 
-      const eventDetail = {
+      const eventDetail: PropertyDetailsEvent = {
         property_id: propertyId,
         address: {
           country: property.country,
@@ -168,7 +181,7 @@ class RequestApprovalFunction implements LambdaInterface {
    * @param source
    */
   private async firePropertyEvent(
-    eventDetail: string,
+    eventDetail: PropertyDetailsEvent,
     source: string
   ): Promise<void> {
     const propertyId = eventDetail.property_id;
