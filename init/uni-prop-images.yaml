@@ -35,8 +35,6 @@ Globals:
 Resources:
 
   #### SSM PARAMETERS
-
-
   UnicornPropertiesImagesBucketParam:
     Type: AWS::SSM::Parameter
     Properties:
