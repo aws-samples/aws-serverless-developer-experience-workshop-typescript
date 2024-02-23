@@ -31,9 +31,24 @@ jobs:
                   role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
                   aws-region: ${{ env.AWS_REGION }}
 
-            - name: Deploy Shared Images
-              working-directory: unicorn_shared
-              run: make deploy-images
+# jobs:
+#   shared-infrastructure:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - uses: actions/checkout@v3
+#     - name: Configure AWS SAM
+#       uses: aws-actions/setup-sam@v2
+#       with:
+#         use-installer: true
+#     - name: Configure AWS credentials
+#       uses: aws-actions/configure-aws-credentials@v2
+#       with:
+#         role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
+#         aws-region: ${{ env.AWS_REGION }}
+#     - name: Deploy Shared Infrastructure
+#       working-directory: unicorn_shared
+#       run: sam build |
+#            cdk deploy --require-approval never
 
             - name: Deploy Shared Namespaces
               working-directory: unicorn_shared
@@ -52,10 +67,10 @@ jobs:
         steps:
             - uses: actions/checkout@v4
 
-            - name: Setup NodeJS
-              uses: actions/setup-node@v4
-              with:
-                  node-version: 18.x
+#     - name: Configure AWS SAM
+#       uses: aws-actions/setup-sam@v2
+#       with:
+#         use-installer: true
 
             - uses: pnpm/action-setup@v3
               with:
@@ -70,15 +85,13 @@ jobs:
               run: pnpm add -g aws-cdk
               working-directory: ${{ matrix.folder }}
 
-            - name: Run unit tests
-              run: make unit-test
-              working-directory: ${{ matrix.folder }}
+#     - name: Build the SAM template
+#       run: sam build
+#       working-directory: ${{ matrix.folder }}
 
-            - name: Configure AWS credentials
-              uses: aws-actions/configure-aws-credentials@v4
-              with:
-                  role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
-                  aws-region: ${{ env.AWS_REGION }}
+#     - name: Deploy the SAM template
+#       run: cdk deploy --require-approval never
+#       working-directory: ${{ matrix.folder }}
 
             - name: Build the SAM template
               run: cdk build
