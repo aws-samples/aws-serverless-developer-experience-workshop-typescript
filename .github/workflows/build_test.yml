@@ -29,7 +29,7 @@
 #     - uses: actions/checkout@v3
 #     - name: Configure AWS SAM
 #       uses: aws-actions/setup-sam@v2
-#       with: 
+#       with:
 #         use-installer: true
 #     - name: Configure AWS credentials
 #       uses: aws-actions/configure-aws-credentials@v2
@@ -39,7 +39,7 @@
 #     - name: Deploy Shared Infrastructure
 #       working-directory: unicorn_shared
 #       run: sam build |
-#            sam deploy --no-confirm-changeset
+#            cdk deploy --require-approval never
 
 #   service:
 #     needs: shared-infrastructure
@@ -67,7 +67,7 @@
 
 #     - name: Configure AWS SAM
 #       uses: aws-actions/setup-sam@v2
-#       with: 
+#       with:
 #         use-installer: true
 
 #     - uses: actions/setup-python@v4
@@ -84,11 +84,11 @@
 #       working-directory: ${{ matrix.folder }}
 
 #     - name: Build the SAM template
-#       run: sam build 
+#       run: sam build
 #       working-directory: ${{ matrix.folder }}
 
 #     - name: Deploy the SAM template
-#       run: sam deploy --no-confirm-changeset
+#       run: cdk deploy --require-approval never
 #       working-directory: ${{ matrix.folder }}
 
 #     - name: Run integration tests
