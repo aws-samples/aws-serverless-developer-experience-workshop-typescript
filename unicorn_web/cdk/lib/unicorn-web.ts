@@ -38,10 +38,10 @@ export class UnicornWebStack extends Stack {
 
     const retentionPeriod = logsRetentionPeriod(props.stage);
 
-    /*
-      EVENT BUS
-      Event bus for Unicorn Web Service used to publish and consume events
-    */
+    /* -------------------------------------------------------------------------- */
+    /*                                  EVENT BUS                                 */
+    /* -------------------------------------------------------------------------- */
+    // Event bus for Unicorn Web Service used to publish and consume events
     const eventBus = new events.EventBus(
       this,
       `UnicornContractsBus-${props.stage}`,
@@ -105,20 +105,20 @@ export class UnicornWebStack extends Stack {
       dynamoStream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
     });
 
-    /*
-      DEAD LETTER QUEUES
-      DeadLetterQueue for UnicornWebIngestQueue. Contains messages that failed to be processed
-    */
+    /* -------------------------------------------------------------------------- */
+    /*                             DEAD LETTER QUEUES                             */
+    /* -------------------------------------------------------------------------- */
+    // DeadLetterQueue for UnicornWebIngestQueue. Contains messages that failed to be processed
     const IngestQueueDLQ = new sqs.Queue(this, "UnicornWebIngestDLQ", {
       removalPolicy: RemovalPolicy.DESTROY,
       retentionPeriod: Duration.days(14),
       queueName: `UnicornWebIngestDLQ-${props.stage}`,
     });
 
-    /*
-      INGEST QUEUES
-      Queue API Gateway requests to be processed by RequestApprovalFunction
-    */
+    /* -------------------------------------------------------------------------- */
+    /*                                INGEST QUEUES                               */
+    /* -------------------------------------------------------------------------- */
+    // Queue API Gateway requests to be processed by RequestApprovalFunction
     const ingestQueue = new sqs.Queue(this, `UnicornWebIngestQueue`, {
       removalPolicy: RemovalPolicy.DESTROY,
       retentionPeriod: Duration.days(14),
@@ -130,9 +130,9 @@ export class UnicornWebStack extends Stack {
       visibilityTimeout: Duration.seconds(20),
     });
 
-    /*
-      Lambda Functions
-    */
+    /* -------------------------------------------------------------------------- */
+    /*                              Lambda Functions                              */
+    /* -------------------------------------------------------------------------- */
     const defaultLambdaOptions: nodejs.NodejsFunctionProps = {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: "lambdaHandler",
@@ -232,9 +232,7 @@ export class UnicornWebStack extends Stack {
       new targets.LambdaFunction(publicationApprovedEventHandlerFunction)
     );
 
-    /*
-      API GATEWAY REST API
-    */
+    /* -------------------------- API GATEWAY REST API -------------------------- */
     const apiLogs = new logs.LogGroup(this, "UnicornWebApiLogGroup", {
       removalPolicy: RemovalPolicy.DESTROY,
       retention: retentionPeriod,
@@ -318,7 +316,11 @@ export class UnicornWebStack extends Stack {
       })
       .addMethod("GET");
 
-    /* Events Schema */
+    /* -------------------------------------------------------------------------- */
+    /*                            Service Integrations                            */
+    /* -------------------------------------------------------------------------- */
+
+    /* ------------------------------ Events Schema ----------------------------- */
     const eventRegistryName = `${UNICORN_NAMESPACES.WEB}-${props.stage}`;
 
     const publicationApprovalRequestedSchema = new CfnSchema(
@@ -462,7 +464,7 @@ export class UnicornWebStack extends Stack {
       }
     );
 
-    /* Subscriptions */
+    /* ------------------------------ Subscriptions ----------------------------- */
     // Update this policy as you get new subscribers by adding their namespace to events:source
     new UnicornConstructs.SubscriberPoliciesConstruct(
       this,
@@ -474,10 +476,9 @@ export class UnicornWebStack extends Stack {
       }
     );
 
-    /*
-      OUTPUTS
-    */
-
+    /* -------------------------------------------------------------------------- */
+    /*                                   OUTPUTS                                  */
+    /* -------------------------------------------------------------------------- */
     // API GATEWAY OUTPUTS
     new CfnOutput(this, "ApiUrl", {
       description: "Web service API endpoint",

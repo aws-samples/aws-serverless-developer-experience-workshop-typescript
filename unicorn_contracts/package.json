@@ -2,7 +2,7 @@
   "name": "contracts",
   "version": "1.0.0",
   "description": "Contracts Module for Serverless Developer Experience Reference Architecture - Node",
-  "main": "app.js",
+  "main": "app.ts",
   "repository": "https://github.com/awslabs/aws-sam-cli/tree/develop/samcli/local/init/templates/cookiecutter-aws-sam-hello-nodejs",
   "author": "Amazon.com, Inc.",
   "license": "MIT",
@@ -19,6 +19,7 @@
     "aws-cdk": "^2.128.0",
     "aws-cdk-lib": "^2.128.0",
     "aws-lambda": "^1.0.7",
+    "cdk-nag": "^2.28.42",
     "constructs": "^10.3.0",
     "esbuild": "^0.17.19",
     "unicorn_shared": "workspace:*"
