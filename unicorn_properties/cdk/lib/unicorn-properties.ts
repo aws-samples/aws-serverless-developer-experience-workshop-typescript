@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from 'path';
 import {
   Duration,
   RemovalPolicy,
@@ -21,7 +21,7 @@ import {
   SqsDlq,
 } from "aws-cdk-lib/aws-lambda-event-sources";
 import {
-  UnicornConstructs,
+  UnicornSharedConstruct,
   logsRetentionPeriod,
   Stage,
   isProd,
@@ -386,7 +386,8 @@ export class UnicornPropertiesStack extends Stack {
         type: "OpenApi3",
         registryName: eventRegistryName,
         schemaName: `${eventRegistryName}@PublicationEvaluationCompleted`,
-        description: "The schema for when a property evaluation is completed",
+           description:
+                    'The schema for when a property evaluation is completed",
         content: JSON.stringify({
           openapi: "3.0.0",
           info: {
@@ -463,7 +464,7 @@ export class UnicornPropertiesStack extends Stack {
       }
     );
 
-    const schemaStack = new UnicornConstructs.EventsSchemaConstruct(
+    const schemaStack = new UnicornSharedConstruct.EventsSchemaConstruct(
       this,
       `uni-prop-${props.stage}-properties-EventSchemaSack`,
       {
@@ -475,7 +476,7 @@ export class UnicornPropertiesStack extends Stack {
 
     /* Subscriptions */
     // Update this policy as you get new subscribers by adding their namespace to events:source
-    const subscriberStack = new UnicornConstructs.SubscriberPoliciesConstruct(
+    const subscriberStack = new UnicornSharedConstruct.SubscriberPoliciesConstruct(
       this,
       `uni-prop-${props.stage}-properties-SubscriptionsStack`,
       {
