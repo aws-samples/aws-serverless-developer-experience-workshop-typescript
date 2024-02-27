@@ -1,6 +1,6 @@
 # Developing Unicorn Contracts
 
-![Contracts Service Architecture](https://static.us-east-1.prod.workshops.aws/public/fd291886-89c4-4336-b21b-5747484b495d/static/images/architecture-contracts.png)
+![Contracts Service Architecture](https://static.us-east-1.prod.workshops.aws/public/ba5300cf-a325-4124-83bf-5789cc30b8ff/static/images/architecture-contracts.png)
 
 ## Architecture overview
 
@@ -29,4 +29,28 @@ Here is an example of an event that is published to EventBridge:
     "ContractStatus": "DRAFT"
   }
 }
+```
+
+### Testing the APIs
+
+```bash
+export API=`aws cloudformation describe-stacks --stack-name uni-prop-local-contract --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text`
+
+curl --location --request POST "${API}contract" \
+--header 'Content-Type: application/json' \
+--data-raw '{
+"address": {
+"country": "USA",
+"city": "Anytown",
+"street": "Main Street",
+"number": 111
+},
+"seller_name": "John Doe",
+"property_id": "usa/anytown/main-street/111"
+}'
+
+
+curl --location --request PUT "${API}contract" \
+--header 'Content-Type: application/json' \
+--data-raw '{"property_id": "usa/anytown/main-street/111"}' | jq
 ```

@@ -3,7 +3,6 @@
 import {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
-  AttributeValue,
   Context,
 } from "aws-lambda";
 import type { LambdaInterface } from "@aws-lambda-powertools/commons";
@@ -14,7 +13,6 @@ import {
   GetItemCommand,
   GetItemCommandInput,
   QueryCommandInput,
-  Condition,
   QueryCommand,
   QueryCommandOutput,
 } from "@aws-sdk/client-dynamodb";
@@ -104,7 +102,7 @@ class PropertySearchFunction implements LambdaInterface {
       },
       ProjectionExpression: PROJECTION_PROPERTIES,
       ExpressionAttributeNames: { "#num": "number", "#status": "status" },
-      FilterExpression: "status = :s",
+      FilterExpression: "#status = :s",
       TableName: DDB_TABLE,
     };
 
@@ -173,7 +171,7 @@ class PropertySearchFunction implements LambdaInterface {
       },
       ProjectionExpression: PROJECTION_PROPERTIES,
       ExpressionAttributeNames: { "#num": "number", "#status": "status" },
-      FilterExpression: "status = :s",
+      FilterExpression: "#status = :s",
       TableName: DDB_TABLE,
     };
 

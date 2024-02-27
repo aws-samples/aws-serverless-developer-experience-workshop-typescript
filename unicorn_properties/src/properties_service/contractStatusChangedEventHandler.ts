@@ -40,11 +40,11 @@ class ContractStatusChangedFunction implements LambdaInterface {
     logger.info(`Contract status changed: ${JSON.stringify(event.detail)}`);
     try {
       // Construct the entry to insert into database.
-      let statusEntry: ContractStatusChanged = Marshaller.unmarshal(
+      const statusEntry: ContractStatusChanged = Marshaller.unmarshal(
         event.detail,
         "ContractStatusChanged"
       );
-
+      tracer.putAnnotation("ContractStatus", statusEntry.contractStatus);
       logger.info(`Unmarshalled entry: ${JSON.stringify(statusEntry)}`);
 
       // Build the Command objects
@@ -72,7 +72,7 @@ class ContractStatusChangedFunction implements LambdaInterface {
       ExpressionAttributeValues: {
         ":c": { S: statusEntry.contractId as string },
         ":t": { S: statusEntry.contractStatus as string },
-        ":m": { S: statusEntry.contractLastModifiedOn.toISOString() },
+        ":m": { S: statusEntry.contractLastModifiedOn },
       },
     };
     logger.info(`Constructed command ${JSON.stringify(ddbUpdateCommandInput)}`);

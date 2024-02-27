@@ -13,10 +13,7 @@ import {
   UpdateItemCommandOutput,
 } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
-import {
-  SFNClient,
-  SendTaskSuccessCommand,
-  SendTaskSuccessCommandInput,
+import { SFNClient
 } from "@aws-sdk/client-sfn";
 
 // Empty configuration for DynamoDB

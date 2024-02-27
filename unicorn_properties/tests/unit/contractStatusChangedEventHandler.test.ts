@@ -27,7 +27,7 @@ describe("Unit tests for contract creation", function () {
       expect(cmd["ExpressionAttributeValues"][":c"].S).toEqual("contract1");
       expect(cmd["ExpressionAttributeValues"][":t"].S).toEqual("APPROVED");
       expect(cmd["ExpressionAttributeValues"][":t"].S).toEqual(
-        dateToCheck.toISOString()
+        dateToCheck.toISOString(),
       );
       return {
         $metadata: {

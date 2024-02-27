@@ -1,6 +1,6 @@
 # Developing Unicorn Properties
 
-![Properties Approval Architecture](https://static.us-east-1.prod.workshops.aws/public/fd291886-89c4-4336-b21b-5747484b495d/static/images/architecture-properties.png)
+![Properties Approval Architecture](https://static.us-east-1.prod.workshops.aws/public/ba5300cf-a325-4124-83bf-5789cc30b8ff/static/images/architecture-properties.png)
 
 ## Architecture overview
 
@@ -20,3 +20,7 @@ In order process the approvals workflow successfully, the properties service nee
 When the workflow is paused to check to see whether or not the contract is in an approved state, the `WaitForContractApproval` state will update a contract status for a specified property with its task token. This initiates a stream event on the DynamoDB table. The Property approvals sync function handles DynamoDB stream events. It determines whether or not to pass AWS Step Function task token back to the state machine based on the contract state.
 
 If workflow is completed successfully, it will emit a `PublicationEvaluationCompleted` event, with an evaluation result of `APPROVED` or `DECLINED`. This is what the Property Web will listen to in order to make the list available for publication.
+
+## Note:
+
+Upon deleting the CloudFormation stack for this service, check if the `ApprovalStateMachine` StepFunction doesn't have any executions in `RUNNING` state. If there are, cancel those execution prior to deleting the CloudFormation stack.
