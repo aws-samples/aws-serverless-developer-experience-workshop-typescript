@@ -26,7 +26,7 @@ describe("Unit tests for contract creation", function () {
       expect(cmd["Key"]["property_id"].S).toEqual("property1");
       expect(cmd["ExpressionAttributeValues"][":c"].S).toEqual("contract1");
       expect(cmd["ExpressionAttributeValues"][":t"].S).toEqual("APPROVED");
-      expect(cmd["ExpressionAttributeValues"][":t"].S).toEqual(
+      expect(cmd["ExpressionAttributeValues"][":m"].S).toEqual(
         dateToCheck.toISOString(),
       );
       return {
@@ -56,7 +56,7 @@ describe("Unit tests for contract creation", function () {
         contract_status: "APPROVED",
         contract_last_modified_on: dateToCheck.toISOString(),
       },
-      "detail-type": "Contract updated",
+      "detail-type": "ContractStatusChanged",
     };
 
     await lambdaHandler(event, context);
