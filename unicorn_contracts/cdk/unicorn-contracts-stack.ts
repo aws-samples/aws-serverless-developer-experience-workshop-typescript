@@ -29,13 +29,14 @@ import {
 } from 'unicorn_shared';
 import { CfnSchema } from 'aws-cdk-lib/aws-eventschemas';
 import ContractStatusChangedEventSchema from '../integration/ContractStatusChangedEventSchema.json';
+import { Construct } from 'constructs';
 
 interface UnicornConstractsStackProps extends StackProps {
     stage: Stage;
 }
 
 export class UnicornConstractsStack extends Stack {
-    constructor(scope: App, id: string, props: UnicornConstractsStackProps) {
+    constructor(scope: Construct, id: string, props: UnicornConstractsStackProps) {
         super(scope, id, props);
 
         const retentionPeriod = logsRetentionPeriod(props.stage);
@@ -238,7 +239,7 @@ export class UnicornConstractsStack extends Stack {
                 tracing: lambda.Tracing.ACTIVE,
                 entry: path.join(
                     __dirname,
-                    '../../src/contracts_service/contractEventHandler.ts'
+                    '../src/contracts_service/contractEventHandler.ts'
                 ),
                 logGroup: eventHandlerLogs,
                 environment: {
