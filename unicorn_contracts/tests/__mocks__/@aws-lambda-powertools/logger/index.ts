@@ -1,7 +1,7 @@
 import {
   LogItemExtraInput,
   LogItemMessage,
-} from "@aws-lambda-powertools/logger/lib/types/Logger";
+} from "@aws-lambda-powertools/logger/types/Logger";
 
 /**
  * Stub for Powertools Logger
