@@ -22,7 +22,7 @@ describe("Testing updating contracts", () => {
 
   afterAll(async () => {
     // Clear DB
-    await clearDatabase();
+    // await clearDatabase();
   });
 
   it("Should update the item in DynamoDB and fire a eventbridge event when an existing contract is updated", async () => {
