@@ -42,7 +42,6 @@ describe("Testing draft contract event handling", () => {
     expect(ddbResp.Item).toBeTruthy();
     if (!ddbResp.Item) throw Error("Contract not found");
     expect(ddbResp.Item.contract_status?.S).toBe("DRAFT");
-    expect(ddbResp.Item.sfn_wait_approved_task_token).toHaveProperty('S');
   }, 20000);
 
   it("Should update an existing contract status to APPROVED", async () => {

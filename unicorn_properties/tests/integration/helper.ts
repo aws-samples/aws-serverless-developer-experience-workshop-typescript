@@ -154,8 +154,7 @@ export async function clearDatabase() {
         [tableName]: itemsToDelete.map((item: any) => ({
           DeleteRequest: {
             Key: {
-              PK: item.PK,
-              SK: item.SK,
+              property_id: item.property_id,
             },
           },
         })),
