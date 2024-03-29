@@ -3,8 +3,8 @@
 import { Context } from "aws-lambda";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { SFNClient } from "@aws-sdk/client-sfn";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
+import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
+import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { logger, metrics, tracer } from "./powertools";
 import {
   DynamoDBClient,

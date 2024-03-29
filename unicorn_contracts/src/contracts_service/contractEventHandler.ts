@@ -138,7 +138,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
       contractId,
       metadata: ddbPutCommandOutput.$metadata,
     });
-    metrics.addMetric("ContractCreated", MetricUnits.Count, 1);
+    metrics.addMetric("ContractCreated", MetricUnit.Count, 1);
   }
 
   /**

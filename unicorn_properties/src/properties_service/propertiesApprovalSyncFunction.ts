@@ -6,8 +6,8 @@ import {
   AttributeValue,
   DynamoDBBatchResponse,
 } from "aws-lambda";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
+import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
+import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { logger, metrics, tracer } from "./powertools";
 import {
   SFNClient,

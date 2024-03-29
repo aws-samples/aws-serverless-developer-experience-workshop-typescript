@@ -1,8 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import { Context } from "aws-lambda";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
+import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
+import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { logger, metrics, tracer } from "./powertools";
 
 export type StepFunctionsResponse = {
