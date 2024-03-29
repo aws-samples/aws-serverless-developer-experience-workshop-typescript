@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 import { Metrics } from "@aws-lambda-powertools/metrics";
 import { Logger } from "@aws-lambda-powertools/logger";
-import type { LogLevel } from "@aws-lambda-powertools/logger/lib/types";
+import type { LogLevel } from "@aws-lambda-powertools/logger/types";
 import { Tracer } from "@aws-lambda-powertools/tracer";
 
 const SERVICE_NAMESPACE = process.env.SERVICE_NAMESPACE ?? "test_namespace";

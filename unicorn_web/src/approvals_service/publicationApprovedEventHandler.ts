@@ -1,8 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import { EventBridgeEvent, Context } from "aws-lambda";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
+import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
+import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { logger, metrics, tracer } from "./powertools";
 import {
   DynamoDBClient,
@@ -42,7 +42,7 @@ class PublicationApprovedFunction implements LambdaInterface {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
     }
-    metrics.addMetric("ContractUpdated", MetricUnits.Count, 1);
+    metrics.addMetric("ContractUpdated", MetricUnit.Count, 1);
   }
 
   /**

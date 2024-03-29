@@ -14,8 +14,8 @@ import {
   ReturnValue,
 } from "@aws-sdk/client-dynamodb";
 import { randomUUID } from "crypto";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
+import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
+import { MetricUnit } from "@aws-lambda-powertools/metrics";
 import { logger, metrics, tracer } from "./powertools";
 
 // Empty configuration for DynamoDB
@@ -201,7 +201,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
       contractId: ddbUpdateCommandOutput?.Attributes?.contract_id?.S,
       metdata: ddbUpdateCommandOutput.$metadata,
     });
-    metrics.addMetric("ContractUpdated", MetricUnits.Count, 1);
+    metrics.addMetric("ContractUpdated", MetricUnit.Count, 1);
   }
 
   /**

@@ -1,9 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import { EventBridgeEvent, Context } from "aws-lambda";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
-import { logger, metrics, tracer } from "./powertools";
 import {
   DynamoDBClient,
   UpdateItemCommand,
@@ -12,6 +9,9 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { ContractStatusChanged } from "../schema/unicorn_contracts/contractstatuschanged/ContractStatusChanged";
 import { Marshaller } from "../schema/unicorn_contracts/contractstatuschanged/marshaller/Marshaller";
+import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
+import { MetricUnit } from "@aws-lambda-powertools/metrics";
+import { logger, metrics, tracer } from "./powertools";
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
@@ -53,6 +53,7 @@ class ContractStatusChangedFunction implements LambdaInterface {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
     }
+    metrics.addMetric("ContractStatusChanged", MetricUnit.Count, 1);
   }
 
   /**

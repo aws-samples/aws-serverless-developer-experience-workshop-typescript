@@ -1,8 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import { Context, SQSEvent, SQSRecord } from "aws-lambda";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { logger, metrics, tracer } from "./powertools";
 import {
   DynamoDBClient,
   GetItemCommand,
@@ -17,7 +15,9 @@ import {
   PutEventsCommandOutput,
   PutEventsRequestEntry,
 } from "@aws-sdk/client-eventbridge";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
+import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
+import { MetricUnit } from "@aws-lambda-powertools/metrics";
+import { logger, metrics, tracer } from "./powertools";
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
@@ -126,13 +126,14 @@ class RequestApprovalFunction implements LambdaInterface {
         description: property.description,
       };
 
-      await this.firePropertyEvent(eventDetail, "unicorn.web");
+      await this.firePropertyEvent(JSON.stringify(eventDetail), "unicorn.web");
+      logger.info(`Published approval request for ${propertyId}`);
     } catch (error) {
       tracer.addErrorAsMetadata(error as Error);
-      logger.error(`${error}`);
-      metrics.addMetric("ApprovalsRequested", MetricUnits.Count, 1);
+      logger.error(`${error} for ${propertyId}`);
       return;
     }
+    metrics.addMetric("ApprovalsRequested", MetricUnit.Count, 1);
   }
 
   /**
@@ -171,15 +172,13 @@ class RequestApprovalFunction implements LambdaInterface {
     eventDetail: string,
     source: string
   ): Promise<void> {
-    const propertyId = eventDetail.property_id;
-
     // Build the Command objects
     const eventsPutEventsCommandInputEntry: PutEventsRequestEntry = {
       EventBusName: EVENT_BUS,
       Time: new Date(),
       Source: source,
       DetailType: "PublicationApprovalRequested",
-      Detail: JSON.stringify(eventDetail),
+      Detail: eventDetail,
     };
     const eventsPutEventsCommandInput: PutEventsCommandInput = {
       Entries: [eventsPutEventsCommandInputEntry],
@@ -197,11 +196,10 @@ class RequestApprovalFunction implements LambdaInterface {
     if (eventsPutEventsCommandOutput.$metadata.httpStatusCode != 200) {
       const error: Error = {
         name: "PropertyApprovalError",
-        message: `EventBridge Response invalid for ${propertyId}: ${eventsPutEventsCommandOutput.$metadata.httpStatusCode}`,
+        message: `EventBridge Response invalid: ${eventsPutEventsCommandOutput.$metadata.httpStatusCode}`,
       };
       throw error;
     }
-    logger.info(`Published approval request for ${propertyId}`);
   }
 }
 
