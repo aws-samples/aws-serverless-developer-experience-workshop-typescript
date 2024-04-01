@@ -1,120 +1,93 @@
 name: Build & Test Workflow
 on:
-  push:
-    branches: [develop]
-    paths:
-      - '.github/workflows/*'
-      - 'unicorn_shared/**'
-      - 'unicorn_contracts/**'
-      - 'unicorn_properties/**'
-      - 'unicorn_web/**'
+    push:
+        branches: [develop]
+        paths:
+            - '.github/workflows/*'
+            - 'init/**'
+            - 'unicorn_shared/**'
+            - 'unicorn_contracts/**'
+            - 'unicorn_properties/**'
+            - 'unicorn_web/**'
 env:
-  AWS_REGION : "ap-southeast-2"
+    AWS_REGION: 'ap-southeast-2'
 
 permissions:
-  id-token: write
-  contents: read
+    id-token: write
+    contents: read
 
 jobs:
-  shared-infrastructure:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
+    init-sample-data:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - name: Configure AWS SAM
+              uses: aws-actions/setup-sam@v2
+              with:
+                  use-installer: true
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v2
+              with:
+                  role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
+                  aws-region: ${{ env.AWS_REGION }}
 
-# jobs:
-#   shared-infrastructure:
-#     runs-on: ubuntu-latest
-#     steps:
-#     - uses: actions/checkout@v3
-#     - name: Configure AWS SAM
-#       uses: aws-actions/setup-sam@v2
-#       with:
-#         use-installer: true
-#     - name: Configure AWS credentials
-#       uses: aws-actions/configure-aws-credentials@v2
-#       with:
-#         role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
-#         aws-region: ${{ env.AWS_REGION }}
-#     - name: Deploy Shared Infrastructure
-#       working-directory: unicorn_shared
-#       run: sam build |
-#            cdk deploy --require-approval never
+            - name: Deploy Shared Images
+              working-directory: unicorn_shared
+              run: make deploy-images
 
-    - name: Deploy Shared Images
-      working-directory: unicorn_shared
-      run: make deploy-images
+            - name: Deploy Shared Namespaces
+              working-directory: unicorn_shared
+              run: make deploy-namespaces
 
-    - name: Deploy Shared Namespaces
-      working-directory: unicorn_shared
-      run: aws cloudformation update-stack --stack-name uni-prop-namespaces --template-body file://uni-prop-namespaces.yaml --capabilities CAPABILITY_AUTO_EXPAND
+    uniorn-service:
+        needs: shared-infrastructure
+        runs-on: ubuntu-latest
+        continue-on-error: true
 
-  uniorn-service:
-    needs: shared-infrastructure
-    runs-on: ubuntu-latest
-    continue-on-error: true
+        strategy:
+            max-parallel: 1
+            matrix:
+                folder: [unicorn_contracts, unicorn_web, unicorn_properties]
 
-    strategy:
-      #max-parallel: 1
-      matrix:
-        folder: [unicorn_contracts, unicorn_web, unicorn_properties]
+        steps:
+            - uses: actions/checkout@v4
 
-<<<<<<< HEAD
-    steps:
-    - uses: actions/checkout@v4
-=======
-#     - name: Configure AWS SAM
-#       uses: aws-actions/setup-sam@v2
-#       with:
-#         use-installer: true
->>>>>>> f3afc6b (cleanup)
+            - name: Setup NodeJS
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 18.x
 
-    - name: Setup NodeJS
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18.x
-  
-    - uses: pnpm/action-setup@v3
-      with:
-        version: 8
-        package_json_file: ${{ matrix.folder }}/package.json
+            - uses: pnpm/action-setup@v3
+              with:
+                  version: 8
+                  package_json_file: ${{ matrix.folder }}/package.json
 
-    - name: Install dependencies
-      run: pnpm i
-      working-directory: ${{ matrix.folder }}
+            - name: Install dependencies
+              run: pnpm i
+              working-directory: ${{ matrix.folder }}
 
-    - name: Run unit tests
-      run: make unit-test
-      working-directory: ${{ matrix.folder }}
+            - name: Install AWS CDK
+              run: pnpm add -g aws-cdk
+              working-directory: ${{ matrix.folder }}
 
-<<<<<<< HEAD
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
-        aws-region: ${{ env.AWS_REGION }}
+            - name: Run unit tests
+              run: make unit-test
+              working-directory: ${{ matrix.folder }}
 
-    - name: Configure AWS SAM
-      uses: aws-actions/setup-sam@v2
-      with: 
-        use-installer: true
-=======
-#     - name: Build the SAM template
-#       run: sam build
-#       working-directory: ${{ matrix.folder }}
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: arn:aws:iam::819998446679:role/GithubActions-ServerlessDeveloperExperience
+                  aws-region: ${{ env.AWS_REGION }}
 
-#     - name: Deploy the SAM template
-#       run: cdk deploy --require-approval never
-#       working-directory: ${{ matrix.folder }}
->>>>>>> f3afc6b (cleanup)
+            - name: Build the SAM template
+              run: cdk build
+              working-directory: ${{ matrix.folder }}
 
-    - name: Build the SAM template
-      run: sam build 
-      working-directory: ${{ matrix.folder }}
+            - name: Deploy the SAM template
+              run: cdk deploy --require-approval never
+              working-directory: ${{ matrix.folder }}
 
-    - name: Deploy the SAM template
-      run: sam deploy --no-confirm-changeset
-      working-directory: ${{ matrix.folder }}
-
-    - name: Run integration tests
-      run: make integration-test
-      working-directory: ${{ matrix.folder }}
+            - name: Run integration tests
+              run: make integration-test
+              working-directory: ${{ matrix.folder }}
