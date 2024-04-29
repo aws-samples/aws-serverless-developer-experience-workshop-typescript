@@ -19,13 +19,14 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import { CfnPipe } from 'aws-cdk-lib/aws-pipes';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { EventsSchemaConstruct } from './event-schema';
+import { SubscriberPoliciesConstruct } from './subscriber-policies';
 import {
     logsRetentionPeriod,
     Stage,
     isProd,
     UNICORN_NAMESPACES,
     eventBusName,
-    UnicornSharedConstruct,
 } from 'unicorn_shared';
 import { CfnSchema } from 'aws-cdk-lib/aws-eventschemas';
 import ContractStatusChangedEventSchema from '../integration/ContractStatusChangedEventSchema.json';
@@ -362,7 +363,7 @@ export class UnicornConstractsStack extends Stack {
                 content: JSON.stringify(ContractStatusChangedEventSchema),
             }
         );
-        new UnicornSharedConstruct.EventsSchemaConstruct(
+        new EventsSchemaConstruct(
             this,
             `uni-prop-${props.stage}-contracts-EventSchemaSack`,
             {
@@ -374,7 +375,7 @@ export class UnicornConstractsStack extends Stack {
         /* -------------------------------------------------------------------------- */
         /*                                  Subscribe                                 */
         /* -------------------------------------------------------------------------- */
-        new UnicornSharedConstruct.SubscriberPoliciesConstruct(
+        new SubscriberPoliciesConstruct(
             this,
             `uni-prop-${props.stage}-contracts-SubscriptionsStack`,
             {

@@ -18,13 +18,14 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import {
-    UnicornSharedConstruct,
     logsRetentionPeriod,
     Stage,
     isProd,
     UNICORN_NAMESPACES,
     eventBusName,
 } from 'unicorn_shared';
+import { EventsSchemaConstruct } from './event-schema'
+import { SubscriberPoliciesConstruct } from './subscriber-policies';
 import { CfnSchema } from 'aws-cdk-lib/aws-eventschemas';
 
 interface UnicornWebStackProps extends StackProps {
@@ -481,7 +482,7 @@ export class UnicornWebStack extends Stack {
                 }),
             }
         );
-        new UnicornSharedConstruct.EventsSchemaConstruct(
+        new EventsSchemaConstruct(
             this,
             `uni-prop-${props.stage}-web-EventSchemaSack`,
             {
@@ -493,7 +494,7 @@ export class UnicornWebStack extends Stack {
 
         /* ------------------------------ Subscriptions ----------------------------- */
         // Update this policy as you get new subscribers by adding their namespace to events:source
-        new UnicornSharedConstruct.SubscriberPoliciesConstruct(
+        new SubscriberPoliciesConstruct(
             this,
             `uni-prop-${props.stage}-web-SubscriptionsStack`,
             {

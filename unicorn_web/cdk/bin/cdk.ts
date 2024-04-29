@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { UnicornWebStack } from '../lib/unicorn-web';
+import { UnicornWebStack } from '../lib/unicorn-web-stack';
 import { Stage, UNICORN_NAMESPACES } from 'unicorn_shared';
 
 const app = new cdk.App();
