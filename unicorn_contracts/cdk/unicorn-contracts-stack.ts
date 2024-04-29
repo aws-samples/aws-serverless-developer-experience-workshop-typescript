@@ -4,7 +4,7 @@ import {
     RemovalPolicy,
     Stack,
     StackProps,
-    App,
+    // App,
     CfnOutput,
 } from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
@@ -193,15 +193,11 @@ export class UnicornConstractsStack extends Stack {
         /*                             DEAD LETTER QUEUES                             */
         /* -------------------------------------------------------------------------- */
         // DeadLetterQueue for UnicornContractsIngestQueue. Contains messages that failed to be processed
-        const IngestQueueDLQ = new sqs.Queue(
-            this,
-            'UnicornContractsIngestDLQ',
-            {
-                removalPolicy: RemovalPolicy.DESTROY,
-                retentionPeriod: Duration.days(14),
-                queueName: `UnicornContractsIngestDLQ-${props.stage}`,
-            }
-        );
+        const IngestQueueDLQ = new sqs.Queue(this, 'UnicornContractsIngestDLQ', {
+            removalPolicy: RemovalPolicy.DESTROY,
+            retentionPeriod: Duration.days(14),
+            queueName: `UnicornContractsIngestDLQ-${props.stage}`,
+        });
 
         /* -------------------------------------------------------------------------- */
         /*                                INGEST QUEUE                                */

@@ -2,6 +2,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { AwsSolutionsChecks } from 'cdk-nag';
 import { UnicornConstractsStack } from './unicorn-contracts-stack';
+import { UnicornContractsPipelineStack } from './pipeline-stack';
 import { Stage, UNICORN_NAMESPACES } from 'unicorn_shared';
 
 const app = new cdk.App();
