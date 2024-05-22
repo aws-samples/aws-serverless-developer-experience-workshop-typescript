@@ -28,8 +28,6 @@ States:
 
   CheckImageIntegrity:
     Type: Map
-    Parameters:
-      ImageName.$: "$$.Map.Item.Value"
     Iterator:
       StartAt: CheckForUnsafeContentInImages
       States:
@@ -47,6 +45,8 @@ States:
       Loop through all the images for the property and ensure they don't have
       unsafe content.
     ItemsPath: "$.detail.images"
+    ItemSelector:
+      ImageName.$: $$.Map.Item.Value
     ResultPath: "$.imageModerations"
 
   CheckDescriptionSentiment:
@@ -81,12 +81,9 @@ States:
     Type: Choice
     Choices:
     - Variable: $.validation_check.validation_result
-      StringEquals: FAIL
-      Next: PublishPropertyPublicationRejected
-    - Variable: $.validation_check.validation_result
       StringEquals: PASS
       Next: WaitForContractApproval
-    Default: WaitForContractApproval
+    Default: PublicationEvaluationCompletedDeclined
 
   PublishPropertyPublicationRejected:
     Type: Task
