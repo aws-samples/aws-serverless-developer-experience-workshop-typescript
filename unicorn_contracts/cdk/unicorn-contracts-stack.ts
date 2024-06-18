@@ -4,7 +4,6 @@ import {
     RemovalPolicy,
     Stack,
     StackProps,
-    App,
     CfnOutput,
 } from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
@@ -19,23 +18,25 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import { CfnPipe } from 'aws-cdk-lib/aws-pipes';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { EventsSchemaConstruct } from './event-schema';
+import { SubscriberPoliciesConstruct } from './subscriber-policies';
 import {
     logsRetentionPeriod,
     Stage,
     isProd,
     UNICORN_NAMESPACES,
     eventBusName,
-    UnicornSharedConstruct,
 } from 'unicorn_shared';
 import { CfnSchema } from 'aws-cdk-lib/aws-eventschemas';
 import ContractStatusChangedEventSchema from '../integration/ContractStatusChangedEventSchema.json';
+import { Construct } from 'constructs';
 
 interface UnicornConstractsStackProps extends StackProps {
     stage: Stage;
 }
 
 export class UnicornConstractsStack extends Stack {
-    constructor(scope: App, id: string, props: UnicornConstractsStackProps) {
+    constructor(scope: Construct, id: string, props: UnicornConstractsStackProps) {
         super(scope, id, props);
 
         const retentionPeriod = logsRetentionPeriod(props.stage);
@@ -192,15 +193,11 @@ export class UnicornConstractsStack extends Stack {
         /*                             DEAD LETTER QUEUES                             */
         /* -------------------------------------------------------------------------- */
         // DeadLetterQueue for UnicornContractsIngestQueue. Contains messages that failed to be processed
-        const IngestQueueDLQ = new sqs.Queue(
-            this,
-            'UnicornContractsIngestDLQ',
-            {
-                removalPolicy: RemovalPolicy.DESTROY,
-                retentionPeriod: Duration.days(14),
-                queueName: `UnicornContractsIngestDLQ-${props.stage}`,
-            }
-        );
+        const IngestQueueDLQ = new sqs.Queue(this, 'UnicornContractsIngestDLQ', {
+            removalPolicy: RemovalPolicy.DESTROY,
+            retentionPeriod: Duration.days(14),
+            queueName: `UnicornContractsIngestDLQ-${props.stage}`,
+        });
 
         /* -------------------------------------------------------------------------- */
         /*                                INGEST QUEUE                                */
@@ -238,7 +235,7 @@ export class UnicornConstractsStack extends Stack {
                 tracing: lambda.Tracing.ACTIVE,
                 entry: path.join(
                     __dirname,
-                    '../../src/contracts_service/contractEventHandler.ts'
+                    '../src/contracts_service/contractEventHandler.ts'
                 ),
                 logGroup: eventHandlerLogs,
                 environment: {
@@ -365,7 +362,7 @@ export class UnicornConstractsStack extends Stack {
                 content: JSON.stringify(ContractStatusChangedEventSchema),
             }
         );
-        new UnicornSharedConstruct.EventsSchemaConstruct(
+        new EventsSchemaConstruct(
             this,
             `uni-prop-${props.stage}-contracts-EventSchemaSack`,
             {
@@ -377,7 +374,7 @@ export class UnicornConstractsStack extends Stack {
         /* -------------------------------------------------------------------------- */
         /*                                  Subscribe                                 */
         /* -------------------------------------------------------------------------- */
-        new UnicornSharedConstruct.SubscriberPoliciesConstruct(
+        new SubscriberPoliciesConstruct(
             this,
             `uni-prop-${props.stage}-contracts-SubscriptionsStack`,
             {
