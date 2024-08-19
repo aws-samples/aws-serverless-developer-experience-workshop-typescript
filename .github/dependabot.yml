@@ -8,7 +8,7 @@ updates:
   - package-ecosystem: "npm" # See documentation for possible values
     directories: 
       - "unicorn_contracts" # Location of package manifests
-      - "unicorn_propertoes"
+      - "unicorn_properties"
       - "unicorn_shared"
       - "unicorn_web"
     schedule:
