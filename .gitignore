@@ -5,3 +5,4 @@
 .vscode/*
 UnicornProperties.sln.DotSettings.user
 **/cdk.out/
+node_modules/
