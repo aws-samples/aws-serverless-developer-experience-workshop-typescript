@@ -9,7 +9,6 @@ updates:
     directories: 
       - "unicorn_contracts" # Location of package manifests
       - "unicorn_properties"
-      - "unicorn_shared"
       - "unicorn_web"
     schedule:
       interval: "weekly"
