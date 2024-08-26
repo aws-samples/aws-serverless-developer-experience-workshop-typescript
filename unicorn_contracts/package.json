@@ -33,7 +33,7 @@
     "@aws-sdk/client-cloudwatch-logs": "^3.410.0",
     "@types/aws-lambda": "^8.10.136",
     "@types/jest": "^29.5.12",
-    "@types/node": "^18.19.26",
+    "@types/node": "^22.5.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.57.0",
