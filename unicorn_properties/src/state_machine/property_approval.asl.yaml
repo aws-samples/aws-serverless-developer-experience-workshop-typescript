@@ -12,7 +12,7 @@ States:
     ResultPath: "$.contract_exists_check"
     Parameters:
       Payload:
-        Input.$: "$"
+        Input.$: $
       FunctionName: ${ContractExistsChecker}
     Next: CheckImageIntegrity
     Catch:
@@ -85,12 +85,12 @@ States:
       Next: WaitForContractApproval
     Default: PublicationEvaluationCompletedDeclined
 
-  PublishPropertyPublicationRejected:
+  PublicationEvaluationCompletedDeclined:
     Type: Task
     Resource: arn:aws:states:::events:putEvents
     Parameters:
       Entries:
-      - Detail:
+        - Detail:
           property_id.$: "$.detail.property_id"
           evaluation_result: "DECLINED"
         DetailType: PublicationEvaluationCompleted
@@ -99,7 +99,7 @@ States:
     Next: Declined
   Declined:
     Type: Succeed
-  
+
   WaitForContractApproval:
     Type: Task
     Resource: arn:aws:states:::lambda:invoke.waitForTaskToken
@@ -109,29 +109,29 @@ States:
       Payload:
         Input.$: $
         TaskToken.$: $$.Task.Token
-      FunctionName: ${ContractStatusChecker}
+      FunctionName: ${WaitForContractApproval}
     Retry:
-    - ErrorEquals:
-      - Lambda.ServiceException
-      - Lambda.AWSLambdaException
-      - Lambda.SdkClientException
-      IntervalSeconds: 2
-      MaxAttempts: 6
-      BackoffRate: 2
-    Next: PublishPropertyPublicationApproved
+      - ErrorEquals:
+          - Lambda.ServiceException
+          - Lambda.AWSLambdaException
+          - Lambda.SdkClientException
+        IntervalSeconds: 2
+        MaxAttempts: 6
+        BackoffRate: 2
+    Next: PublicationEvaluationCompletedApproved
     Comment: ContractStatusChecker
 
-  PublishPropertyPublicationApproved:
+  PublicationEvaluationCompletedApproved:
     Type: Task
     Resource: arn:aws:states:::events:putEvents
     Parameters:
       Entries:
-      - Detail:
-          property_id.$: "$.detail.property_id"
-          evaluation_result: "APPROVED"
-        DetailType: PublicationEvaluationCompleted
-        EventBusName: ${EventBusName}
-        Source: unicorn.properties
+        - Detail:
+            PropertyId.$: "$.detail.PropertyId"
+            EvaluationResult: "APPROVED"
+          DetailType: PublicationEvaluationCompleted
+          EventBusName: ${EventBusName}
+          Source: ${ServiceName}
     Next: Approved
   Approved:
     Type: Succeed
