@@ -14,7 +14,7 @@
     "@aws-sdk/client-dynamodb": "^3.637.0",
     "@aws-sdk/client-sfn": "^3.637.0",
     "@aws-sdk/util-dynamodb": "^3.637.0",
-    "esbuild": "^0.17.19"
+    "esbuild": "^0.23.1"
   },
   "scripts": {
     "lint": "eslint '*.ts' --quiet --fix",
