@@ -11,4 +11,4 @@ updates:
       - "unicorn_properties"
       - "unicorn_web"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
