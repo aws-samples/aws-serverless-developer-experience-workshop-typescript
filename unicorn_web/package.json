@@ -30,7 +30,7 @@
     "@types/aws-lambda": "^8.10.143",
     "@types/cfn-response": "^1.0.8",
     "@types/jest": "^29.5.12",
-    "@types/node": "^22.5.0",
+    "@types/node": "^22.5.2",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.57.0",
