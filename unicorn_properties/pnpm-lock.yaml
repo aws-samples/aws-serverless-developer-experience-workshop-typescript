@@ -24,8 +24,8 @@ importers:
         specifier: ^3.637.0
         version: 3.637.0
       '@aws-sdk/client-sfn':
-        specifier: ^3.637.0
-        version: 3.637.0
+        specifier: ^3.642.0
+        version: 3.642.0
       '@aws-sdk/util-dynamodb':
         specifier: ^3.637.0
         version: 3.637.0(@aws-sdk/client-dynamodb@3.637.0)
@@ -154,8 +154,8 @@ packages:
     resolution: {integrity: sha512-iPsDWL6Vqr6zTnkJimFkdzuqLtcVurR9KdA0BT/ssbtcZJlKBP93wwG8Rn6shDFLIWI7l3H5PM06XJz/BFE7Cg==}
     engines: {node: '>=16.0.0'}
 
-  '@aws-sdk/client-sfn@3.637.0':
-    resolution: {integrity: sha512-7pJMKcV21gu2fO8Fw11r7Wp5xq8Xe8kzfiOnEm00PY0Njkw+VgbSmBhxOEv7SK4OKh6kHZjGwpadnMsdJS/D+Q==}
+  '@aws-sdk/client-sfn@3.642.0':
+    resolution: {integrity: sha512-lV9HeWAYFkZfXisLTkVtHrfOKlHY62pCaeBF9ZYklb1BgtrCjFVT6Tnrfo4HUsjEfvOHj0IK7GbmUtUmB53g5Q==}
     engines: {node: '>=16.0.0'}
 
   '@aws-sdk/client-sso-oidc@3.637.0':
@@ -2609,7 +2609,7 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@aws-sdk/client-sfn@3.637.0':
+  '@aws-sdk/client-sfn@3.642.0':
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
