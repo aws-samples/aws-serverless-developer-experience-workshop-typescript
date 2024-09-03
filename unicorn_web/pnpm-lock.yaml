@@ -24,8 +24,8 @@ importers:
         specifier: ^3.637.0
         version: 3.637.0
       '@aws-sdk/client-cloudwatch-logs':
-        specifier: ^3.637.0
-        version: 3.637.0
+        specifier: ^3.643.0
+        version: 3.643.0
       '@aws-sdk/client-dynamodb':
         specifier: ^3.637.0
         version: 3.637.0
@@ -139,8 +139,8 @@ packages:
     resolution: {integrity: sha512-fjXVo7nDnp13yNq2xZywOuCC2x4Y4PLGN9fHyC4QTgoqmdieNoPVsFyVKUVhi79T0Emz+vd6AqmeuBbYeX/w6A==}
     engines: {node: '>=16.0.0'}
 
-  '@aws-sdk/client-cloudwatch-logs@3.637.0':
-    resolution: {integrity: sha512-JK9BgR3zHo/3VHSMO5ovDgk95TGEiY1DnlJ1AIPl/t6i87gZojurQFlbVuwzLDMZGoFfH0FuAJTW2+sH6nzh8A==}
+  '@aws-sdk/client-cloudwatch-logs@3.643.0':
+    resolution: {integrity: sha512-VixSH+8a8wwKE0c3BMkQ9I/5/H/tHMIoGfeWq0eGyhQ0UuRwZS3agNLMgexLiE356lcwbbgwDmIzyuu3BJ2HFg==}
     engines: {node: '>=16.0.0'}
 
   '@aws-sdk/client-dynamodb@3.637.0':
@@ -2397,7 +2397,7 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@aws-sdk/client-cloudwatch-logs@3.637.0':
+  '@aws-sdk/client-cloudwatch-logs@3.643.0':
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
