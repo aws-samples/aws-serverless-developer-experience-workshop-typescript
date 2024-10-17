@@ -23,7 +23,7 @@
     "deploy": "sam build && sam deploy --no-confirm-changeset"
   },
   "devDependencies": {
-    "@aws-sdk/client-cloudformation": "^3.637.0",
+    "@aws-sdk/client-cloudformation": "^3.672.0",
     "@aws-sdk/client-cloudwatch-logs": "^3.643.0",
     "@aws-sdk/client-eventbridge": "^3.637.0",
     "@aws-sdk/lib-dynamodb": "^3.637.0",
