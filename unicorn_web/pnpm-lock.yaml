@@ -18,8 +18,8 @@ importers:
         specifier: ^2.7.0
         version: 2.7.0
       '@aws-lambda-powertools/tracer':
-        specifier: ^2.7.0
-        version: 2.7.0
+        specifier: ^2.10.0
+        version: 2.10.0
       '@aws-sdk/client-cloudformation':
         specifier: ^3.672.0
         version: 3.672.0
@@ -127,8 +127,8 @@ packages:
       '@middy/core':
         optional: true
 
-  '@aws-lambda-powertools/tracer@2.7.0':
-    resolution: {integrity: sha512-IAC6wuEvfwpLEjhWS0qF17k8QBCskepjCD0uP3eVJ0PmFWe00Sipz8jJZurnBojk90s5sbdUUGIKl7Aqa4xrJg==}
+  '@aws-lambda-powertools/tracer@2.10.0':
+    resolution: {integrity: sha512-/kowpOpYMErQWl3asl/9F3ArRzDM7hpvdVZPIgZOvwa8BBrgtkE3MYCvKZ/jkdsvuSk7vgdIpXmsGq2jnvY+4w==}
     peerDependencies:
       '@middy/core': 4.x || 5.x
     peerDependenciesMeta:
@@ -1453,8 +1453,8 @@ packages:
   atomic-batcher@1.0.2:
     resolution: {integrity: sha512-EFGCRj4kLX1dHv1cDzTk+xbjBFj1GnJDpui52YmEcxxHHEWjYyT6l51U7n6WQ28osZH4S9gSybxe56Vm7vB61Q==}
 
-  aws-xray-sdk-core@3.9.0:
-    resolution: {integrity: sha512-YKzOVse7m6PCO/Uf3y3zhkWqPo5uUIU1Iin/hvL+Lpr2gFxCbNR88pkARAW2LyjvkwlcwLvx7TEoNV3SJYa4yg==}
+  aws-xray-sdk-core@3.10.1:
+    resolution: {integrity: sha512-Eb1Iy5WEjRqRi8G+gi32QjR7t/9xTDore8EKasXsPMXCLMlYunslxJAvT2PDLXQ7ohEC/mKT9+7tUyUt6CGruw==}
     engines: {node: '>= 14.x'}
 
   babel-jest@29.7.0:
@@ -2684,10 +2684,10 @@ snapshots:
     dependencies:
       '@aws-lambda-powertools/commons': 2.10.0
 
-  '@aws-lambda-powertools/tracer@2.7.0':
+  '@aws-lambda-powertools/tracer@2.10.0':
     dependencies:
       '@aws-lambda-powertools/commons': 2.10.0
-      aws-xray-sdk-core: 3.9.0
+      aws-xray-sdk-core: 3.10.1
 
   '@aws-sdk/client-cloudformation@3.672.0':
     dependencies:
@@ -5243,9 +5243,9 @@ snapshots:
 
   atomic-batcher@1.0.2: {}
 
-  aws-xray-sdk-core@3.9.0:
+  aws-xray-sdk-core@3.10.1:
     dependencies:
-      '@aws-sdk/types': 3.667.0
+      '@aws-sdk/types': 3.679.0
       '@smithy/service-error-classification': 2.1.5
       '@types/cls-hooked': 4.3.8
       atomic-batcher: 1.0.2
