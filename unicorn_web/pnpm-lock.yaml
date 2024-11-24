@@ -18,8 +18,8 @@ importers:
         specifier: ^2.7.0
         version: 2.7.0
       '@aws-lambda-powertools/tracer':
-        specifier: ^2.7.0
-        version: 2.7.0
+        specifier: ^2.11.0
+        version: 2.11.0
       '@aws-sdk/client-cloudformation':
         specifier: ^3.672.0
         version: 3.672.0
@@ -111,6 +111,9 @@ packages:
   '@aws-lambda-powertools/commons@2.10.0':
     resolution: {integrity: sha512-XHC0FW/k33JWc2SZ9pbOJQPzNCMoRGnRuX/Cx1CYXRvRnaLYkPNRPrPYvGWy1OInAS3GSK6zxP1Asx0k4uaqSw==}
 
+  '@aws-lambda-powertools/commons@2.11.0':
+    resolution: {integrity: sha512-gtiBeUSyg4VcL4qra5G4AwuOl7CNF6g0oDasAS5KxkEi8IhTku6S7vJTpQ82+12oviwKBD+w27yEcGQmSw5xdg==}
+
   '@aws-lambda-powertools/logger@2.7.0':
     resolution: {integrity: sha512-6nY26q7N5qH8eIDjV3ZBFxtNHx5M6cLQeQDP7kvdGPhRI3N0xWLsiaedMTByzRqaIDYjV3VXOaAIc9r59vCgbg==}
     peerDependencies:
@@ -127,8 +130,8 @@ packages:
       '@middy/core':
         optional: true
 
-  '@aws-lambda-powertools/tracer@2.7.0':
-    resolution: {integrity: sha512-IAC6wuEvfwpLEjhWS0qF17k8QBCskepjCD0uP3eVJ0PmFWe00Sipz8jJZurnBojk90s5sbdUUGIKl7Aqa4xrJg==}
+  '@aws-lambda-powertools/tracer@2.11.0':
+    resolution: {integrity: sha512-4sMBSbA2pmwav1KZu+6avGDLrvX47/gZmDf9NxKiLCkN/zfuWbGHZaVwjXhkXBuDkhcA4AlLQX7Z+p+sb8T1pg==}
     peerDependencies:
       '@middy/core': 4.x || 5.x
     peerDependenciesMeta:
@@ -1453,8 +1456,8 @@ packages:
   atomic-batcher@1.0.2:
     resolution: {integrity: sha512-EFGCRj4kLX1dHv1cDzTk+xbjBFj1GnJDpui52YmEcxxHHEWjYyT6l51U7n6WQ28osZH4S9gSybxe56Vm7vB61Q==}
 
-  aws-xray-sdk-core@3.9.0:
-    resolution: {integrity: sha512-YKzOVse7m6PCO/Uf3y3zhkWqPo5uUIU1Iin/hvL+Lpr2gFxCbNR88pkARAW2LyjvkwlcwLvx7TEoNV3SJYa4yg==}
+  aws-xray-sdk-core@3.10.2:
+    resolution: {integrity: sha512-hAFEB+Stqm4FoQmIuyw5AzGVJh3BSfvLjK7IK4YYRXXLt1Oq9KS6pv2samYgRTTTXsxhmVpDjiYF3Xo/gfXIXA==}
     engines: {node: '>= 14.x'}
 
   babel-jest@29.7.0:
@@ -2675,6 +2678,8 @@ snapshots:
 
   '@aws-lambda-powertools/commons@2.10.0': {}
 
+  '@aws-lambda-powertools/commons@2.11.0': {}
+
   '@aws-lambda-powertools/logger@2.7.0':
     dependencies:
       '@aws-lambda-powertools/commons': 2.10.0
@@ -2684,10 +2689,10 @@ snapshots:
     dependencies:
       '@aws-lambda-powertools/commons': 2.10.0
 
-  '@aws-lambda-powertools/tracer@2.7.0':
+  '@aws-lambda-powertools/tracer@2.11.0':
     dependencies:
-      '@aws-lambda-powertools/commons': 2.10.0
-      aws-xray-sdk-core: 3.9.0
+      '@aws-lambda-powertools/commons': 2.11.0
+      aws-xray-sdk-core: 3.10.2
 
   '@aws-sdk/client-cloudformation@3.672.0':
     dependencies:
@@ -5243,9 +5248,9 @@ snapshots:
 
   atomic-batcher@1.0.2: {}
 
-  aws-xray-sdk-core@3.9.0:
+  aws-xray-sdk-core@3.10.2:
     dependencies:
-      '@aws-sdk/types': 3.667.0
+      '@aws-sdk/types': 3.679.0
       '@smithy/service-error-classification': 2.1.5
       '@types/cls-hooked': 4.3.8
       atomic-batcher: 1.0.2
