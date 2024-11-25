@@ -15,7 +15,7 @@ describe("Testing creating contracts", () => {
     await clearDatabase();
     // Find API Endpoint
     apiUrl = await findOutputValue("ApiUrl");
-  });
+  }, 60000);
 
   afterAll(async () => {
     // Clear DB
