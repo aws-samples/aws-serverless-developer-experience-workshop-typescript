@@ -13,7 +13,7 @@
     "@aws-lambda-powertools/tracer": "^2.11.0",
     "@aws-sdk/client-dynamodb": "^3.699.0",
     "@aws-sdk/client-sfn": "^3.699.0",
-    "@aws-sdk/util-dynamodb": "^3.699.0",
+    "@aws-sdk/util-dynamodb": "^3.704.0",
     "esbuild": "^0.24.0"
   },
   "scripts": {
