@@ -14,9 +14,9 @@
     "@aws-sdk/client-cloudformation": "^3.699.0",
     "@aws-sdk/client-cloudwatch-logs": "^3.699.0",
     "@aws-sdk/client-dynamodb": "^3.699.0",
-    "@aws-sdk/client-eventbridge": "^3.699.0",
+    "@aws-sdk/client-eventbridge": "^3.703.0",
     "@aws-sdk/lib-dynamodb": "^3.699.0",
-    "@aws-sdk/util-dynamodb": "^3.699.0",
+    "@aws-sdk/util-dynamodb": "^3.704.0",
     "esbuild": "^0.24.0"
   },
   "scripts": {
