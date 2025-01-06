@@ -44,7 +44,7 @@ Conditions:
 
 Globals:
   Function: 
-    Runtime: nodejs18.x
+    Runtime: nodejs22.x
     MemorySize: 128
     Timeout: 15
     Tracing: Active
