@@ -1,7 +1,5 @@
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
-
 import * as UnicornSharedConstruct from './constructs';
-
 export { UnicornSharedConstruct };
 
 export enum UNICORN_NAMESPACES {

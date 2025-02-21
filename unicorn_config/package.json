@@ -1,0 +1,19 @@
+{
+    "name": "unicorn_shared",
+    "version": "0.1.0",
+    "description": "shared resources such as types and namespaces",
+    "private": true,
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc -w"
+    },
+    "devDependencies": {
+        "@types/node": "20.10.8",
+        "ts-node": "^10.9.2",
+        "typescript": "~5.3.3"
+    },
+    "dependencies": {
+        "aws-cdk-lib": "^2.178.2",
+        "constructs": "^10.3.0"
+    }
+}

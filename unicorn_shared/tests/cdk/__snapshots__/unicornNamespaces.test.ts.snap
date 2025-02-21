@@ -1,0 +1,116 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Unicorn Namespaces Stack Template matches snapshot 1`] = `
+{
+  "Outputs": {
+    "UnicornContractsNamespace": {
+      "Description": "Unicorn Contracts namespace parameter",
+      "Value": {
+        "Ref": "NamespacesUnicornContractsNamespaceParamF5BFAF82",
+      },
+    },
+    "UnicornContractsNamespaceValue": {
+      "Description": "Unicorn Contracts namespace parameter value",
+      "Value": {
+        "Fn::GetAtt": [
+          "NamespacesUnicornContractsNamespaceParamF5BFAF82",
+          "Value",
+        ],
+      },
+    },
+    "UnicornPropertiesNamespace": {
+      "Description": "Unicorn Properties namespace parameter",
+      "Value": {
+        "Ref": "NamespacesUnicornPropertiesNamespaceParam69AB1DC5",
+      },
+    },
+    "UnicornPropertiesNamespaceValue": {
+      "Description": "Unicorn Properties namespace parameter value",
+      "Value": {
+        "Fn::GetAtt": [
+          "NamespacesUnicornPropertiesNamespaceParam69AB1DC5",
+          "Value",
+        ],
+      },
+    },
+    "UnicornWebNamespace": {
+      "Description": "Unicorn Web namespace parameter",
+      "Value": {
+        "Ref": "NamespacesUnicornWebNamespaceParamA52D70C9",
+      },
+    },
+    "UnicornWebNamespaceValue": {
+      "Description": "Unicorn Web namespace parameter value",
+      "Value": {
+        "Fn::GetAtt": [
+          "NamespacesUnicornWebNamespaceParamA52D70C9",
+          "Value",
+        ],
+      },
+    },
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "NamespacesUnicornContractsNamespaceParamF5BFAF82": {
+      "Properties": {
+        "Description": "Namespace for the Unicorn Contracts domain",
+        "Name": "/uni-prop/UnicornContractsNamespace",
+        "Type": "String",
+        "Value": "unicorn.contracts",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "NamespacesUnicornPropertiesNamespaceParam69AB1DC5": {
+      "Properties": {
+        "Description": "Namespace for the Unicorn Properties domain",
+        "Name": "/uni-prop/UnicornPropertiesNamespace",
+        "Type": "String",
+        "Value": "unicorn.properties",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+    "NamespacesUnicornWebNamespaceParamA52D70C9": {
+      "Properties": {
+        "Description": "Namespace for the Unicorn Web domain",
+        "Name": "/uni-prop/UnicornWebNamespace",
+        "Type": "String",
+        "Value": "unicorn.web",
+      },
+      "Type": "AWS::SSM::Parameter",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;

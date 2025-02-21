@@ -13,7 +13,7 @@ import { Repository } from 'aws-cdk-lib/aws-codecommit';
 import { CodeBuildStep, CodePipeline, CodePipelineSource } from "aws-cdk-lib/pipelines";
 
 import { UnicornConstractsStack } from './unicorn-contracts-stack';
-import { Stage as UnicornStage } from 'unicorn_shared';
+import { Stage as UnicornStage } from '../../unicorn_config';
 
 interface UnicornContractsPipelineStackProps extends StackProps {
     stage: String;

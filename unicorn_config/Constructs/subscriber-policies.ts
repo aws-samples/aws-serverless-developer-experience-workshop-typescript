@@ -2,7 +2,7 @@ import { aws_events as events } from "aws-cdk-lib";
 import { aws_iam as iam } from "aws-cdk-lib";
 import { Stack } from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { Stage, UNICORN_NAMESPACES } from "../../unicorn_config";
+import { Stage, UNICORN_NAMESPACES } from "../index";
 
 
 interface SubscriberPoliciesProps {
