@@ -21,8 +21,9 @@ import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import { CfnPipe } from 'aws-cdk-lib/aws-pipes';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
-import ContractStatusChangedEventSchema from '../integration/ContractStatusChangedEventSchema.json';
+import ContractStatusChangedEventSchema from '../../integration/ContractStatusChangedEventSchema.json';
 import { Construct } from 'constructs';
+import { NagSuppressions } from 'cdk-nag';
 
 export enum Stage {
     local = 'local',
@@ -30,9 +31,14 @@ export enum Stage {
     prod = 'prod',
 }
 
+enum UNICORN_NAMESPACES {
+    CONTRACTS = 'unicorn.contracts',
+    PROPERTIES = 'unicorn.properties',
+    WEB = 'unicorn.web',
+}
+
 interface UnicornConstractsStackProps extends StackProps {
     stage: Stage;
-    serviceNamespace: string;
 }
 
 export class UnicornConstractsStack extends Stack {
@@ -40,7 +46,7 @@ export class UnicornConstractsStack extends Stack {
         super(scope, id, props);
 
         // Tag CloudFormation Stack
-        Tags.of(this).add('namespace', props.serviceNamespace)
+        Tags.of(this).add('namespace', UNICORN_NAMESPACES.CONTRACTS)
         Tags.of(this).add('stage', props.stage)
         Tags.of(this).add('project', 'AWS Serverless Developer Experience')
 
@@ -59,6 +65,7 @@ export class UnicornConstractsStack extends Stack {
         };
         const retentionPeriod = logsRetentionPeriod(props.stage);
 
+
         /* -------------------------------------------------------------------------- */
         /*                                  EVENT BUS                                 */
         /* -------------------------------------------------------------------------- */
@@ -70,13 +77,6 @@ export class UnicornConstractsStack extends Stack {
                 eventBusName: `UnicornContractsBus-${props.stage}`
             }
         );
-
-        // CloudWatch log group used to catch all events
-        const catchAllLogGroup = new logs.LogGroup(this, 'CatchAllLogGroup', {
-            logGroupName: `/aws/events/${props.stage}/${props.serviceNamespace}-catchall`,
-            removalPolicy: RemovalPolicy.DESTROY,
-            retention: retentionPeriod,
-        });
 
         new events.EventBusPolicy(
             this,
@@ -90,27 +90,32 @@ export class UnicornConstractsStack extends Stack {
                     resources: [eventBus.eventBusArn],
                     conditions: {
                         StringEquals: {
-                            'events:source': props.serviceNamespace,
+                            'events:source': UNICORN_NAMESPACES.CONTRACTS,
                         },
                     },
                 }).toJSON(),
             }
         );
 
+        // CloudWatch log group used to catch all events
+        const catchAllLogGroup = new logs.LogGroup(this, 'CatchAllLogGroup', {
+            logGroupName: `/aws/events/${props.stage}/${UNICORN_NAMESPACES.CONTRACTS}-catchall`,
+            removalPolicy: RemovalPolicy.DESTROY,
+            retention: retentionPeriod,
+        });
+
         // Catchall rule used for development purposes.
-        const catchAllRule = new events.Rule(this, 'contracts.catchall', {
+        new events.Rule(this, 'contracts.catchall', {
             ruleName: 'contracts.catchall',
-            description: 'Catch all events published by the contracts service.',
+            description: 'Catch all events published by the Contracts service.',
             eventBus: eventBus,
             eventPattern: {
                 account: [this.account],
-                source: [ props.serviceNamespace ],
+                source: [ UNICORN_NAMESPACES.CONTRACTS ],
             },
             enabled: true,
+            targets: [new targets.CloudWatchLogGroup(catchAllLogGroup)],
         });
-        catchAllRule.addTarget(
-            new targets.CloudWatchLogGroup(catchAllLogGroup)
-        );
 
         // Share Event bus Name through SSM
         new ssm.StringParameter(this, 'UnicornContractsEventBusNameParam', {
@@ -129,7 +134,7 @@ export class UnicornConstractsStack extends Stack {
         /* -------------------------------------------------------------------------- */
         // Persist Contracts information in DynamoDB
         const table = new dynamodb.TableV2(this, `ContractsTable`, {
-            tableName: `ContractsTable-${props.stage}`,
+            tableName: `uni-prop-${props.stage}-contracts-ContractsTable`,
             partitionKey: {
                 name: 'property_id',
                 type: dynamodb.AttributeType.STRING,
@@ -152,10 +157,14 @@ export class UnicornConstractsStack extends Stack {
             {
                 queueName: `ContractsTableStreamToEventPipeDLQ-${props.stage}`,
                 encryption: sqs.QueueEncryption.SQS_MANAGED,
+                enforceSSL: true,
                 retentionPeriod: Duration.days(14),
                 removalPolicy: RemovalPolicy.DESTROY,
             }
         );
+        NagSuppressions.addResourceSuppressions(pipeDLQ, [
+            { id: 'AwsSolutions-SQS3', reason: 'This queue is used as a DLQ and does not require its own DLQ.' },
+        ])
 
         const pipeRole = new iam.Role(this, 'pipe-role', {
             roleName: `ContractsTableStreamToEventPipeRole-${props.stage}`,
@@ -183,6 +192,7 @@ export class UnicornConstractsStack extends Stack {
                 retention: retentionPeriod,
             }
         );
+
         new CfnPipe(this, 'ContractsTableStreamToEventPipe', {
             roleArn: pipeRole.roleArn,
             source: table.tableStreamArn!,
@@ -216,11 +226,11 @@ export class UnicornConstractsStack extends Stack {
             target: eventBus.eventBusArn,
             targetParameters: {
                 eventBridgeEventBusParameters: {
-                    source: props.serviceNamespace,
+                    source: UNICORN_NAMESPACES.CONTRACTS,
                     detailType: 'ContractStatusChanged',
                 },
                 inputTemplate: JSON.stringify({
-                    property_id: '<$.dynamodb.Key.property_id.S>',
+                    property_id: '<$.dynamodb.Keys.property_id.S>',
                     contract_id: '<$.dynamodb.NewImage.contract_id.S>',
                     contract_status: '<$.dynamodb.NewImage.contract_status.S>',
                     contract_last_modified_on:
@@ -241,6 +251,7 @@ export class UnicornConstractsStack extends Stack {
             queueName: `UnicornContractsIngestDLQ-${props.stage}`,
             retentionPeriod: Duration.days(14),
             encryption: sqs.QueueEncryption.SQS_MANAGED,
+            enforceSSL: true,
             removalPolicy: RemovalPolicy.DESTROY,
         });
 
@@ -257,6 +268,7 @@ export class UnicornConstractsStack extends Stack {
             },
             visibilityTimeout: Duration.seconds(20),
             encryption: sqs.QueueEncryption.SQS_MANAGED,
+            enforceSSL: true,
             removalPolicy: RemovalPolicy.DESTROY,
         });
 
@@ -283,18 +295,18 @@ export class UnicornConstractsStack extends Stack {
                 timeout: Duration.seconds(15),
                 entry: path.join(
                     __dirname,
-                    '../src/contracts_service/contractEventHandler.ts'
+                    '../../src/contracts_service/contractEventHandler.ts'
                 ),
                 logGroup: eventHandlerLogs,
                 environment: {
                     DYNAMODB_TABLE: table.tableName,
-                    SERVICE_NAMESPACE: props.serviceNamespace,
+                    SERVICE_NAMESPACE: UNICORN_NAMESPACES.CONTRACTS,
                     POWERTOOLS_LOGGER_CASE: 'PascalCase',
-                    POWERTOOLS_SERVICE_NAME: props.serviceNamespace,
+                    POWERTOOLS_SERVICE_NAME: UNICORN_NAMESPACES.CONTRACTS,
                     POWERTOOLS_TRACE_DISABLED: 'false', // Explicitly disables tracing, default
                     POWERTOOLS_LOGGER_LOG_EVENT: String(props.stage !== 'prod'),
                     POWERTOOLS_LOGGER_SAMPLE_RATE: props.stage !== 'prod' ? '0.1' : '0', // Debug log sampling percentage, default
-                    POWERTOOLS_METRICS_NAMESPACE: props.serviceNamespace,
+                    POWERTOOLS_METRICS_NAMESPACE: UNICORN_NAMESPACES.CONTRACTS,
                     POWERTOOLS_LOG_LEVEL: 'INFO', // Log level for Logger (INFO, DEBUG, etc.), default
                     LOG_LEVEL: 'INFO', // Log level for Logger
                     NODE_OPTIONS: props.stage === 'prod' ? '' : '--enable-source-maps',
@@ -324,7 +336,7 @@ export class UnicornConstractsStack extends Stack {
             }
         );
         ingestQueue.grantSendMessages(apiRole);
-
+        
         const api = new apigateway.RestApi(this, 'UnicornContractsApi', {
             description: "Unicorn Properties Contract Service API",
             cloudWatchRole: true,
@@ -433,33 +445,6 @@ export class UnicornConstractsStack extends Stack {
             })
         );
 
-        // const sqsIntegration = new apigateway.AwsIntegration({
-        //     service: 'sqs',
-        //     region: this.region,
-        //     integrationHttpMethod: 'POST',
-        //     path: ingestQueue.queueName,
-        //     options: {
-        //         credentialsRole: apiRole,
-        //         integrationResponses: [
-        //             {
-        //                 statusCode: '200',
-        //                 responseTemplates: {
-        //                     'application/json': '{"message":"OK"}',
-        //                 },
-        //             },
-        //         ],
-        //         requestParameters: {
-        //             'integration.request.header.Content-Type':
-        //                 "'application/x-www-form-urlencoded'",
-        //         },
-        //         passthroughBehavior: apigateway.PassthroughBehavior.NEVER,
-        //         requestTemplates: {
-        //             'application/json':
-        //                 'Action=SendMessage&MessageBody=$input.body&MessageAttribute.1.Name=HttpMethod&MessageAttribute.1.Value.StringValue=$context.httpMethod&MessageAttribute.1.Value.DataType=String',
-        //         },
-        //     },
-        // });
-
         const contractsApiResource = api.root.addResource('contracts', {
             defaultIntegration: new apigateway.AwsIntegration({
                 service: 'sqs',
@@ -513,12 +498,20 @@ export class UnicornConstractsStack extends Stack {
             }],
         })
 
+        NagSuppressions.addResourceSuppressions(
+            api, [
+            { id: 'AwsSolutions-APIG2', reason: 'Validation not required'},
+            { id: 'AwsSolutions-APIG3', reason: 'Does not require WAF'},
+            { id: 'AwsSolutions-APIG4', reason: 'Authorization not implemented for this workshop.'},
+            { id: 'AwsSolutions-COG4', reason: 'Authorization not implemented for this workshop.'},
+        ], true)
+
         /* -------------------------------------------------------------------------- */
         /*                                Events Schema                               */
         /* -------------------------------------------------------------------------- */
 
         const registry = new eventschemas.CfnRegistry(this, 'EventRegistry', {
-            registryName: `${props.serviceNamespace}-${props.stage}`,
+            registryName: `${UNICORN_NAMESPACES.CONTRACTS}-${props.stage}`,
             description: `Event schemas for Unicorn Contracts ${props.stage}`,
         });
 
@@ -566,7 +559,7 @@ export class UnicornConstractsStack extends Stack {
         
         // Allow event subscribers to create subscription rules on this event bus
         eventBus.addToResourcePolicy(new iam.PolicyStatement({
-            sid: 'AllowSubscribersToCreateSubscriptionRules',
+            sid: `AllowSubscribersToCreateSubscriptionRules-contracts-${props.stage}`,
             effect: iam.Effect.ALLOW,
             principals: [ new iam.AccountRootPrincipal()],
             actions: [
@@ -580,13 +573,18 @@ export class UnicornConstractsStack extends Stack {
                 },
                 // TO DO - Review if below are valid as they may not apply to PutRule/PutTargets as per https://aws.amazon.com/blogs/compute/simplifying-cross-account-access-with-amazon-eventbridge-resource-policies/
                 // StringEquals: {
-                //     'event:source': [props.serviceNamespace],
+                //     'event:source': [UNICORN_NAMESPACES.CONTRACTS],
                 // },
                 // Null: {
                 //     'events:source': 'false',
                 // }
             }
         }))
+
+        NagSuppressions.addResourceSuppressions(
+            [apiLogGroup, catchAllLogGroup, ContractsTableStreamToEventPiptLogGroup, eventHandlerLogs],
+            [{ id: 'AwsSolutions-IAM5', reason: 'Custom Resource to set Log Retention Policy'}]
+        )
 
         /* -------------------------------------------------------------------------- */
         /*                                   Outputs                                  */

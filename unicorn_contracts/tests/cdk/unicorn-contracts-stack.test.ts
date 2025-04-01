@@ -1,6 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions'
-import { Stage, UnicornConstractsStack } from '../../cdk/unicorn-contracts-stack';
+import { Stage, UnicornConstractsStack } from '../../cdk/app/unicorn-contracts-stack';
 import { PolicyDocument } from 'aws-cdk-lib/aws-iam';
 import { Tracing } from 'aws-cdk-lib/aws-lambda';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
@@ -18,7 +18,6 @@ describe('Unicorn Contracts Stack', () => {
     app = new cdk.App();
     stack = new UnicornConstractsStack(app, 'TestStack', {
       stage,
-      serviceNamespace: serviceNamespace,
     });
     template = Template.fromStack(stack);
   });
@@ -117,7 +116,7 @@ describe('Unicorn Contracts Stack', () => {
 
   test('Creates DynamoDB table with correct configuration', () => {
     template.hasResourceProperties('AWS::DynamoDB::GlobalTable', {
-      TableName: `ContractsTable-${stage}`,
+      TableName: `uni-prop-${stage}-contracts-ContractsTable`,
       AttributeDefinitions: [
         {
           AttributeName: 'property_id',
@@ -183,7 +182,7 @@ describe('Unicorn Contracts Stack', () => {
 
     template.hasResourceProperties('AWS::Events::Rule', {
       Name: 'contracts.catchall',
-      Description: 'Catch all events published by the contracts service.',
+      Description: 'Catch all events published by the Contracts service.',
       EventPattern: {
         account: [{ Ref: 'AWS::AccountId' }],
         source: [serviceNamespace],
@@ -251,7 +250,7 @@ describe('Unicorn Contracts Stack', () => {
       TargetParameters: {
         EventBridgeEventBusParameters: {
           DetailType: 'ContractStatusChanged',
-          Source: 'unicorn.contracts',
+          Source: serviceNamespace,
         }
       }
     });

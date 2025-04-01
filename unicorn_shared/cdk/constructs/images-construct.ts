@@ -46,6 +46,7 @@ export class ImagesInfraConstruct extends Construct {
     new s3deploy.BucketDeployment(this, 'DeployImages', {
       sources: [s3deploy.Source.bucket(propertyImagesBucket, 'property_images/property_images.zip')],
       destinationBucket: this.ImagesBucket,
+      destinationKeyPrefix: '/',
       retainOnDelete: false,
       extract: true,
     })
