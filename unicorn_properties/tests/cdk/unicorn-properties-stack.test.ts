@@ -1,10 +1,9 @@
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions'
-import { Stage, UnicornPropertiesStack } from '../../cdk/app/unicorn-properties-stack';
-import { PolicyDocument } from 'aws-cdk-lib/aws-iam';
-import { Tracing } from 'aws-cdk-lib/aws-lambda';
-import { RetentionDays } from 'aws-cdk-lib/aws-logs';
-import { match } from 'assert';
+
+
+import { Stage, UNICORN_NAMESPACES } from '../../cdk/app/helper';
+import { UnicornPropertiesStack } from '../../cdk/app/unicorn-properties-stack';
 
 describe('Unicorn Properties Stack', () => {
   let app: cdk.App;
@@ -12,7 +11,7 @@ describe('Unicorn Properties Stack', () => {
   let template: Template;
 
   const stage = Stage.local // use Local for testing
-  const serviceNamespace = 'unicorn.properties'
+  const serviceNamespace = UNICORN_NAMESPACES.PROPERTIES
 
   beforeEach(() => {
     app = new cdk.App();

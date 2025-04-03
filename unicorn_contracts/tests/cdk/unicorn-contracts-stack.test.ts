@@ -1,10 +1,10 @@
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions'
-import { Stage, UnicornConstractsStack } from '../../cdk/app/unicorn-contracts-stack';
-import { PolicyDocument } from 'aws-cdk-lib/aws-iam';
-import { Tracing } from 'aws-cdk-lib/aws-lambda';
+
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
-import { match } from 'assert';
+
+import { Stage, UNICORN_NAMESPACES } from '../../cdk/app/helper';
+import { UnicornConstractsStack } from '../../cdk/app/unicorn-contracts-stack';
 
 describe('Unicorn Contracts Stack', () => {
   let app: cdk.App;
@@ -12,7 +12,7 @@ describe('Unicorn Contracts Stack', () => {
   let template: Template;
 
   const stage = Stage.local // use Local for testing
-  const serviceNamespace = 'unicorn.contracts'
+  const serviceNamespace = UNICORN_NAMESPACES.CONTRACTS
 
   beforeEach(() => {
     app = new cdk.App();

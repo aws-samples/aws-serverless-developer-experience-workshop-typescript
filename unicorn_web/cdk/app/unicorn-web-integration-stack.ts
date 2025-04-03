@@ -1,10 +1,11 @@
-import { Lazy, Stack, StackProps } from 'aws-cdk-lib'
 import { Construct } from 'constructs';
-import { UNICORN_NAMESPACES, Stage } from './unicorn-web-stack';
+import { Lazy, Stack, StackProps } from 'aws-cdk-lib'
+
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 
+import { Stage, UNICORN_NAMESPACES } from './helper'
 interface WebIntegrationStackProps extends StackProps {
   stage: Stage;
   propertiesEventBusArnParam: string;

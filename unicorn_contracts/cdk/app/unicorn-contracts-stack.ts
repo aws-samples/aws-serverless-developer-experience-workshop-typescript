@@ -25,17 +25,7 @@ import ContractStatusChangedEventSchema from '../../integration/ContractStatusCh
 import { Construct } from 'constructs';
 import { NagSuppressions } from 'cdk-nag';
 
-export enum Stage {
-    local = 'local',
-    dev = 'dev',
-    prod = 'prod',
-}
-
-enum UNICORN_NAMESPACES {
-    CONTRACTS = 'unicorn.contracts',
-    PROPERTIES = 'unicorn.properties',
-    WEB = 'unicorn.web',
-}
+import { Stage, UNICORN_NAMESPACES } from './helper'
 
 interface UnicornConstractsStackProps extends StackProps {
     stage: Stage;

@@ -1,4 +1,5 @@
 import * as path from 'path';
+
 import {
     Duration,
     RemovalPolicy,
@@ -8,31 +9,22 @@ import {
     Tags,
     CfnOutput,
 } from 'aws-cdk-lib';
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
+import * as eventschemas from 'aws-cdk-lib/aws-eventschemas';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
-import * as eventschemas from 'aws-cdk-lib/aws-eventschemas'
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as logs from 'aws-cdk-lib/aws-logs';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { CfnSchema } from 'aws-cdk-lib/aws-eventschemas';
 
-export enum Stage {
-    local = 'local',
-    dev = 'dev',
-    prod = 'prod',
-}
-  
-export enum UNICORN_NAMESPACES {
-    CONTRACTS = 'unicorn.contracts',
-    PROPERTIES = 'unicorn.properties',
-    WEB = 'unicorn.web',
-}
+import { Stage, UNICORN_NAMESPACES } from './helper'
 
 interface UnicornWebStackProps extends StackProps {
     stage: Stage;

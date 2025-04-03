@@ -1,4 +1,5 @@
 import * as path from 'path';
+
 import {
     Duration,
     RemovalPolicy,
@@ -9,37 +10,23 @@ import {
     CfnOutput,
 } from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
-import * as iam from 'aws-cdk-lib/aws-iam';
 import * as eventschemas from 'aws-cdk-lib/aws-eventschemas';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
-import * as logs from 'aws-cdk-lib/aws-logs';
+import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import {
     DynamoEventSource,
     SqsDlq,
 } from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
+
+import { Stage, UNICORN_NAMESPACES } from './helper'
 import PublicationEvaluationCompleted from '../../integration/PublicationEvaluationCompleted.json';
-import {
-    DefinitionBody,
-    LogLevel,
-    StateMachine,
-} from 'aws-cdk-lib/aws-stepfunctions';
-
-export enum Stage {
-    local = 'local',
-    dev = 'dev',
-    prod = 'prod',
-}
-
-export enum UNICORN_NAMESPACES {
-    CONTRACTS = 'unicorn.contracts',
-    PROPERTIES = 'unicorn.properties',
-    WEB = 'unicorn.web',
-}
 
 interface UnicornPropertiesStackProps extends StackProps {
     stage: Stage;
@@ -144,7 +131,6 @@ export class UnicornPropertiesStack extends Stack {
     });
   }
 
-
   private createCatchAllLogGroup() {
     return new logs.LogGroup(
       this,
@@ -156,7 +142,6 @@ export class UnicornPropertiesStack extends Stack {
       }
     );
   }
-        
         
   private createEventBus() {
     return new events.EventBus(
@@ -404,9 +389,9 @@ export class UnicornPropertiesStack extends Stack {
             retention: this.retentionPeriod,
         }
     );
-    const stateMachine = new StateMachine(this, `ApprovalStateMachine`, {
+    const stateMachine = new sfn.StateMachine(this, `ApprovalStateMachine`, {
       stateMachineName: `${this.stackName}-ApprovalStateMachine`,
-      definitionBody: DefinitionBody.fromFile(
+      definitionBody: sfn.DefinitionBody.fromFile(
           path.join(
               __dirname,
               '../../src/state_machine/property_approval.asl.yaml'
@@ -425,7 +410,7 @@ export class UnicornPropertiesStack extends Stack {
       },
       tracingEnabled: true,
       logs: {
-          level: LogLevel.ALL,
+          level: sfn.LogLevel.ALL,
           includeExecutionData: true,
           destination: stateMachineLogGroup,
       },
@@ -484,7 +469,7 @@ export class UnicornPropertiesStack extends Stack {
     return { stateMachine, stateMachineLogGroup };
   };
     
-  private createEventRules(lambdaFunctions: Record<string, nodejs.NodejsFunction>, stateMachine: StateMachine, DLQs: Record<string, sqs.Queue>) {
+  private createEventRules(lambdaFunctions: Record<string, nodejs.NodejsFunction>, stateMachine: sfn.StateMachine, DLQs: Record<string, sqs.Queue>) {
     // Add EventBridge Rule as event source for the Contract Status Changed function
     new events.Rule(this, 'unicorn.properties-ContractStatusChanged', {
       ruleName: 'unicorn.properties-ContractStatusChanged',
@@ -604,7 +589,7 @@ export class UnicornPropertiesStack extends Stack {
   private createStackOutputs(
     table: dynamodb.TableV2,
     lambdaFunctions: Record<string, nodejs.NodejsFunction>,
-    stateMachine: StateMachine,
+    stateMachine: sfn.StateMachine,
     stateMachineLogGroup: logs.LogGroup,
     catchAllLogGroup: logs.LogGroup
   ): void {
