@@ -1,5 +1,7 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
-import { Match, Template } from 'aws-cdk-lib/assertions'
+import { Match, Template } from 'aws-cdk-lib/assertions';
 import { UnicornImagesStack } from '../../cdk/unicornImages';
 
 describe('Unicorn Namespaces Stack', () => {
@@ -14,21 +16,22 @@ describe('Unicorn Namespaces Stack', () => {
     template = Template.fromStack(stack);
   });
 
-  const _stages = ['local', 'dev', 'prod'] as const
+  const _stages = ['local', 'dev', 'prod'] as const;
 
-  _stages.forEach(stage => {
+  _stages.forEach((stage) => {
     test(`Creates S3 bucket with correct configuration for ${stage}`, () => {
       template.hasResourceProperties('AWS::S3::Bucket', {
         BucketName: {
-          'Fn::Join': [ 
-            "", [
-            Match.stringLikeRegexp(`uni-prop-${stage}-images-.*`),
-            { Ref: 'AWS::AccountId' },
-            "-",
-            { Ref: 'AWS::Region'}
-          ]]
-        }
-        
+          'Fn::Join': [
+            '',
+            [
+              Match.stringLikeRegexp(`uni-prop-${stage}-images-.*`),
+              { Ref: 'AWS::AccountId' },
+              '-',
+              { Ref: 'AWS::Region' },
+            ],
+          ],
+        },
       });
     });
 
@@ -37,8 +40,8 @@ describe('Unicorn Namespaces Stack', () => {
         Type: 'String',
         Name: Match.stringLikeRegexp(`/uni-prop/${stage}/ImagesBucket`),
         Value: {
-          Ref: Match.stringLikeRegexp('UnicornPropertiesImagesBucket.*')
-        }
+          Ref: Match.stringLikeRegexp('UnicornPropertiesImagesBucket.*'),
+        },
       });
     });
   });
@@ -52,13 +55,15 @@ describe('Unicorn Namespaces Stack', () => {
     // Test Lambda function policies
     template.hasResourceProperties('AWS::IAM::Role', {
       AssumeRolePolicyDocument: Match.objectLike({
-        Statement: [{
-          Action: 'sts:AssumeRole',
-          Effect: 'Allow',
-          Principal: {
-            Service: 'lambda.amazonaws.com'
-          }
-        }]
+        Statement: [
+          {
+            Action: 'sts:AssumeRole',
+            Effect: 'Allow',
+            Principal: {
+              Service: 'lambda.amazonaws.com',
+            },
+          },
+        ],
       }),
       ManagedPolicyArns: [
         {
@@ -67,14 +72,13 @@ describe('Unicorn Namespaces Stack', () => {
             [
               'arn:',
               Match.objectLike({
-                'Ref': 'AWS::Partition'
+                Ref: 'AWS::Partition',
               }),
-              ':iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-            ]
-          ]
-        }
-      ]
+              ':iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
+            ],
+          ],
+        },
+      ],
     });
   });
-
 });

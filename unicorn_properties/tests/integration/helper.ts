@@ -114,7 +114,7 @@ export async function clearDatabase() {
   }
 
   if (!itemsToDelete || itemsToDelete.length === 0) {
-    console.log("No items to delete.");
+    console.log('No items to delete.');
     return;
   }
 
@@ -135,21 +135,23 @@ export async function clearDatabase() {
   try {
     const batchWriteResponse = await client.send(batchWriteCommand);
   } catch (error) {
-    console.error("Error batch deleting items:", error);
+    console.error('Error batch deleting items:', error);
   }
 }
 
 export async function initializeDatabase() {
-  const client = new DynamoDBClient({ region: process.env.AWS_DEFAULT_REGION });
-  const tableName = await findOutputValue("ContractStatusTableName");
+  const client = new DynamoDBClient({
+    region: process.env.AWS_DEFAULT_REGION,
+  });
+  const tableName = await findOutputValue('ContractStatusTableName');
 
   const putItemRequest: PutCommandInput = {
     TableName: tableName,
     Item: {
-      contract_last_modified_on: { S: "10/08/2022 19:56:30" },
-      contract_id: { S: "9183453b-d284-4466-a2d9-f00b1d569ad7" },
-      property_id: { S: "usa/anytown/main-street/222" },
-      contract_status: { S: "DRAFT" },
+      contract_last_modified_on: { S: '10/08/2022 19:56:30' },
+      contract_id: { S: '9183453b-d284-4466-a2d9-f00b1d569ad7' },
+      property_id: { S: 'usa/anytown/main-street/222' },
+      contract_status: { S: 'DRAFT' },
     },
   };
   const putItemCommand = new PutItemCommand(putItemRequest);
@@ -157,7 +159,7 @@ export async function initializeDatabase() {
   try {
     const putItemResponse = await client.send(putItemCommand);
   } catch (error) {
-    console.error("Error itinialising database:", error);
+    console.error('Error itinialising database:', error);
   }
 }
 

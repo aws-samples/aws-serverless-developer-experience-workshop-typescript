@@ -64,7 +64,7 @@ type PropertyDetailsEvent = {
     street: string;
     number: string;
   };
-  status: "PENDING";
+  status: 'PENDING';
   listprice?: number;
   images?: string[];
   description: string;

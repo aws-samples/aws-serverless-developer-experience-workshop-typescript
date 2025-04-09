@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 import { App, Aspects } from 'aws-cdk-lib';
 import { AwsSolutionsChecks } from 'cdk-nag';
 
@@ -7,8 +9,8 @@ import { UnicornWebStack } from './app/unicorn-web-stack';
 import { WebIntegrationStack } from './app/unicorn-web-integration-stack';
 
 const env = {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION,
+  account: process.env.CDK_DEFAULT_ACCOUNT,
+  region: process.env.CDK_DEFAULT_REGION,
 };
 
 const app = new App();
@@ -17,15 +19,16 @@ const app = new App();
 const stage = getStageFromContext(app);
 
 const webStack = new UnicornWebStack(app, `uni-prop-${stage}-web`, {
-    description: 'Unicorn Web Service - web interface. Add, list and get details for Unicorn Properties.',
-    stage,
-    env,
+  description:
+    'Unicorn Web Service - web interface. Add, list and get details for Unicorn Properties.',
+  stage,
+  env,
 });
 
 new WebIntegrationStack(app, `uni-prop-${stage}-web-integration`, {
-    description: 'Unicorn Web to Properties Service integration.',
-    stage,
-    propertiesEventBusArnParam: `/uni-prop/${stage}/UnicornPropertiesEventBusArn`,
-    webEventBus: webStack.eventBus,
-    env,
-})
+  description: 'Unicorn Web to Properties Service integration.',
+  stage,
+  propertiesEventBusArnParam: `/uni-prop/${stage}/UnicornPropertiesEventBusArn`,
+  webEventBus: webStack.eventBus,
+  env,
+});

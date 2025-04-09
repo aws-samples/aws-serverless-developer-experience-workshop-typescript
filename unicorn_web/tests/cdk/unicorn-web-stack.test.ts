@@ -1,7 +1,9 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
-import { Match, Template } from 'aws-cdk-lib/assertions'
+import { Match, Template } from 'aws-cdk-lib/assertions';
 
-import { Stage, UNICORN_NAMESPACES } from '../../cdk/app/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/app/helper';
 import { UnicornWebStack } from '../../cdk/app/unicorn-web-stack';
 
 describe('Unicorn Properties Stack', () => {
@@ -9,8 +11,8 @@ describe('Unicorn Properties Stack', () => {
   let stack: cdk.Stack;
   let template: Template;
 
-  const stage = Stage.local // use Local for testing
-  const serviceNamespace = UNICORN_NAMESPACES.WEB
+  const stage = STAGE.local; // use Local for testing
+  const serviceNamespace = UNICORN_NAMESPACES.WEB;
 
   beforeEach(() => {
     app = new cdk.App();
@@ -26,17 +28,17 @@ describe('Unicorn Properties Stack', () => {
       Tags: [
         {
           Key: 'namespace',
-          Value: 'unicorn.web'
+          Value: 'unicorn.web',
         },
         {
           Key: 'project',
-          Value: 'AWS Serverless Developer Experience'
+          Value: 'AWS Serverless Developer Experience',
         },
         {
           Key: 'stage',
-          Value: 'local'
-        }
-      ]
+          Value: 'local',
+        },
+      ],
     });
   });
 
@@ -45,17 +47,17 @@ describe('Unicorn Properties Stack', () => {
       AttributeDefinitions: [
         {
           AttributeName: 'PK',
-          AttributeType: 'S'
+          AttributeType: 'S',
         },
         {
           AttributeName: 'SK',
-          AttributeType: 'S'
-        }
+          AttributeType: 'S',
+        },
       ],
       BillingMode: 'PAY_PER_REQUEST',
       StreamSpecification: {
-        StreamViewType: 'NEW_AND_OLD_IMAGES'
-      }
+        StreamViewType: 'NEW_AND_OLD_IMAGES',
+      },
     });
   });
 
@@ -63,8 +65,8 @@ describe('Unicorn Properties Stack', () => {
     template.hasResourceProperties('AWS::ApiGateway::RestApi', {
       Name: 'UnicornWebApi',
       EndpointConfiguration: {
-        Types: ['REGIONAL']
-      }
+        Types: ['REGIONAL'],
+      },
     });
   });
 
@@ -77,12 +79,12 @@ describe('Unicorn Properties Stack', () => {
         Variables: {
           POWERTOOLS_SERVICE_NAME: 'unicorn.web',
           POWERTOOLS_METRICS_NAMESPACE: 'unicorn.web',
-          LOG_LEVEL: 'INFO'
-        }
+          LOG_LEVEL: 'INFO',
+        },
       },
       TracingConfig: {
-        Mode: 'Active'
-      }
+        Mode: 'Active',
+      },
     });
   });
 
@@ -91,19 +93,19 @@ describe('Unicorn Properties Stack', () => {
     template.hasResourceProperties('AWS::SQS::Queue', {
       QueueName: 'WebIngestQueue-local',
       MessageRetentionPeriod: 1209600,
-      VisibilityTimeout: 20
+      VisibilityTimeout: 20,
     });
 
     // Test DLQ
     template.hasResourceProperties('AWS::SQS::Queue', {
       QueueName: 'WebIngestDLQ-local',
-      MessageRetentionPeriod: 1209600
+      MessageRetentionPeriod: 1209600,
     });
   });
 
   test('CloudWatch log groups are created with correct retention', () => {
     template.hasResourceProperties('AWS::Logs::LogGroup', {
-      RetentionInDays: 1
+      RetentionInDays: 1,
     });
   });
 
@@ -115,21 +117,21 @@ describe('Unicorn Properties Stack', () => {
     template.hasResourceProperties('AWS::Events::Rule', {
       EventPattern: {
         source: ['unicorn.properties'],
-        'detail-type': ['PublicationEvaluationCompleted']
+        'detail-type': ['PublicationEvaluationCompleted'],
       },
-      State: 'ENABLED'
+      State: 'ENABLED',
     });
   });
 
   test('SSM Parameters are created for EventBus', () => {
     template.hasResourceProperties('AWS::SSM::Parameter', {
       Name: '/uni-prop/local/UnicornWebEventBus',
-      Type: 'String'
+      Type: 'String',
     });
 
     template.hasResourceProperties('AWS::SSM::Parameter', {
       Name: '/uni-prop/local/UnicornWebEventBusArn',
-      Type: 'String'
+      Type: 'String',
     });
   });
 });

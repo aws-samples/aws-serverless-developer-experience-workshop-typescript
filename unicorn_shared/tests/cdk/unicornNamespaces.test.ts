@@ -1,5 +1,7 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
-import { Match, Template } from 'aws-cdk-lib/assertions'
+import { Match, Template } from 'aws-cdk-lib/assertions';
 import { UnicornNamespacesStack } from '../../cdk/unicornNamespaces';
 
 describe('Unicorn Namespaces Stack', () => {
@@ -15,49 +17,49 @@ describe('Unicorn Namespaces Stack', () => {
 
   test('Creates three SSM Parameters with correct names', () => {
     template.resourceCountIs('AWS::SSM::Parameter', 3);
-    
+
     template.hasResourceProperties('AWS::SSM::Parameter', {
       Type: 'String',
       Name: '/uni-prop/UnicornContractsNamespace',
-      Value: 'unicorn.contracts'
+      Value: 'unicorn.contracts',
     });
 
     template.hasResourceProperties('AWS::SSM::Parameter', {
       Type: 'String',
       Name: '/uni-prop/UnicornPropertiesNamespace',
-      Value: 'unicorn.properties'
+      Value: 'unicorn.properties',
     });
 
     template.hasResourceProperties('AWS::SSM::Parameter', {
       Type: 'String',
       Name: '/uni-prop/UnicornWebNamespace',
-      Value: 'unicorn.web'
+      Value: 'unicorn.web',
     });
   });
 
   test('Has correct outputs', () => {
     template.hasOutput('UnicornContractsNamespace', {
-      Description: 'Unicorn Contracts namespace parameter'
+      Description: 'Unicorn Contracts namespace parameter',
     });
 
     template.hasOutput('UnicornPropertiesNamespace', {
-      Description: 'Unicorn Properties namespace parameter'
+      Description: 'Unicorn Properties namespace parameter',
     });
 
     template.hasOutput('UnicornWebNamespace', {
-      Description: 'Unicorn Web namespace parameter'
+      Description: 'Unicorn Web namespace parameter',
     });
 
     template.hasOutput('UnicornContractsNamespaceValue', {
-      Description: 'Unicorn Contracts namespace parameter value'
+      Description: 'Unicorn Contracts namespace parameter value',
     });
 
     template.hasOutput('UnicornPropertiesNamespaceValue', {
-      Description: 'Unicorn Properties namespace parameter value'
+      Description: 'Unicorn Properties namespace parameter value',
     });
 
     template.hasOutput('UnicornWebNamespaceValue', {
-      Description: 'Unicorn Web namespace parameter value'
+      Description: 'Unicorn Web namespace parameter value',
     });
   });
 
@@ -71,27 +73,27 @@ describe('Unicorn Namespaces Stack', () => {
       Value: {
         'Fn::GetAtt': [
           Match.stringLikeRegexp('.*UnicornContractsNamespaceParam.*'),
-          'Value'
-        ]
-      }
+          'Value',
+        ],
+      },
     });
 
     template.hasOutput('UnicornPropertiesNamespaceValue', {
       Value: {
         'Fn::GetAtt': [
           Match.stringLikeRegexp('.*UnicornPropertiesNamespaceParam.*'),
-          'Value'
-        ]
-      }
+          'Value',
+        ],
+      },
     });
 
     template.hasOutput('UnicornWebNamespaceValue', {
       Value: {
         'Fn::GetAtt': [
           Match.stringLikeRegexp('.*UnicornWebNamespaceParam.*'),
-          'Value'
-        ]
-      }
+          'Value',
+        ],
+      },
     });
   });
-})
+});

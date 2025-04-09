@@ -113,7 +113,7 @@ export async function clearDatabase() {
   }
 
   if (!itemsToDelete || itemsToDelete.length === 0) {
-    console.log("No items to delete.");
+    console.log('No items to delete.');
     return;
   }
 
@@ -134,7 +134,7 @@ export async function clearDatabase() {
   try {
     const batchWriteResponse = await client.send(batchWriteCommand);
   } catch (error) {
-    console.error("Error batch deleting items:", error);
+    console.error('Error batch deleting items:', error);
   }
 }
 

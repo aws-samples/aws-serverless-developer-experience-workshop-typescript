@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { AwsSolutionsChecks } from 'cdk-nag';
 
@@ -6,10 +8,9 @@ import { getStageFromContext } from './app/helper';
 import { UnicornPropertiesStack } from './app/unicorn-properties-stack';
 import { PropertiesIntegrationStack } from './app/unicorn-properties-integration-stack';
 
-
 const env = {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION,
+  account: process.env.CDK_DEFAULT_ACCOUNT,
+  region: process.env.CDK_DEFAULT_REGION,
 };
 
 const app = new cdk.App();
@@ -17,18 +18,26 @@ const app = new cdk.App();
 
 const stage = getStageFromContext(app);
 
-const propertiesStack = new UnicornPropertiesStack(app, `uni-prop-${stage}-properties`, {
-    description: 'Unicorn Properties Service. Validate the content, images and contgract of property listings.',
+const propertiesStack = new UnicornPropertiesStack(
+  app,
+  `uni-prop-${stage}-properties`,
+  {
+    description:
+      'Unicorn Properties Service. Validate the content, images and contgract of property listings.',
     stage,
     env,
-});
+  }
+);
 
-new PropertiesIntegrationStack(app, `uni-prop-${stage}-properties-integration`, {
+new PropertiesIntegrationStack(
+  app,
+  `uni-prop-${stage}-properties-integration`,
+  {
     description: 'Unicorn Properties to Web & Contracts service integration.',
     stage,
     propertiesEventBus: propertiesStack.eventBus,
     webEventBusArnParam: `/uni-prop/${stage}/UnicornWebEventBusArn`,
     contractsEventBusArnParam: `/uni-prop/${stage}/UnicornContractsEventBusArn`,
     env,
-})
-
+  }
+);

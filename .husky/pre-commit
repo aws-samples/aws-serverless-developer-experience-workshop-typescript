@@ -1,2 +1,2 @@
-pnpm exec prettier --write "*/**.ts"
+pnpm exec prettier --write "**/*.ts"
 pnpm exec eslint  --ext .ts,.js --quiet --fix

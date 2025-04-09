@@ -1,8 +1,9 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
-import { Match, Template } from 'aws-cdk-lib/assertions'
+import { Match, Template } from 'aws-cdk-lib/assertions';
 
-
-import { Stage, UNICORN_NAMESPACES } from '../../cdk/app/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/app/helper';
 import { UnicornPropertiesStack } from '../../cdk/app/unicorn-properties-stack';
 
 describe('Unicorn Properties Stack', () => {
@@ -10,8 +11,8 @@ describe('Unicorn Properties Stack', () => {
   let stack: cdk.Stack;
   let template: Template;
 
-  const stage = Stage.local // use Local for testing
-  const serviceNamespace = UNICORN_NAMESPACES.PROPERTIES
+  const stage = STAGE.local; // use Local for testing
+  const serviceNamespace = UNICORN_NAMESPACES.PROPERTIES;
 
   beforeEach(() => {
     app = new cdk.App();
@@ -27,17 +28,17 @@ describe('Unicorn Properties Stack', () => {
       Tags: [
         {
           Key: 'namespace',
-          Value: serviceNamespace
+          Value: serviceNamespace,
         },
         {
           Key: 'project',
-          Value: 'AWS Serverless Developer Experience'
+          Value: 'AWS Serverless Developer Experience',
         },
         {
           Key: 'stage',
-          Value: 'local'
-        }
-      ]
+          Value: 'local',
+        },
+      ],
     });
   });
 
@@ -46,19 +47,19 @@ describe('Unicorn Properties Stack', () => {
       AttributeDefinitions: [
         {
           AttributeName: 'property_id',
-          AttributeType: 'S'
-        }
+          AttributeType: 'S',
+        },
       ],
       BillingMode: 'PAY_PER_REQUEST',
       KeySchema: [
         {
           AttributeName: 'property_id',
-          KeyType: 'HASH'
-        }
+          KeyType: 'HASH',
+        },
       ],
       StreamSpecification: {
-        StreamViewType: 'NEW_AND_OLD_IMAGES'
-      }
+        StreamViewType: 'NEW_AND_OLD_IMAGES',
+      },
     });
   });
 
@@ -70,10 +71,10 @@ describe('Unicorn Properties Stack', () => {
       Environment: {
         Variables: {
           CONTRACT_STATUS_TABLE: {
-            Ref: Match.stringLikeRegexp('.*ContractStatusTable.*')
+            Ref: Match.stringLikeRegexp('.*ContractStatusTable.*'),
           },
           EVENT_BUS: {
-            Ref: Match.stringLikeRegexp('.*UnicornPropertiesBus.*')
+            Ref: Match.stringLikeRegexp('.*UnicornPropertiesBus.*'),
           },
           SERVICE_NAMESPACE: serviceNamespace,
           POWERTOOLS_SERVICE_NAME: serviceNamespace,
@@ -81,9 +82,9 @@ describe('Unicorn Properties Stack', () => {
           POWERTOOLS_TRACE_DISABLED: 'false',
           POWERTOOLS_LOGGER_LOG_EVENT: Match.anyValue(),
           POWERTOOLS_LOGGER_SAMPLE_RATE: Match.anyValue(),
-          LOG_LEVEL: 'INFO'
-        }
-      }
+          LOG_LEVEL: 'INFO',
+        },
+      },
     });
   });
 
@@ -91,33 +92,33 @@ describe('Unicorn Properties Stack', () => {
     template.hasResourceProperties('AWS::Events::Rule', {
       Description: 'Catch all events published by the Properties service.',
       EventPattern: {
-        source: [serviceNamespace]
+        source: [serviceNamespace],
       },
-      State: 'ENABLED'
+      State: 'ENABLED',
     });
   });
 
   test('SSM Parameters are created', () => {
     template.hasResourceProperties('AWS::SSM::Parameter', {
       Type: 'String',
-      Name: '/uni-prop/local/UnicornPropertiesEventBus'
+      Name: '/uni-prop/local/UnicornPropertiesEventBus',
     });
 
     template.hasResourceProperties('AWS::SSM::Parameter', {
       Type: 'String',
-      Name: '/uni-prop/local/UnicornPropertiesEventBusArn'
+      Name: '/uni-prop/local/UnicornPropertiesEventBusArn',
     });
   });
 
   test('Dead Letter Queues are created', () => {
     template.hasResourceProperties('AWS::SQS::Queue', {
       MessageRetentionPeriod: 1209600,
-      QueueName: 'PropertiesEventBusRuleDLQ-local'
+      QueueName: 'PropertiesEventBusRuleDlq-local',
     });
 
     template.hasResourceProperties('AWS::SQS::Queue', {
       MessageRetentionPeriod: 1209600,
-      QueueName: 'PropertiesServiceDLQ-local'
+      QueueName: 'PropertiesServiceDlq-local',
     });
   });
 
@@ -129,5 +130,4 @@ describe('Unicorn Properties Stack', () => {
     template.resourceCountIs('AWS::SQS::Queue', 2);
     template.resourceCountIs('AWS::SSM::Parameter', 2);
   });
-
 });
