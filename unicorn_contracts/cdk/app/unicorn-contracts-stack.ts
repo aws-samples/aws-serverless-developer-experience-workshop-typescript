@@ -534,8 +534,6 @@ export class UnicornConstractsStack extends cdk.Stack {
       description: `Event schemas for Unicorn Contracts ${props.stage}`,
     });
 
-
-
     const registryPolicy = new eventschemas.CfnRegistryPolicy(
       this,
       'RegistryPolicy',
