@@ -16,11 +16,11 @@ import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import { CfnPipe } from 'aws-cdk-lib/aws-pipes';
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
-import ContractStatusChangedEventSchema from '../../integration/ContractStatusChangedEventSchema.json';
 import { Construct } from 'constructs';
 import { NagSuppressions } from 'cdk-nag';
 
 import { STAGE, UNICORN_NAMESPACES } from './helper';
+import ContractStatusChangedEventSchema from '../../integration/ContractStatusChangedEventSchema.json';
 
 interface UnicornConstractsStackProps extends cdk.StackProps {
   stage: STAGE;
@@ -289,6 +289,7 @@ export class UnicornConstractsStack extends cdk.Stack {
         environment: {
           DYNAMODB_TABLE: table.tableName,
           SERVICE_NAMESPACE: UNICORN_NAMESPACES.CONTRACTS,
+          NODE_OPTIONS: props.stage === 'prod' ? '' : '--enable-source-maps',
           POWERTOOLS_LOGGER_CASE: 'PascalCase',
           POWERTOOLS_SERVICE_NAME: UNICORN_NAMESPACES.CONTRACTS,
           POWERTOOLS_TRACE_DISABLED: 'false', // Explicitly disables tracing, default
@@ -297,7 +298,6 @@ export class UnicornConstractsStack extends cdk.Stack {
           POWERTOOLS_METRICS_NAMESPACE: UNICORN_NAMESPACES.CONTRACTS,
           POWERTOOLS_LOG_LEVEL: 'INFO', // Log level for Logger (INFO, DEBUG, etc.), default
           LOG_LEVEL: 'INFO', // Log level for Logger
-          NODE_OPTIONS: props.stage === 'prod' ? '' : '--enable-source-maps',
         },
       }
     );
@@ -534,17 +534,7 @@ export class UnicornConstractsStack extends cdk.Stack {
       description: `Event schemas for Unicorn Contracts ${props.stage}`,
     });
 
-    const contractStatusChangedSchema = new eventschemas.CfnSchema(
-      this,
-      'ContractStatusChangedEventSchema',
-      {
-        type: 'OpenApi3',
-        registryName: registry.attrRegistryName,
-        description: 'The schema for a request to publish a property',
-        schemaName: `${registry.attrRegistryName}@ContractStatusChanged`,
-        content: JSON.stringify(ContractStatusChangedEventSchema),
-      }
-    );
+
 
     const registryPolicy = new eventschemas.CfnRegistryPolicy(
       this,
@@ -574,6 +564,18 @@ export class UnicornConstractsStack extends cdk.Stack {
             }),
           ],
         }),
+      }
+    );
+
+    const contractStatusChangedSchema = new eventschemas.CfnSchema(
+      this,
+      'ContractStatusChangedEventSchema',
+      {
+        type: 'OpenApi3',
+        registryName: registry.attrRegistryName,
+        description: 'The schema for a request to publish a property',
+        schemaName: `${registry.attrRegistryName}@ContractStatusChanged`,
+        content: JSON.stringify(ContractStatusChangedEventSchema),
       }
     );
     registryPolicy.node.addDependency(contractStatusChangedSchema);
