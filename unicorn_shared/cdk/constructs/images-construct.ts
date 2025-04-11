@@ -7,6 +7,11 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { NagSuppressions } from 'cdk-nag';
 
+export enum STAGE {
+  local = 'local',
+  dev = 'dev',
+  prod = 'prod',
+}
 export interface ImagesInfraConstructProps {
   stage: 'local' | 'dev' | 'prod';
 }
@@ -19,20 +24,39 @@ export class ImagesInfraConstruct extends Construct {
     super(scope, id);
 
     // S3 Property Images Bucket
-    this.imagesBucket = new s3.Bucket(this, 'UnicornPropertiesImagesBucket', {
-      bucketName: `uni-prop-${props.stage}-images-${Stack.of(this).account}-${Stack.of(this).region}`,
+    const bucketName = `uni-prop-${props.stage}-images-${Stack.of(this).account}-${Stack.of(this).region}`
+    const commonBucketProperties: s3.BucketProps = {
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
       enforceSSL: true,
-    });
-    NagSuppressions.addResourceSuppressions(this.imagesBucket, [
-      {
-        id: 'AwsSolutions-S1',
-        reason: 'No access logs for images bucket',
-      },
-    ]);
+    }
+
+    // Prod environment requires S3 access logging while other environments do not.
+    if (props.stage === STAGE.prod) {
+      const accessLogsBucket = new s3.Bucket(this, 'UnicornPropertiesAccessLogBucket', {
+        ...commonBucketProperties,
+        bucketName: `${bucketName}-logs`,
+      })
+      this.imagesBucket = new s3.Bucket(this, 'UnicornPropertiesImagesBucket', {
+        ...commonBucketProperties,
+        bucketName: `uni-prop-${props.stage}-images-${Stack.of(this).account}-${Stack.of(this).region}`,
+        serverAccessLogsBucket: accessLogsBucket,
+        serverAccessLogsPrefix: 'access-logs',
+      });
+    } else {
+      this.imagesBucket = new s3.Bucket(this, 'UnicornPropertiesImagesBucket', {
+        ...commonBucketProperties,
+        bucketName: `uni-prop-${props.stage}-images-${Stack.of(this).account}-${Stack.of(this).region}`,
+      });
+      NagSuppressions.addResourceSuppressions(this.imagesBucket, [
+        {
+          id: 'AwsSolutions-S1',
+          reason: 'Access logs for images bucket not required in local or dev environments',
+        },
+      ]);
+    }
 
     // SSM Parameter
     this.imagesBucketParameter = new ssm.StringParameter(
@@ -51,7 +75,7 @@ export class ImagesInfraConstruct extends Construct {
       'propertyImagesBucket',
       'aws-serverless-developer-experience-workshop-assets'
     );
-    new s3deploy.BucketDeployment(this, 'DeployImages', {
+    const propertyImagesDeployment = new s3deploy.BucketDeployment(this, 'DeployImages', {
       sources: [
         s3deploy.Source.bucket(
           propertyImagesBucket,
