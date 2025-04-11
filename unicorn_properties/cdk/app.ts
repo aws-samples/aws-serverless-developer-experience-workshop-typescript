@@ -6,7 +6,8 @@ import { AwsSolutionsChecks } from 'cdk-nag';
 
 import { getStageFromContext } from './app/helper';
 import { UnicornPropertiesStack } from './app/unicorn-properties-stack';
-import { PropertiesIntegrationStack } from './app/unicorn-properties-integration-stack';
+import { PropertiesToContractsIntegrationStack } from './app/unicorn-properties-integration-with-contracts-stack';
+import { PropertiesToWebIntegrationStack } from './app/unicorn-properties-integration-with-web-stack';
 
 const env = {
   account: process.env.CDK_DEFAULT_ACCOUNT,
@@ -29,15 +30,26 @@ const propertiesStack = new UnicornPropertiesStack(
   }
 );
 
-new PropertiesIntegrationStack(
+new PropertiesToContractsIntegrationStack(
   app,
-  `uni-prop-${stage}-properties-integration`,
+  `uni-prop-${stage}-properties-integration-with-contracts`,
   {
-    description: 'Unicorn Properties to Web & Contracts service integration.',
+    description: 'Unicorn Properties to Contracts service integration.',
+    stage,
+    propertiesEventBus: propertiesStack.eventBus,
+    contractsEventBusArnParam: `/uni-prop/${stage}/UnicornContractsEventBusArn`,
+    env,
+  }
+);
+
+new PropertiesToWebIntegrationStack(
+  app,
+  `uni-prop-${stage}-properties-integration-with-web`,
+  {
+    description: 'Unicorn Properties to Web service integration.',
     stage,
     propertiesEventBus: propertiesStack.eventBus,
     webEventBusArnParam: `/uni-prop/${stage}/UnicornWebEventBusArn`,
-    contractsEventBusArnParam: `/uni-prop/${stage}/UnicornContractsEventBusArn`,
     env,
   }
 );

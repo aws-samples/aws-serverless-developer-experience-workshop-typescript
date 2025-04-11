@@ -6,7 +6,7 @@ import { AwsSolutionsChecks } from 'cdk-nag';
 
 import { getStageFromContext } from './app/helper';
 import { UnicornWebStack } from './app/unicorn-web-stack';
-import { WebIntegrationStack } from './app/unicorn-web-integration-stack';
+import { WebToPropertiesIntegrationStack } from './app/unicorn-web-integration-with-properties-stack';
 
 const env = {
   account: process.env.CDK_DEFAULT_ACCOUNT,
@@ -25,10 +25,14 @@ const webStack = new UnicornWebStack(app, `uni-prop-${stage}-web`, {
   env,
 });
 
-new WebIntegrationStack(app, `uni-prop-${stage}-web-integration`, {
-  description: 'Unicorn Web to Properties Service integration.',
-  stage,
-  propertiesEventBusArnParam: `/uni-prop/${stage}/UnicornPropertiesEventBusArn`,
-  webEventBus: webStack.eventBus,
-  env,
-});
+new WebToPropertiesIntegrationStack(
+  app,
+  `uni-prop-${stage}-web-integration-with-properties`,
+  {
+    description: 'Unicorn Web to Properties Service integration.',
+    stage,
+    webEventBus: webStack.eventBus,
+    propertiesEventBusArnParam: `/uni-prop/${stage}/UnicornPropertiesEventBusArn`,
+    env,
+  }
+);

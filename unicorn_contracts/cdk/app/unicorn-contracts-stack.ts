@@ -557,7 +557,9 @@ export class UnicornConstractsStack extends cdk.Stack {
               ],
               resources: [
                 registry.attrRegistryArn,
-                `arn:aws:schemas:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account}:schema/${registry.attrRegistryName}*`,
+                `arn:aws:schemas:${cdk.Stack.of(this).region}:${
+                  cdk.Stack.of(this).account
+                }:schema/${registry.attrRegistryName}*`,
               ],
             }),
           ],

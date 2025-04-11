@@ -378,6 +378,7 @@ export class UnicornPropertiesStack extends cdk.Stack {
       this,
       'ApprovalStateMachineLogGroup',
       {
+        logGroupName: `/aws/vendedlogs/states/uni-prop-${this.stage}-${UNICORN_NAMESPACES.PROPERTIES}-ApprovalStateMachine`,
         retention: this.retentionPeriod,
       }
     );
