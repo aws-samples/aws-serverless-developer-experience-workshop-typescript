@@ -4,7 +4,7 @@ import { AwsSolutionsChecks } from 'cdk-nag';
 import { App, Aspects } from 'aws-cdk-lib';
 import { UnicornNamespacesStack } from './unicornNamespaces';
 import { UnicornImagesStack } from './unicornImages';
-import { STAGE } from "./constructs/images-construct";
+import { STAGE } from './constructs/images-construct';
 
 const app = new App();
 // Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));

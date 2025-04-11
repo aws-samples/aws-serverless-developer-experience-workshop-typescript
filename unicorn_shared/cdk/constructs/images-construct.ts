@@ -24,36 +24,47 @@ export class ImagesInfraConstruct extends Construct {
     super(scope, id);
 
     // S3 Property Images Bucket
-    const bucketName = `uni-prop-${props.stage}-images-${Stack.of(this).account}-${Stack.of(this).region}`
+    const bucketName = `uni-prop-${props.stage}-images-${
+      Stack.of(this).account
+    }-${Stack.of(this).region}`;
     const commonBucketProperties: s3.BucketProps = {
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
       enforceSSL: true,
-    }
+    };
 
     // Prod environment requires S3 access logging while other environments do not.
     if (props.stage === STAGE.prod) {
-      const accessLogsBucket = new s3.Bucket(this, 'UnicornPropertiesAccessLogBucket', {
-        ...commonBucketProperties,
-        bucketName: `${bucketName}-logs`,
-      })
+      const accessLogsBucket = new s3.Bucket(
+        this,
+        'UnicornPropertiesAccessLogBucket',
+        {
+          ...commonBucketProperties,
+          bucketName: `${bucketName}-logs`,
+        }
+      );
       this.imagesBucket = new s3.Bucket(this, 'UnicornPropertiesImagesBucket', {
         ...commonBucketProperties,
-        bucketName: `uni-prop-${props.stage}-images-${Stack.of(this).account}-${Stack.of(this).region}`,
+        bucketName: `uni-prop-${props.stage}-images-${Stack.of(this).account}-${
+          Stack.of(this).region
+        }`,
         serverAccessLogsBucket: accessLogsBucket,
         serverAccessLogsPrefix: 'access-logs',
       });
     } else {
       this.imagesBucket = new s3.Bucket(this, 'UnicornPropertiesImagesBucket', {
         ...commonBucketProperties,
-        bucketName: `uni-prop-${props.stage}-images-${Stack.of(this).account}-${Stack.of(this).region}`,
+        bucketName: `uni-prop-${props.stage}-images-${Stack.of(this).account}-${
+          Stack.of(this).region
+        }`,
       });
       NagSuppressions.addResourceSuppressions(this.imagesBucket, [
         {
           id: 'AwsSolutions-S1',
-          reason: 'Access logs for images bucket not required in local or dev environments',
+          reason:
+            'Access logs for images bucket not required in local or dev environments',
         },
       ]);
     }
@@ -75,17 +86,21 @@ export class ImagesInfraConstruct extends Construct {
       'propertyImagesBucket',
       'aws-serverless-developer-experience-workshop-assets'
     );
-    const propertyImagesDeployment = new s3deploy.BucketDeployment(this, 'DeployImages', {
-      sources: [
-        s3deploy.Source.bucket(
-          propertyImagesBucket,
-          'property_images/property_images.zip'
-        ),
-      ],
-      destinationBucket: this.imagesBucket,
-      destinationKeyPrefix: '/',
-      retainOnDelete: false,
-      extract: true,
-    });
+    const propertyImagesDeployment = new s3deploy.BucketDeployment(
+      this,
+      'DeployImages',
+      {
+        sources: [
+          s3deploy.Source.bucket(
+            propertyImagesBucket,
+            'property_images/property_images.zip'
+          ),
+        ],
+        destinationBucket: this.imagesBucket,
+        destinationKeyPrefix: '/',
+        retainOnDelete: false,
+        extract: true,
+      }
+    );
   }
 }

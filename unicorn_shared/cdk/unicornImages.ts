@@ -11,7 +11,7 @@ interface UnicornImagesStackProps extends StackProps {
 export class UnicornImagesStack extends Stack {
   constructor(scope: Construct, id: string, props: UnicornImagesStackProps) {
     super(scope, id);
-    
+
     const imagesInfra = new ImagesInfraConstruct(
       this,
       `ImagesInfra-${props.stage}`,
@@ -23,6 +23,5 @@ export class UnicornImagesStack extends Stack {
       description: `S3 bucket for property images (${props.stage})`,
       value: imagesInfra.imagesBucket.bucketName,
     });
-    
   }
 }
