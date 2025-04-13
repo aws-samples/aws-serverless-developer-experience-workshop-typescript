@@ -16,7 +16,7 @@ new UnicornNamespacesStack(app, 'uni-prop-namespaces', {
 
 const _stages = [STAGE.local, STAGE.dev, STAGE.prod] as const;
 _stages.forEach((stage) => {
-  new UnicornImagesStack(app, `uni-prop-${stage}-images`, {
+  new UnicornImagesStack(app, `uni-prop-${stage}-shared`, {
     description:
       'Global namespaces for Unicorn Properties applications and services. This only needs to be deployed once.',
     stage,

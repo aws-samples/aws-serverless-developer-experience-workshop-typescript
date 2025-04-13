@@ -6,7 +6,7 @@ import { Construct } from 'constructs';
 
 export class UnicornNamespacesStack extends Stack {
   constructor(scope: Construct, id: string, props: StackProps) {
-    super(scope, id);
+    super(scope, id, props);
 
     const namespaces = new NamespacesConstruct(this, 'Namespaces', {});
 

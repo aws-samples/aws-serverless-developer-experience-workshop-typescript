@@ -407,17 +407,17 @@ importers:
   unicorn_contracts:
     dependencies:
       '@aws-lambda-powertools/commons':
-        specifier: ^1.18.0
-        version: 1.18.1
+        specifier: ^2.18.0
+        version: 2.18.0
       '@aws-lambda-powertools/logger':
-        specifier: ^1.18.0
-        version: 1.18.1
+        specifier: ^2.18.0
+        version: 2.18.0
       '@aws-lambda-powertools/metrics':
-        specifier: ^1.18.0
-        version: 1.18.1
+        specifier: ^2.18.0
+        version: 2.18.0
       '@aws-lambda-powertools/tracer':
-        specifier: ^1.18.0
-        version: 1.18.1
+        specifier: ^2.18.0
+        version: 2.18.0
       '@aws-sdk/client-dynamodb':
         specifier: ^3.514.0
         version: 3.749.0
@@ -451,9 +451,6 @@ importers:
       esbuild:
         specifier: ^0.17.19
         version: 0.17.19
-      unicorn_shared:
-        specifier: workspace:*
-        version: link:../unicorn_config
     devDependencies:
       '@aws-sdk/client-cloudformation':
         specifier: ^3.514.0
@@ -510,17 +507,17 @@ importers:
   unicorn_properties:
     dependencies:
       '@aws-lambda-powertools/commons':
-        specifier: ^1.18.0
-        version: 1.18.1
+        specifier: ^2.18.0
+        version: 2.18.0
       '@aws-lambda-powertools/logger':
-        specifier: ^1.18.0
-        version: 1.18.1
+        specifier: ^2.18.0
+        version: 2.18.0
       '@aws-lambda-powertools/metrics':
-        specifier: ^1.18.0
-        version: 1.18.1
+        specifier: ^2.18.0
+        version: 2.18.0
       '@aws-lambda-powertools/tracer':
-        specifier: ^1.18.0
-        version: 1.18.1
+        specifier: ^2.18.0
+        version: 2.18.0
       '@aws-sdk/client-dynamodb':
         specifier: ^3.514.0
         version: 3.749.0
@@ -548,9 +545,6 @@ importers:
       esbuild:
         specifier: ^0.17.19
         version: 0.17.19
-      unicorn_shared:
-        specifier: workspace:*
-        version: link:../unicorn_config
     devDependencies:
       '@aws-sdk/client-cloudformation':
         specifier: ^3.514.0
@@ -612,33 +606,6 @@ importers:
 
   unicorn_shared:
     dependencies:
-      '@aws-lambda-powertools/commons':
-        specifier: ^1.18.0
-        version: 1.18.1
-      '@aws-lambda-powertools/logger':
-        specifier: ^1.18.0
-        version: 1.18.1
-      '@aws-lambda-powertools/metrics':
-        specifier: ^1.18.0
-        version: 1.18.1
-      '@aws-lambda-powertools/tracer':
-        specifier: ^1.18.0
-        version: 1.18.1
-      '@aws-sdk/client-dynamodb':
-        specifier: ^3.514.0
-        version: 3.749.0
-      '@aws-sdk/client-eventbridge':
-        specifier: ^3.514.0
-        version: 3.749.0
-      '@aws-sdk/client-sqs':
-        specifier: ^3.514.0
-        version: 3.749.0
-      '@aws-sdk/lib-dynamodb':
-        specifier: ^3.514.0
-        version: 3.749.0(@aws-sdk/client-dynamodb@3.749.0)
-      '@aws-sdk/util-dynamodb':
-        specifier: ^3.514.0
-        version: 3.749.0(@aws-sdk/client-dynamodb@3.749.0)
       aws-cdk:
         specifier: ^2.128.0
         version: 2.178.2
@@ -657,19 +624,7 @@ importers:
       esbuild:
         specifier: ^0.17.19
         version: 0.17.19
-      unicorn_shared:
-        specifier: workspace:*
-        version: link:../unicorn_config
     devDependencies:
-      '@aws-sdk/client-cloudformation':
-        specifier: ^3.514.0
-        version: 3.749.0
-      '@aws-sdk/client-cloudwatch-logs':
-        specifier: ^3.514.0
-        version: 3.749.0
-      '@types/aws-lambda':
-        specifier: ^8.10.133
-        version: 8.10.147
       '@types/jest':
         specifier: ^29.5.12
         version: 29.5.14
@@ -716,17 +671,17 @@ importers:
   unicorn_web:
     dependencies:
       '@aws-lambda-powertools/commons':
-        specifier: ^1.18.0
-        version: 1.18.1
+        specifier: ^2.18.0
+        version: 2.18.0
       '@aws-lambda-powertools/logger':
-        specifier: ^1.18.0
-        version: 1.18.1
+        specifier: ^2.18.0
+        version: 2.18.0
       '@aws-lambda-powertools/metrics':
-        specifier: ^1.18.0
-        version: 1.18.1
+        specifier: ^2.18.0
+        version: 2.18.0
       '@aws-lambda-powertools/tracer':
-        specifier: ^1.18.0
-        version: 1.18.1
+        specifier: ^2.18.0
+        version: 2.18.0
       '@aws-sdk/client-dynamodb':
         specifier: ^3.514.0
         version: 3.749.0
@@ -760,9 +715,6 @@ importers:
       esbuild:
         specifier: ^0.17.19
         version: 0.17.19
-      unicorn_shared:
-        specifier: workspace:*
-        version: link:../unicorn_config
     devDependencies:
       '@aws-sdk/client-cloudformation':
         specifier: ^3.514.0
