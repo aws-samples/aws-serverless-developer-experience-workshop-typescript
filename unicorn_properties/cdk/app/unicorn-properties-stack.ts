@@ -1,652 +1,127 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import * as path from 'path';
-
 import * as cdk from 'aws-cdk-lib';
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
-import * as targets from 'aws-cdk-lib/aws-events-targets';
-import * as eventschemas from 'aws-cdk-lib/aws-eventschemas';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
-import {
-  DynamoEventSource,
-  SqsDlq,
-} from 'aws-cdk-lib/aws-lambda-event-sources';
-import * as logs from 'aws-cdk-lib/aws-logs';
-import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
-import * as sqs from 'aws-cdk-lib/aws-sqs';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
 
-import { STAGE, UNICORN_NAMESPACES } from './helper';
-import PublicationEvaluationCompleted from '../../integration/PublicationEvaluationCompleted.json';
+import { STAGE, UNICORN_NAMESPACES } from '../constructs/helper';
+import { EventsDomain } from '../constructs/unicorn-properties-events-domain';
+import { PropertyApprovalDomain } from '../constructs/unicorn-properties-property-approval-domain';
+import { ContractsDomain } from '../constructs/unicorn-properties-contracts-domain';
 
+/**
+ * Properties for the UnicornPropertiesStack
+ * @interface UnicornPropertiesStackProps
+ */
 interface UnicornPropertiesStackProps extends cdk.StackProps {
+  /** Deployment stage of the application */
   stage: STAGE;
 }
 
+/**
+ * Stack that defines the Unicorn Properties infrastructure
+ * @class UnicornPropertiesStack
+ *
+ * @example
+ * ```typescript
+ * const app = new cdk.App();
+ * new UnicornPropertiesStack(app, 'UnicornPropertiesStack', {
+ *   stage: STAGE.dev,
+ *   env: {
+ *     account: process.env.CDK_DEFAULT_ACCOUNT,
+ *     region: process.env.CDK_DEFAULT_REGION
+ *   }
+ * });
+ * ```
+ */
 export class UnicornPropertiesStack extends cdk.Stack {
+  /** EventBridge event bus for application events */
   public readonly eventBus: events.EventBus;
+  /** Current deployment stage of the application */
   private readonly stage: STAGE;
-  private readonly retentionPeriod: logs.RetentionDays;
 
+  /**
+   * Creates a new UnicornPropertiesStack
+   * @param scope - The scope in which to define this construct
+   * @param id - The scoped construct ID
+   * @param props - Configuration properties
+   *
+   * @remarks
+   * This stack creates:
+   * - EventBridge event bus through Events Domain
+   * - Contracts Domain with associated DynamoDB table
+   * - Property Approval Domain integrated with Contracts
+   * - Associated IAM roles and permissions
+   */
   constructor(scope: cdk.App, id: string, props: UnicornPropertiesStackProps) {
     super(scope, id, props);
     this.stage = props.stage;
-    this.retentionPeriod = this.getLogsRetentionPriod();
 
-    // Add CloudFormation stack tags
+    /**
+     * Add standard tags to the CloudFormation stack for resource organization
+     * and cost allocation
+     */
     this.addStackTags();
 
-    // Create infrastructure components
-    const dlqs = this.createDeadLetterQueues();
-    const table = this.createDynamoDBTable();
-    const catchAllLogGroup = this.createCatchAllLogGroup();
+    /* -------------------------------------------------------------------------- */
+    /*                                 EVENTS DOMAIN                                */
+    /* -------------------------------------------------------------------------- */
 
-    // Create Event Bus and related resources
-    this.eventBus = this.createEventBus();
-    this.configureEventBusPolicy();
-    this.createCatchAllRule(catchAllLogGroup);
-    this.createEventBusSSMParameters();
+    /**
+     * Create Events Domain
+     * Establishes central event bus for inter-domain communication
+     */
+    const propertiesEventDomain = new EventsDomain(this, 'EventsDomain', {
+      stage: this.stage,
+    });
+    this.eventBus = propertiesEventDomain.eventBus;
 
-    // Create Lambda Functions
-    const lambdaFunctions = this.createLambdaFunctions(table, dlqs);
+    /* -------------------------------------------------------------------------- */
+    /*                              CONTRACTS DOMAIN                                */
+    /* -------------------------------------------------------------------------- */
 
-    // Create State Machine
-    const { stateMachine, stateMachineLogGroup } = this.createStateMachine(
-      lambdaFunctions,
-      dlqs
+    /**
+     * Contracts Domain
+     * Handles contract-related operations and data storage
+     */
+    const propertiesContractsDomain = new ContractsDomain(
+      this,
+      'ContractsDomain',
+      {
+        stage: this.stage,
+        eventBus: propertiesEventDomain.eventBus,
+      }
     );
 
-    // Create Event Rules
-    this.createEventRules(lambdaFunctions, stateMachine, dlqs);
+    /* -------------------------------------------------------------------------- */
+    /*                           PROPERTY APPROVAL DOMAIN                           */
+    /* -------------------------------------------------------------------------- */
 
-    // Create Event Schema Registry
-    this.createEventSchemaRegistry();
-
-    // Create Stack Outputs
-    this.createStackOutputs(
-      table,
-      lambdaFunctions,
-      stateMachine,
-      stateMachineLogGroup,
-      catchAllLogGroup
-    );
+    /**
+     * Create Property Approval Domain
+     * Manages property approval workflow integrated with Contracts domain
+     */
+    new PropertyApprovalDomain(this, 'PropertyApprovalDomain', {
+      stage: this.stage,
+      table: propertiesContractsDomain.table,
+      eventBus: this.eventBus,
+      taskResponseFunction:
+        propertiesContractsDomain.propertiesApprovalSyncFunction,
+    });
   }
 
-  private getLogsRetentionPriod(): logs.RetentionDays {
-    // Set log retention period based on stage
-    switch (this.stage) {
-      case STAGE.local:
-        return logs.RetentionDays.ONE_DAY;
-      case STAGE.dev:
-        return logs.RetentionDays.ONE_WEEK;
-      case STAGE.prod:
-        return logs.RetentionDays.TWO_WEEKS;
-      default:
-        return logs.RetentionDays.ONE_DAY;
-    }
-  }
-
+  /**
+   * Adds standard tags to the CloudFormation stack
+   * @private
+   *
+   * @remarks
+   * Tags added:
+   * - namespace: Identifies the service namespace (PROPERTIES)
+   * - stage: Identifies the deployment stage
+   * - project: Identifies the project name
+   */
   private addStackTags(): void {
     cdk.Tags.of(this).add('namespace', UNICORN_NAMESPACES.PROPERTIES);
     cdk.Tags.of(this).add('stage', this.stage);
     cdk.Tags.of(this).add('project', 'AWS Serverless Developer Experience');
-  }
-
-  private createDeadLetterQueues(): Record<string, sqs.Queue> {
-    // Object to store all our Dead Letter Queues
-    const dlqs: Record<string, sqs.Queue> = {};
-
-    // Store EventBridge events that failed to be DELIVERED to ContractStatusChangedHandlerFunction
-    dlqs.eventBusDlq = new sqs.Queue(this, 'PropertiesEventBusRuleDlq', {
-      queueName: `PropertiesEventBusRuleDlq-${this.stage}`,
-      retentionPeriod: cdk.Duration.days(14),
-      encryption: sqs.QueueEncryption.SQS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
-    // Store failed INVOCATIONS to each Lambda function in Unicorn Properties Service
-    dlqs.propertiesServiceDlq = new sqs.Queue(this, 'PropertiesServiceDlq', {
-      queueName: `PropertiesServiceDlq-${this.stage}`,
-      retentionPeriod: cdk.Duration.days(14),
-      encryption: sqs.QueueEncryption.SQS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-    return dlqs;
-  }
-
-  private createDynamoDBTable() {
-    return new dynamodb.TableV2(this, `ContractStatusTable`, {
-      tableName: `uni-prop-${this.stage}-properties-ContractStatusTable`,
-      partitionKey: {
-        name: 'property_id',
-        type: dynamodb.AttributeType.STRING,
-      },
-      dynamoStream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // be careful with this in production
-    });
-  }
-
-  private createCatchAllLogGroup() {
-    return new logs.LogGroup(this, 'UnicornPropertiesCatchAllLogGroup', {
-      logGroupName: `/aws/events/${this.stage}/${UNICORN_NAMESPACES.PROPERTIES}-catchall`,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      retention: this.retentionPeriod,
-    });
-  }
-
-  private createEventBus() {
-    return new events.EventBus(this, `UnicornPropertiesBus-${this.stage}`, {
-      eventBusName: `UnicornPropertiesBus-${this.stage}`,
-    });
-  }
-
-  private configureEventBusPolicy() {
-    // Event bus policy to restrict who can publish events (should only be services from UnicornPropertiesNamespace)
-    new events.EventBusPolicy(this, 'UnicornPropertiesEventsBusPublishPolicy', {
-      eventBus: this.eventBus,
-      statementId: `OnlyPropertiesServiceCanPublishToEventBus-${this.stage}`,
-      statement: new iam.PolicyStatement({
-        principals: [new iam.AccountRootPrincipal()],
-        actions: ['events:PutEvents'],
-        resources: [this.eventBus.eventBusArn],
-        conditions: {
-          StringEquals: {
-            'events:source': UNICORN_NAMESPACES.PROPERTIES,
-          },
-        },
-      }).toJSON(),
-    });
-  }
-
-  private createCatchAllRule(catchAllLogGroup: logs.LogGroup) {
-    // Catchall rule used for development purposes.
-    new events.Rule(this, 'properties.catchall', {
-      ruleName: 'properties.catchall',
-      description: 'Catch all events published by the Properties service.',
-      eventBus: this.eventBus,
-      eventPattern: {
-        account: [this.account],
-        source: [UNICORN_NAMESPACES.PROPERTIES],
-      },
-      enabled: true,
-      targets: [new targets.CloudWatchLogGroup(catchAllLogGroup)],
-    });
-  }
-
-  private createEventBusSSMParameters() {
-    // Share Event bus Name through SSM
-    new ssm.StringParameter(this, 'UnicornPropertiesEventBusNameParam', {
-      parameterName: `/uni-prop/${this.stage}/UnicornPropertiesEventBus`,
-      stringValue: this.eventBus.eventBusName,
-    });
-
-    // Share Event bus Arn through SSM
-    new ssm.StringParameter(this, 'UnicornPropertiesEventBusArnParam', {
-      parameterName: `/uni-prop/${this.stage}/UnicornPropertiesEventBusArn`,
-      stringValue: this.eventBus.eventBusArn,
-    });
-  }
-
-  private getDefaultLambdaOptions(
-    contractStatusTable: dynamodb.TableV2,
-    propertiesServiceDlq: sqs.Queue
-  ): nodejs.NodejsFunctionProps {
-    return {
-      runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'lambdaHandler',
-      tracing: lambda.Tracing.ACTIVE,
-      memorySize: 128,
-      timeout: cdk.Duration.seconds(15),
-      architecture: lambda.Architecture.X86_64,
-      environment: {
-        CONTRACT_STATUS_TABLE: contractStatusTable.tableName,
-        EVENT_BUS: this.eventBus.eventBusName,
-        SERVICE_NAMESPACE: UNICORN_NAMESPACES.PROPERTIES,
-        POWERTOOLS_LOGGER_CASE: 'PascalCase',
-        POWERTOOLS_SERVICE_NAME: UNICORN_NAMESPACES.PROPERTIES,
-        POWERTOOLS_TRACE_DISABLED: 'false', // Explicitly disables tracing, default
-        POWERTOOLS_LOGGER_LOG_EVENT: String(this.stage !== 'prod'),
-        POWERTOOLS_LOGGER_SAMPLE_RATE: this.stage !== 'prod' ? '0.1' : '0', // Debug log sampling percentage, default
-        POWERTOOLS_METRICS_NAMESPACE: UNICORN_NAMESPACES.PROPERTIES,
-        POWERTOOLS_LOG_LEVEL: 'INFO', // Log level for Logger (INFO, DEBUG, etc.), default
-        LOG_LEVEL: 'INFO', // Log level for Logger
-        NODE_OPTIONS: this.stage === 'prod' ? '' : '--enable-source-maps',
-      },
-      deadLetterQueue: propertiesServiceDlq,
-    };
-  }
-
-  private createLambdaFunctions(
-    table: dynamodb.TableV2,
-    dlqs: Record<string, sqs.Queue>
-  ): Record<string, nodejs.NodejsFunction> {
-    const defaultLambdaOptions = this.getDefaultLambdaOptions(
-      table,
-      dlqs.propertiesServiceDlq
-    );
-
-    const lambdaFunctions: Record<string, nodejs.NodejsFunction> = {};
-
-    /* Listens to ContractStatusChanged events from EventBridge */
-    lambdaFunctions.contractStatusChangedHandler = new nodejs.NodejsFunction(
-      this,
-      `ContractEventHandlerFunction-${this.stage}`,
-      {
-        ...defaultLambdaOptions,
-        entry: path.join(
-          __dirname,
-          '../../src/properties_service/contractStatusChangedEventHandler.ts'
-        ),
-        logGroup: new logs.LogGroup(
-          this,
-          'ContractStatusChangedHandlerFunctionLogGroup',
-          {
-            removalPolicy: cdk.RemovalPolicy.DESTROY,
-            retention: this.retentionPeriod,
-          }
-        ),
-      }
-    );
-
-    // Listens to Contract status changes from ContractStatusTable to un-pause StepFunctions
-    lambdaFunctions.propertiesApprovalSyncHandler = new nodejs.NodejsFunction(
-      this,
-      `PropertiesApprovalSyncFunction`,
-      {
-        ...defaultLambdaOptions,
-        entry: path.join(
-          __dirname,
-          '../../src/properties_service/propertiesApprovalSyncFunction.ts'
-        ),
-        logGroup: new logs.LogGroup(
-          this,
-          'PropertiesApprovalSyncFunctionLogGroup',
-          {
-            retention: this.retentionPeriod,
-          }
-        ),
-      }
-    );
-
-    // Part of the ApprovalStateMachine, checks if a given Property has an existing Contract in ContractStatusTable
-    lambdaFunctions.contractExistsCheckerHandler = new nodejs.NodejsFunction(
-      this,
-      `ContractExistsCheckerFunction`,
-      {
-        ...defaultLambdaOptions,
-        entry: path.join(
-          __dirname,
-          '../../src/properties_service/contractExistsCheckerFunction.ts'
-        ),
-        logGroup: new logs.LogGroup(
-          this,
-          'ContractExistsCheckerFunctionLogGroup',
-          {
-            retention: this.retentionPeriod,
-          }
-        ),
-      }
-    );
-
-    lambdaFunctions.waitForContractApprovalHandler = new nodejs.NodejsFunction(
-      this,
-      `WaitForContractApprovalFunction`,
-      {
-        ...defaultLambdaOptions,
-        entry: path.join(
-          __dirname,
-          '../../src/properties_service/waitForContractApprovalFunction.ts'
-        ),
-        logGroup: new logs.LogGroup(
-          this,
-          'WaitForContractApprovalFunctionLogGroup',
-          {
-            retention: this.retentionPeriod,
-          }
-        ),
-      }
-    );
-
-    // Part of the ApprovalStateMachine, validates if all outputs of content checking steps are OK
-    lambdaFunctions.contentIntegrityValidatorHandler =
-      new nodejs.NodejsFunction(this, `ContentIntegrityValidatorFunction`, {
-        ...defaultLambdaOptions,
-        entry: path.join(
-          __dirname,
-          '../../src/properties_service/contentIntegrityValidatorFunction.ts'
-        ),
-        logGroup: new logs.LogGroup(
-          this,
-          'ContentIntegrityValidatorFunctionLogGroup',
-          {
-            retention: this.retentionPeriod,
-          }
-        ),
-      });
-
-    // Set up permissions and event sources
-    this.configureLambdaPermissions(lambdaFunctions, table, dlqs);
-
-    return lambdaFunctions;
-  }
-
-  private configureLambdaPermissions(
-    lambdaFunctions: Record<string, nodejs.NodejsFunction>,
-    table: dynamodb.TableV2,
-    dlqs: Record<string, sqs.Queue>
-  ): void {
-    // allow Contract Status Changed function to read and write from Contract Status DynamoDB table
-    table.grantReadWriteData(lambdaFunctions.contractStatusChangedHandler);
-
-    // Allow Properties Approval Sync function to send messages to the Properties Service Dead Letter Queue
-    dlqs.propertiesServiceDlq.grantSendMessages(
-      lambdaFunctions.propertiesApprovalSyncHandler
-    );
-
-    // Allow Properties Approval Sync function to read data and stream data from Contract Status DynamoDB table
-    table.grantReadData(lambdaFunctions.propertiesApprovalSyncHandler);
-    table.grantStreamRead(lambdaFunctions.propertiesApprovalSyncHandler);
-
-    // Add DynamoDB Stream as an event source for the Properties Approval Sync Function
-    lambdaFunctions.propertiesApprovalSyncHandler.addEventSource(
-      new DynamoEventSource(table, {
-        startingPosition: lambda.StartingPosition.TRIM_HORIZON,
-        onFailure: new SqsDlq(dlqs.propertiesServiceDlq),
-      })
-    );
-
-    // Allow Contract Exists Checker function to read data from Contract Status DynamoDB table
-    table.grantReadData(lambdaFunctions.contractExistsCheckerHandler);
-
-    // Allow Wait For Contract Approval function to read and write data from Contract Status DynamoDB table
-    table.grantReadWriteData(lambdaFunctions.waitForContractApprovalHandler);
-  }
-
-  private createStateMachine(
-    lambdaFunctions: Record<string, nodejs.NodejsFunction>,
-    dlqs: Record<string, sqs.Queue>
-  ) {
-    const imagesBucketName = ssm.StringParameter.valueForTypedStringParameterV2(
-      this,
-      `/uni-prop/${this.stage}/ImagesBucket`,
-      ssm.ParameterValueType.STRING
-    );
-    const stateMachineLogGroup = new logs.LogGroup(
-      this,
-      'ApprovalStateMachineLogGroup',
-      {
-        logGroupName: `/aws/vendedlogs/states/uni-prop-${this.stage}-${UNICORN_NAMESPACES.PROPERTIES}-ApprovalStateMachine`,
-        retention: this.retentionPeriod,
-      }
-    );
-    const stateMachine = new sfn.StateMachine(this, `ApprovalStateMachine`, {
-      stateMachineName: `${this.stackName}-ApprovalStateMachine`,
-      definitionBody: sfn.DefinitionBody.fromFile(
-        path.join(
-          __dirname,
-          '../../src/state_machine/property_approval.asl.yaml'
-        )
-      ),
-      definitionSubstitutions: {
-        ContractExistsChecker:
-          lambdaFunctions.contractExistsCheckerHandler.functionArn,
-        WaitForContractApproval:
-          lambdaFunctions.waitForContractApprovalHandler.functionArn,
-        ContentIntegrityValidator:
-          lambdaFunctions.contentIntegrityValidatorHandler.functionArn,
-        ImageUploadBucketName: imagesBucketName,
-        EventBusName: this.eventBus.eventBusName,
-        ServiceName: UNICORN_NAMESPACES.PROPERTIES,
-      },
-      tracingEnabled: true,
-      logs: {
-        level: sfn.LogLevel.ALL,
-        includeExecutionData: true,
-        destination: stateMachineLogGroup,
-      },
-      role: new iam.Role(this, 'StateMachineRole', {
-        assumedBy: new iam.ServicePrincipal('states.amazonaws.com'),
-        managedPolicies: [
-          iam.ManagedPolicy.fromAwsManagedPolicyName(
-            'AWSXRayDaemonWriteAccess'
-          ),
-          iam.ManagedPolicy.fromAwsManagedPolicyName('ComprehendFullAccess'),
-          iam.ManagedPolicy.fromAwsManagedPolicyName(
-            'AmazonRekognitionFullAccess'
-          ),
-        ],
-        inlinePolicies: {
-          CloudWatchPublishLogsMetrics: new iam.PolicyDocument({
-            statements: [
-              new iam.PolicyStatement({
-                actions: [
-                  'logs:CreateLogDelivery',
-                  'logs:GetLogDelivery',
-                  'logs:UpdateLogDelivery',
-                  'logs:DeleteLogDelivery',
-                  'logs:ListLogDeliveries',
-                  'logs:PutResourcePolicy',
-                  'logs:DescribeResourcePolicies',
-                  'logs:DescribeLogGroups',
-                  'cloudwatch:PutMetricData',
-                ],
-                resources: ['*'],
-              }),
-            ],
-          }),
-          S3ReadPolicy: new iam.PolicyDocument({
-            statements: [
-              new iam.PolicyStatement({
-                actions: ['s3:Get*'],
-                resources: [`arn:aws:s3:::${imagesBucketName}/*`],
-              }),
-            ],
-          }),
-        },
-      }),
-    });
-    // State machine permissions
-    stateMachine.grantTaskResponse(
-      lambdaFunctions.propertiesApprovalSyncHandler
-    );
-    this.eventBus.grantPutEventsTo(stateMachine);
-    lambdaFunctions.waitForContractApprovalHandler.grantInvoke(stateMachine);
-    lambdaFunctions.contentIntegrityValidatorHandler.grantInvoke(stateMachine);
-    lambdaFunctions.contractExistsCheckerHandler.grantInvoke(stateMachine);
-
-    return { stateMachine, stateMachineLogGroup };
-  }
-
-  private createEventRules(
-    lambdaFunctions: Record<string, nodejs.NodejsFunction>,
-    stateMachine: sfn.StateMachine,
-    dlqs: Record<string, sqs.Queue>
-  ) {
-    // Add EventBridge Rule as event source for the Contract Status Changed function
-    new events.Rule(this, 'unicorn.properties-ContractStatusChanged', {
-      ruleName: 'unicorn.properties-ContractStatusChanged',
-      description:
-        'ContractStatusChanged events published by the Contracts service.',
-      eventBus: this.eventBus,
-      eventPattern: {
-        source: [UNICORN_NAMESPACES.CONTRACTS],
-        detailType: ['ContractStatusChanged'],
-      },
-      enabled: true,
-      targets: [
-        new targets.LambdaFunction(
-          lambdaFunctions.contractStatusChangedHandler,
-          {
-            deadLetterQueue: dlqs.eventBusDlq,
-            retryAttempts: 5,
-            maxEventAge: cdk.Duration.minutes(15),
-          }
-        ),
-      ],
-    });
-
-    // Add event source for state machine
-    new events.Rule(this, 'unicorn.properties-PublicationApprovalRequested', {
-      ruleName: 'unicorn.properties-PublicationApprovalRequested',
-      description:
-        'PublicationApprovalRequested events published by the Web service.',
-      eventBus: this.eventBus,
-      eventPattern: {
-        source: [UNICORN_NAMESPACES.WEB],
-        detailType: ['PublicationApprovalRequested'],
-      },
-      enabled: true,
-      targets: [
-        new targets.SfnStateMachine(stateMachine, {
-          deadLetterQueue: dlqs.eventBusDlq,
-          retryAttempts: 5,
-          maxEventAge: cdk.Duration.minutes(15),
-        }),
-      ],
-    });
-  }
-
-  private createEventSchemaRegistry() {
-    /* Events Schema */
-    const registry = new eventschemas.CfnRegistry(this, 'EventRegistry', {
-      registryName: `${UNICORN_NAMESPACES.PROPERTIES}-${this.stage}`,
-      description: `Event schemas for Unicorn Properties ${this.stage}`,
-    });
-
-    const publicationEvaluationCompletedSchema = new eventschemas.CfnSchema(
-      this,
-      'PublicationEvaluationCompletedSchema',
-      {
-        type: 'OpenApi3',
-        registryName: registry.attrRegistryName,
-        description: 'The schema for when a property evaluation is completed',
-        schemaName: `${registry.attrRegistryName}@PublicationEvaluationCompleted`,
-        content: JSON.stringify(PublicationEvaluationCompleted),
-      }
-    );
-
-    const registryPolicy = new eventschemas.CfnRegistryPolicy(
-      this,
-      'RegistryPolicy',
-      {
-        registryName: registry.attrRegistryName,
-        policy: new iam.PolicyDocument({
-          statements: [
-            new iam.PolicyStatement({
-              effect: iam.Effect.ALLOW,
-              principals: [
-                new iam.AccountPrincipal(cdk.Stack.of(this).account),
-              ],
-              actions: [
-                'schemas:DescribeCodeBinding',
-                'schemas:DescribeRegistry',
-                'schemas:DescribeSchema',
-                'schemas:GetCodeBindingSource',
-                'schemas:ListSchemas',
-                'schemas:ListSchemaVersions',
-                'schemas:SearchSchemas',
-              ],
-              resources: [
-                registry.attrRegistryArn,
-                `arn:aws:schemas:${cdk.Stack.of(this).region}:${
-                  cdk.Stack.of(this).account
-                }:schema/${registry.attrRegistryName}*`,
-              ],
-            }),
-          ],
-        }),
-      }
-    );
-    registryPolicy.node.addDependency(publicationEvaluationCompletedSchema);
-
-    // Allow Subscribers to create their own subscription rules
-    this.eventBus.addToResourcePolicy(
-      new iam.PolicyStatement({
-        sid: `AllowSubscribersToCreateSubscriptionRules-properties-${this.stage}`,
-        effect: iam.Effect.ALLOW,
-        principals: [new iam.AccountRootPrincipal()],
-        actions: ['events:*Rule', 'events:*Targets'],
-        resources: [this.eventBus.eventBusArn],
-        conditions: {
-          StringEqualsIfExists: {
-            'events:creatorAccount': cdk.Stack.of(this).account,
-          },
-        },
-      })
-    );
-  }
-
-  private createStackOutputs(
-    table: dynamodb.TableV2,
-    lambdaFunctions: Record<string, nodejs.NodejsFunction>,
-    stateMachine: sfn.StateMachine,
-    stateMachineLogGroup: logs.LogGroup,
-    catchAllLogGroup: logs.LogGroup
-  ): void {
-    // Lambda Function ARNs
-    new cdk.CfnOutput(this, 'ContractStatusChangedHandlerFunctionArn', {
-      value: lambdaFunctions.contractStatusChangedHandler.functionArn,
-    });
-    new cdk.CfnOutput(this, 'PropertiesApprovalSyncFunctionArn', {
-      value: lambdaFunctions.propertiesApprovalSyncHandler.functionArn,
-    });
-    new cdk.CfnOutput(this, 'ContractExistsCheckerFunctionArn', {
-      value: lambdaFunctions.contractExistsCheckerHandler.functionArn,
-    });
-    new cdk.CfnOutput(this, 'ContentIntegrityValidatorFunctionArn', {
-      value: lambdaFunctions.contentIntegrityValidatorHandler.functionArn,
-    });
-    new cdk.CfnOutput(this, 'WaitForContractApprovalFunctionArn', {
-      value: lambdaFunctions.waitForContractApprovalHandler.functionArn,
-    });
-
-    // Lambda Function Names
-    new cdk.CfnOutput(this, 'ContractStatusChangedHandlerFunctionName', {
-      value: lambdaFunctions.contractStatusChangedHandler.functionName,
-    });
-    new cdk.CfnOutput(this, 'PropertiesApprovalSyncFunctionName', {
-      value: lambdaFunctions.propertiesApprovalSyncHandler.functionName,
-    });
-    new cdk.CfnOutput(this, 'ContractExistsCheckerFunctionName', {
-      value: lambdaFunctions.contractExistsCheckerHandler.functionName,
-    });
-    new cdk.CfnOutput(this, 'ContentIntegrityValidatorFunctionNName', {
-      value: lambdaFunctions.contentIntegrityValidatorHandler.functionName,
-    });
-    new cdk.CfnOutput(this, 'WaitForContractApprovalFunctionNName', {
-      value: lambdaFunctions.waitForContractApprovalHandler.functionName,
-    });
-
-    // DynamoDB Table Name
-    new cdk.CfnOutput(this, 'ContractStatusTableName', {
-      value: table.tableName,
-      description: 'DynamoDB table storing contract status information',
-    });
-
-    // Step Function Outputs
-    new cdk.CfnOutput(this, 'ApprovalStateMachineName', {
-      value: stateMachine.stateMachineName,
-    });
-    new cdk.CfnOutput(this, 'ApprovalStateMachineArn', {
-      value: stateMachine.stateMachineArn,
-    });
-
-    // EventBridge Names
-    new cdk.CfnOutput(this, 'UnicornPropertiesEventBusName', {
-      value: this.eventBus.eventBusName,
-    });
-
-    // CloudWatch Logs Outputs
-    new cdk.CfnOutput(this, 'UnicornPropertiesCatchAllLogGroupArn', {
-      description: "Log all events on the service's EventBridge Bus",
-      value: catchAllLogGroup.logGroupArn,
-    });
-
-    new cdk.CfnOutput(this, 'ApprovalStateMachineLogGroupName', {
-      value: stateMachineLogGroup.logGroupName,
-    });
   }
 }

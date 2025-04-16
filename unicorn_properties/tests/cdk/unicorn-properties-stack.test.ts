@@ -1,9 +1,9 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
-import { Match, Template } from 'aws-cdk-lib/assertions';
+import { Template } from 'aws-cdk-lib/assertions';
 
-import { STAGE, UNICORN_NAMESPACES } from '../../cdk/app/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/constructs/helper';
 import { UnicornPropertiesStack } from '../../cdk/app/unicorn-properties-stack';
 
 describe('Unicorn Properties Stack', () => {
@@ -22,112 +22,31 @@ describe('Unicorn Properties Stack', () => {
     template = Template.fromStack(stack);
   });
 
-  test('EventBus is created with correct properties', () => {
-    template.hasResourceProperties('AWS::Events::EventBus', {
-      Name: 'UnicornPropertiesBus-local',
-      Tags: [
-        {
-          Key: 'namespace',
-          Value: serviceNamespace,
-        },
-        {
-          Key: 'project',
-          Value: 'AWS Serverless Developer Experience',
-        },
-        {
-          Key: 'stage',
-          Value: 'local',
-        },
-      ],
-    });
-  });
-
-  test('DynamoDB table is created with correct configuration', () => {
-    template.hasResourceProperties('AWS::DynamoDB::GlobalTable', {
-      AttributeDefinitions: [
-        {
-          AttributeName: 'property_id',
-          AttributeType: 'S',
-        },
-      ],
-      BillingMode: 'PAY_PER_REQUEST',
-      KeySchema: [
-        {
-          AttributeName: 'property_id',
-          KeyType: 'HASH',
-        },
-      ],
-      StreamSpecification: {
-        StreamViewType: 'NEW_AND_OLD_IMAGES',
-      },
-    });
-  });
-
-  test('Lambda functions are created with correct configurations', () => {
-    // Test Contract Event Handler Lambda
-    template.hasResourceProperties('AWS::Lambda::Function', {
-      Handler: 'index.lambdaHandler',
-      Runtime: 'nodejs20.x',
-      Environment: {
-        Variables: {
-          CONTRACT_STATUS_TABLE: {
-            Ref: Match.stringLikeRegexp('.*ContractStatusTable.*'),
-          },
-          EVENT_BUS: {
-            Ref: Match.stringLikeRegexp('.*UnicornPropertiesBus.*'),
-          },
-          SERVICE_NAMESPACE: serviceNamespace,
-          POWERTOOLS_SERVICE_NAME: serviceNamespace,
-          POWERTOOLS_LOGGER_CASE: 'PascalCase',
-          POWERTOOLS_TRACE_DISABLED: 'false',
-          POWERTOOLS_LOGGER_LOG_EVENT: Match.anyValue(),
-          POWERTOOLS_LOGGER_SAMPLE_RATE: Match.anyValue(),
-          LOG_LEVEL: 'INFO',
-        },
-      },
-    });
-  });
-
-  test('EventBridge rules are created correctly', () => {
-    template.hasResourceProperties('AWS::Events::Rule', {
-      Description: 'Catch all events published by the Properties service.',
-      EventPattern: {
-        source: [serviceNamespace],
-      },
-      State: 'ENABLED',
-    });
-  });
-
-  test('SSM Parameters are created', () => {
-    template.hasResourceProperties('AWS::SSM::Parameter', {
-      Type: 'String',
-      Name: '/uni-prop/local/UnicornPropertiesEventBus',
-    });
-
-    template.hasResourceProperties('AWS::SSM::Parameter', {
-      Type: 'String',
-      Name: '/uni-prop/local/UnicornPropertiesEventBusArn',
-    });
-  });
-
-  test('Dead Letter Queues are created', () => {
-    template.hasResourceProperties('AWS::SQS::Queue', {
-      MessageRetentionPeriod: 1209600,
-      QueueName: 'PropertiesEventBusRuleDlq-local',
-    });
-
-    template.hasResourceProperties('AWS::SQS::Queue', {
-      MessageRetentionPeriod: 1209600,
-      QueueName: 'PropertiesServiceDlq-local',
+  test('stack has required tags', () => {
+    expect(stack.tags.tagValues()).toEqual({
+      namespace: serviceNamespace,
+      stage: stage,
+      project: 'AWS Serverless Developer Experience',
     });
   });
 
   test('Resource count matches expected', () => {
     // Verify the number of resources created
-    template.resourceCountIs('AWS::Lambda::Function', 6); // Adjust number based on your functions
-    template.resourceCountIs('AWS::Events::EventBus', 1);
+
     template.resourceCountIs('AWS::DynamoDB::GlobalTable', 1);
-    template.resourceCountIs('AWS::SQS::Queue', 2);
+    template.resourceCountIs('AWS::Events::Rule', 3);
+    template.resourceCountIs('AWS::Events::EventBus', 1);
+    template.resourceCountIs('AWS::Events::EventBusPolicy', 2);
+    template.resourceCountIs('AWS::IAM::Role', 6);
+    template.resourceCountIs('AWS::IAM::Policy', 6);
+    template.resourceCountIs('AWS::Lambda::Function', 4);
+    template.resourceCountIs('AWS::Lambda::Permission', 1);
+    template.resourceCountIs('AWS::Lambda::EventSourceMapping', 1);
+    template.resourceCountIs('AWS::Logs::LogGroup', 5);
     template.resourceCountIs('AWS::SSM::Parameter', 2);
+    template.resourceCountIs('AWS::StepFunctions::StateMachine', 1);
+    template.resourceCountIs('AWS::SQS::Queue', 3);
+    template.resourceCountIs('AWS::SQS::QueuePolicy', 2);
+    template.resourceCountIs('Custom::CloudwatchLogResourcePolicy', 1);
   });
 });

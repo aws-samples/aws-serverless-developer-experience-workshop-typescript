@@ -4,7 +4,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { AwsSolutionsChecks } from 'cdk-nag';
 
-import { getStageFromContext } from './app/helper';
+import { getStageFromContext } from './constructs/helper';
 import { UnicornPropertiesStack } from './app/unicorn-properties-stack';
 import { PropertiesToContractsIntegrationStack } from './app/unicorn-properties-integration-with-contracts-stack';
 import { PropertiesToWebIntegrationStack } from './app/unicorn-properties-integration-with-web-stack';
