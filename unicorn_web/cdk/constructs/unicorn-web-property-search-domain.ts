@@ -9,7 +9,12 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 
-import { LambdaHelper, getDefaultLogsRetentionPeriod, STAGE } from './helper';
+import {
+  LambdaHelper,
+  getDefaultLogsRetentionPeriod,
+  STAGE,
+  UNICORN_NAMESPACES,
+} from './helper';
 
 /**
  * Properties for the PropertySearchDomain construct
@@ -76,6 +81,7 @@ export class PropertySearchDomain extends Construct {
           ...LambdaHelper.getDefaultEnvironmentVariables({
             table: props.table,
             stage: props.stage,
+            serviceNamespace: UNICORN_NAMESPACES.WEB,
           }),
         },
         /**

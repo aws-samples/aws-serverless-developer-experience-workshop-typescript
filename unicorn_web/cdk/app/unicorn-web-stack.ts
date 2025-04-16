@@ -99,7 +99,7 @@ export class UnicornWebStack extends cdk.Stack {
     });
 
     /* -------------------------------------------------------------------------- */
-    /*                                  EVENT BUS                                   */
+    /*                                  EVENTS DOMAIN                               */
     /* -------------------------------------------------------------------------- */
 
     /**
@@ -112,7 +112,7 @@ export class UnicornWebStack extends cdk.Stack {
     this.eventBus = webEventsDomain.eventBus;
 
     /* -------------------------------------------------------------------------- */
-    /*                             API GATEWAY REST API                             */
+    /*                                API DOMAIN                                    */
     /* -------------------------------------------------------------------------- */
 
     /**

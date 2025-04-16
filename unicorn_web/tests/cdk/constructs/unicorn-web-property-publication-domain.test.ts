@@ -180,7 +180,7 @@ describe('PropertyPublicationDomain', () => {
     template.resourceCountIs('AWS::ApiGateway::Method', 1);
     template.resourceCountIs('AWS::Events::EventBus', 1);
     template.resourceCountIs('AWS::Events::Rule', 1);
-    template.resourceCountIs('AWS::SQS::Queue', 4);
+    template.resourceCountIs('AWS::SQS::Queue', 3);
     template.resourceCountIs('AWS::SQS::QueuePolicy', 3);
     template.resourceCountIs('AWS::IAM::Role', 4);
     template.resourceCountIs('AWS::IAM::Policy', 3);

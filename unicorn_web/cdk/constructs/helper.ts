@@ -87,6 +87,7 @@ export const getStageFromContext = (app: cdk.App): STAGE => {
 interface LambdaOptionsProps {
   table: dynamodb.ITableV2;
   stage: STAGE;
+  serviceNamespace: UNICORN_NAMESPACES;
 }
 
 /**
@@ -150,13 +151,13 @@ export class LambdaHelper {
   } {
     return {
       DYNAMODB_TABLE: props.table.tableName,
-      SERVICE_NAMESPACE: UNICORN_NAMESPACES.WEB,
+      SERVICE_NAMESPACE: props.serviceNamespace,
       POWERTOOLS_LOGGER_CASE: 'PascalCase',
-      POWERTOOLS_SERVICE_NAME: UNICORN_NAMESPACES.WEB,
+      POWERTOOLS_SERVICE_NAME: props.serviceNamespace,
       POWERTOOLS_TRACE_DISABLED: 'false', // Explicitly disables tracing, default
       POWERTOOLS_LOGGER_LOG_EVENT: String(props.stage !== 'prod'),
       POWERTOOLS_LOGGER_SAMPLE_RATE: props.stage !== 'prod' ? '0.1' : '0', // Debug log sampling percentage, default
-      POWERTOOLS_METRICS_NAMESPACE: UNICORN_NAMESPACES.WEB,
+      POWERTOOLS_METRICS_NAMESPACE: props.serviceNamespace,
       POWERTOOLS_LOG_LEVEL: 'INFO', // Log level for Logger (INFO, DEBUG, etc.), default
       LOG_LEVEL: 'INFO', // Log level for Logger
       NODE_OPTIONS: props.stage === 'prod' ? '' : '--enable-source-maps',

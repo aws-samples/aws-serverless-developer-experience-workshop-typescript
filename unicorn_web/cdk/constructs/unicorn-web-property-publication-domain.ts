@@ -20,7 +20,6 @@ import {
   STAGE,
   UNICORN_NAMESPACES,
 } from './helper';
-import { lambda } from 'cdk-nag/lib/rules';
 
 /**
  * Properties for the PropertyPublicationDomain construct
@@ -170,6 +169,7 @@ export class PropertyPublicationDomain extends Construct {
           ...LambdaHelper.getDefaultEnvironmentVariables({
             table: props.table,
             stage: props.stage,
+            serviceNamespace: UNICORN_NAMESPACES.WEB,
           }),
           EVENT_BUS: props.eventBus.eventBusName,
         },
@@ -177,7 +177,7 @@ export class PropertyPublicationDomain extends Construct {
           removalPolicy: cdk.RemovalPolicy.DESTROY,
           retention: getDefaultLogsRetentionPeriod(props.stage),
         }),
-        deadLetterQueueEnabled: true,
+        deadLetterQueue: publicationApprovedEventHandlerDLQ,
       }
     );
     // Grant permissions to the approval request function
@@ -212,6 +212,7 @@ export class PropertyPublicationDomain extends Construct {
           ...LambdaHelper.getDefaultEnvironmentVariables({
             table: props.table,
             stage: props.stage,
+            serviceNamespace: UNICORN_NAMESPACES.WEB,
           }),
         },
         logGroup: new logs.LogGroup(this, 'PublicationApprovedLogs', {

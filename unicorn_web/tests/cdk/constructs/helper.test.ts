@@ -96,6 +96,8 @@ describe('Helper Functions and Enums', () => {
 
     describe('getDefaultEnvironmentVariables', () => {
       let mockTable: dynamodb.ITableV2;
+      const stage = STAGE.local;
+      const serviceNamespace = UNICORN_NAMESPACES.PROPERTIES;
 
       beforeEach(() => {
         // Create a mock DynamoDB table
@@ -109,17 +111,18 @@ describe('Helper Functions and Enums', () => {
         const envVars = LambdaHelper.getDefaultEnvironmentVariables({
           table: mockTable,
           stage: STAGE.dev,
+          serviceNamespace,
         });
 
         expect(envVars).toEqual({
           DYNAMODB_TABLE: mockTable.tableName,
-          SERVICE_NAMESPACE: UNICORN_NAMESPACES.WEB,
+          SERVICE_NAMESPACE: serviceNamespace,
           POWERTOOLS_LOGGER_CASE: 'PascalCase',
-          POWERTOOLS_SERVICE_NAME: UNICORN_NAMESPACES.WEB,
+          POWERTOOLS_SERVICE_NAME: serviceNamespace,
           POWERTOOLS_TRACE_DISABLED: 'false',
           POWERTOOLS_LOGGER_LOG_EVENT: 'true',
           POWERTOOLS_LOGGER_SAMPLE_RATE: '0.1',
-          POWERTOOLS_METRICS_NAMESPACE: UNICORN_NAMESPACES.WEB,
+          POWERTOOLS_METRICS_NAMESPACE: serviceNamespace,
           POWERTOOLS_LOG_LEVEL: 'INFO',
           LOG_LEVEL: 'INFO',
           NODE_OPTIONS: '--enable-source-maps',
@@ -130,17 +133,18 @@ describe('Helper Functions and Enums', () => {
         const envVars = LambdaHelper.getDefaultEnvironmentVariables({
           table: mockTable,
           stage: STAGE.prod,
+          serviceNamespace,
         });
 
         expect(envVars).toEqual({
           DYNAMODB_TABLE: mockTable.tableName,
-          SERVICE_NAMESPACE: UNICORN_NAMESPACES.WEB,
+          SERVICE_NAMESPACE: serviceNamespace,
           POWERTOOLS_LOGGER_CASE: 'PascalCase',
-          POWERTOOLS_SERVICE_NAME: UNICORN_NAMESPACES.WEB,
+          POWERTOOLS_SERVICE_NAME: serviceNamespace,
           POWERTOOLS_TRACE_DISABLED: 'false',
           POWERTOOLS_LOGGER_LOG_EVENT: 'false',
           POWERTOOLS_LOGGER_SAMPLE_RATE: '0',
-          POWERTOOLS_METRICS_NAMESPACE: UNICORN_NAMESPACES.WEB,
+          POWERTOOLS_METRICS_NAMESPACE: serviceNamespace,
           POWERTOOLS_LOG_LEVEL: 'INFO',
           LOG_LEVEL: 'INFO',
           NODE_OPTIONS: '',
@@ -151,6 +155,7 @@ describe('Helper Functions and Enums', () => {
         const envVars = LambdaHelper.getDefaultEnvironmentVariables({
           table: mockTable,
           stage: STAGE.dev,
+          serviceNamespace: UNICORN_NAMESPACES.PROPERTIES,
         });
 
         expect(envVars.DYNAMODB_TABLE).toBe(mockTable.tableName);
