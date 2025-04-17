@@ -8,30 +8,30 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import { getDefaultLogsRetentionPeriod, STAGE } from './helper';
 
 /**
- * Properties for the ApiDomain construct
- * @interface ApiDomainProps
+ * Properties for the ApiConstruct construct
+ * @interface ApiConstructProps
  */
-interface ApiDomainProps {
+interface ApiConstructProps {
   stage: STAGE;
 }
 
 /**
  * Construct that defines the API Gateway infrastructure for the Unicorn Web application
- * @class ApiDomain
+ * @class ApiConstruct
  *
  * @example
  * ```typescript
- * const apiDomain = new ApiDomain(stack, 'ApiDomain', {
+ * const apiConstruct = new ApiConstruct(stack, 'ApiConstruct', {
  *   stage: STAGE.dev
  * });
  * ```
  */
-export class ApiDomain extends Construct {
+export class ApiConstruct extends Construct {
   /** REST API Gateway instance */
   public readonly api: apigateway.RestApi;
 
   /**
-   * Creates a new ApiDomain construct
+   * Creates a new ApiConstruct construct
    * @param scope - The scope in which to define this construct
    * @param id - The scoped construct ID
    * @param props - Configuration properties
@@ -42,7 +42,7 @@ export class ApiDomain extends Construct {
    * - CloudWatch log group for API logging
    * - Associated IAM roles for CloudWatch integration
    */
-  constructor(scope: Construct, id: string, props: ApiDomainProps) {
+  constructor(scope: Construct, id: string, props: ApiConstructProps) {
     super(scope, id);
 
     /**

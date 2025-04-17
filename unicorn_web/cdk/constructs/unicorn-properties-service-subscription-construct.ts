@@ -11,7 +11,7 @@ import * as ssm from 'aws-cdk-lib/aws-ssm';
  * Parameters for creating a cross-service event subscription
  * @interface crossUniPropServiceSubscriptionParameters
  */
-export interface crossUniPropServiceSubscriptionParameters {
+export interface crossUniPropServiceSubscriptionConstructProps {
   /** SSM parameter name containing the publisher's EventBus ARN */
   publisherEventBusArnParam: string;
   /** Name of the EventBridge rule for the subscription */
@@ -43,7 +43,7 @@ export interface crossUniPropServiceSubscriptionParameters {
  * });
  * ```
  */
-export class crossUniPropServiceSubscription extends Construct {
+export class crossUniPropServiceSubscriptionConstruct extends Construct {
   /**
    * Creates a new cross-service event subscription
    * @param scope - The scope in which to define this construct
@@ -59,7 +59,7 @@ export class crossUniPropServiceSubscription extends Construct {
   constructor(
     scope: Construct,
     id: string,
-    props: crossUniPropServiceSubscriptionParameters
+    props: crossUniPropServiceSubscriptionConstructProps
   ) {
     super(scope, id);
 

@@ -23,10 +23,10 @@ import {
 } from './helper';
 
 /**
- * Properties for the PropertyApprovalDomain construct
- * @interface PropertyApprovalDomainProps
+ * Properties for the PropertyApprovalConstruct construct
+ * @interface PropertyApprovalConstructProps
  */
-interface PropertyApprovalDomainProps {
+interface PropertyApprovalConstructProps {
   /** Deployment stage of the application */
   stage: STAGE;
   /** EventBridge event bus for publishing events */
@@ -40,11 +40,11 @@ interface PropertyApprovalDomainProps {
 /**
  * Construct that defines the Property Approval infrastructure
  * Manages property approval workflow and state machine
- * @class PropertyApprovalDomain
+ * @class PropertyApprovalConstruct
  *
  * @example
  * ```typescript
- * const approvalDomain = new PropertyApprovalDomain(stack, 'PropertyApprovalDomain', {
+ * const approvalDomain = new PropertyApprovalConstruct(stack, 'PropertyApprovalConstruct', {
  *   stage: STAGE.dev,
  *   eventBus: myEventBus,
  *   table: myDynamoTable,
@@ -52,12 +52,12 @@ interface PropertyApprovalDomainProps {
  * });
  * ```
  */
-export class PropertyApprovalDomain extends Construct {
+export class PropertyApprovalConstruct extends Construct {
   /** Step Functions state machine for property approval workflow */
   public readonly stateMachine: sfn.StateMachine;
 
   /**
-   * Creates a new PropertyApprovalDomain construct
+   * Creates a new PropertyApprovalConstruct construct
    * @param scope - The scope in which to define this construct
    * @param id - The scoped construct ID
    * @param props - Configuration properties
@@ -73,7 +73,7 @@ export class PropertyApprovalDomain extends Construct {
   constructor(
     scope: Construct,
     id: string,
-    props: PropertyApprovalDomainProps
+    props: PropertyApprovalConstructProps
   ) {
     super(scope, id);
 

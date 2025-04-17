@@ -6,7 +6,7 @@ import * as cdk from 'aws-cdk-lib';
 
 import * as events from 'aws-cdk-lib/aws-events';
 
-import { crossUniPropServiceSubscription } from '../constructs/unicorn-properties-service-subscription';
+import { crossUniPropServiceSubscriptionConstruct } from '../constructs/unicorn-properties-service-subscription-construct';
 import { STAGE, UNICORN_NAMESPACES } from '../constructs/helper';
 
 /**
@@ -74,7 +74,7 @@ export class PropertiesToContractsIntegrationStack extends cdk.Stack {
      * - Source filtered to Contracts service namespace
      * - Forwards events to Properties service event bus
      */
-    new crossUniPropServiceSubscription(
+    new crossUniPropServiceSubscriptionConstruct(
       this,
       'unicorn-properties-ContractStatusChangedSubscription',
       {

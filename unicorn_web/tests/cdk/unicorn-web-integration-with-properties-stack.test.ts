@@ -4,7 +4,10 @@ import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as events from 'aws-cdk-lib/aws-events';
 
-import { STAGE, UNICORN_NAMESPACES } from '../../cdk/constructs/helper';
+import {
+  STAGE,
+  UNICORN_NAMESPACES,
+} from '../../cdk/constructs/helper';
 import { WebToPropertiesIntegrationStack } from '../../cdk/app/unicorn-web-integration-with-properties-stack';
 
 describe('UnicornWebIntegrationWithPropertiesStack', () => {

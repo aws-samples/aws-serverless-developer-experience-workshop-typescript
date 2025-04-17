@@ -23,7 +23,9 @@ export const getStageFromContext = (app: App): STAGE => {
   if (stageFromContext) {
     if (!isValidStage(stageFromContext)) {
       throw new Error(
-        `Invalid stage "${stageFromContext}". Must be one of: ${Object.values(STAGE).join(', ')}`
+        `Invalid stage "${stageFromContext}". Must be one of: ${Object.values(
+          STAGE
+        ).join(', ')}`
       );
     }
     return stageFromContext;

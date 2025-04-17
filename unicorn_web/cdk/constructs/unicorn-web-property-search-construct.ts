@@ -17,10 +17,10 @@ import {
 } from './helper';
 
 /**
- * Properties for the PropertySearchDomain construct
- * @interface PropertySearchDomainProps
+ * Properties for the PropertySearchConstruct construct
+ * @interface PropertySearchConstructProps
  */
-interface PropertySearchDomainProps {
+interface PropertySearchConstructProps {
   /** Deployment stage of the application */
   stage: STAGE;
   /** DynamoDB table for property data storage */
@@ -32,20 +32,20 @@ interface PropertySearchDomainProps {
 /**
  * Construct that defines the Property Search infrastructure
  * Handles property search and retrieval functionality
- * @class PropertySearchDomain
+ * @class PropertySearchConstruct
  *
  * @example
  * ```typescript
- * const searchDomain = new PropertySearchDomain(stack, 'PropertySearchDomain', {
+ * const searchConstruct = new PropertySearchConstruct(stack, 'PropertySearchConstruct', {
  *   stage: STAGE.dev,
  *   table: myDynamoTable,
  *   api: myApiGateway
  * });
  * ```
  */
-export class PropertySearchDomain extends Construct {
+export class PropertySearchConstruct extends Construct {
   /**
-   * Creates a new PropertySearchDomain construct
+   * Creates a new PropertySearchConstruct construct
    * @param scope - The scope in which to define this construct
    * @param id - The scoped construct ID
    * @param props - Configuration properties
@@ -57,7 +57,11 @@ export class PropertySearchDomain extends Construct {
    * - Associated IAM roles and permissions
    * - CloudFormation outputs for API endpoints
    */
-  constructor(scope: Construct, id: string, props: PropertySearchDomainProps) {
+  constructor(
+    scope: Construct,
+    id: string,
+    props: PropertySearchConstructProps
+  ) {
     super(scope, id);
 
     /* -------------------------------------------------------------------------- */

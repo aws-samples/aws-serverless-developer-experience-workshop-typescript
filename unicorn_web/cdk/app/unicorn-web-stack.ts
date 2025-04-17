@@ -5,10 +5,10 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
 
 import { STAGE, UNICORN_NAMESPACES } from '../constructs/helper';
-import { EventsDomain } from '../constructs/unicorn-web-events-domain';
-import { ApiDomain } from '../constructs/unicorn-web-api-domain';
-import { PropertySearchDomain } from '../constructs/unicorn-web-property-search-domain';
-import { PropertyPublicationDomain } from '../constructs/unicorn-web-property-publication-domain';
+import { EventsConstruct } from '../constructs/unicorn-web-events-construct';
+import { ApiConstruct } from '../constructs/unicorn-web-api-construct';
+import { PropertySearchConstruct } from '../constructs/unicorn-web-property-search-construct';
+import { PropertyPublicationConstruct } from '../constructs/unicorn-web-property-publication-construct';
 
 /**
  * Properties for the UnicornWebStack
@@ -52,8 +52,8 @@ export class UnicornWebStack extends cdk.Stack {
    * - DynamoDB table for data storage
    * - API Gateway REST API
    * - EventBridge event bus
-   * - Property publication domain
-   * - Property eventing domain
+   * - Property publication Construct
+   * - Property eventing Construct
    * - Associated IAM roles and permissions
    */
   constructor(scope: cdk.App, id: string, props: UnicornWebStackProps) {
@@ -99,49 +99,49 @@ export class UnicornWebStack extends cdk.Stack {
     });
 
     /* -------------------------------------------------------------------------- */
-    /*                                  EVENTS DOMAIN                               */
+    /*                                  EVENTS CONSTRUCT                            */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * Event bus domain for handling application events
+     * Event bus Construct for handling application events
      * Manages event routing and integration between components
      */
-    const webEventsDomain = new EventsDomain(this, 'EventsDomain', {
+    const webEventsConstruct = new EventsConstruct(this, 'EventsConstruct', {
       stage: this.stage,
     });
-    this.eventBus = webEventsDomain.eventBus;
+    this.eventBus = webEventsConstruct.eventBus;
 
     /* -------------------------------------------------------------------------- */
-    /*                                API DOMAIN                                    */
+    /*                                API CONSTRUCT                                 */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * API domain for handling HTTP requests
+     * API Construct for handling HTTP requests
      * Provides RESTful interface for the web application
      */
-    const webApiDomain = new ApiDomain(this, 'ApiDomain', {
+    const webApiConstruct = new ApiConstruct(this, 'ApiConstruct', {
       stage: this.stage,
     });
 
     /**
-     * Property Search domain handling property lookup functionality
+     * Property Search Construct handling property lookup functionality
      * Integrates with DynamoDB for data retrieval
      */
-    new PropertySearchDomain(this, 'PropertySearchDomain', {
+    new PropertySearchConstruct(this, 'PropertySearchConstruct', {
       stage: this.stage,
       table: table,
-      api: webApiDomain.api,
+      api: webApiConstruct.api,
     });
 
     /**
-     * Property Publication domain handling property creation and updates
+     * Property Publication Construct handling property creation and updates
      * Integrates with DynamoDB for storage and EventBridge for event publishing
      */
-    new PropertyPublicationDomain(this, 'PropertyPublicationDomain', {
+    new PropertyPublicationConstruct(this, 'PropertyPublicationConstruct', {
       stage: this.stage,
       table: table,
       eventBus: this.eventBus,
-      api: webApiDomain.api,
+      api: webApiConstruct.api,
     });
   }
 

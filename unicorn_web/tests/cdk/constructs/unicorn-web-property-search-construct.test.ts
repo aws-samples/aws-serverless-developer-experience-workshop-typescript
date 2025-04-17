@@ -4,10 +4,13 @@ import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
-import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
-import { PropertySearchDomain } from '../../../cdk/constructs/unicorn-web-property-search-domain';
+import {
+  STAGE,
+  UNICORN_NAMESPACES,
+} from '../../../cdk/constructs/helper';
+import { PropertySearchConstruct } from '../../../cdk/constructs/unicorn-web-property-search-construct';
 
-describe('PropertySearchDomain', () => {
+describe('PropertySearchConstruct', () => {
   let app: cdk.App;
   let stack: cdk.Stack;
   let template: Template;
@@ -32,7 +35,7 @@ describe('PropertySearchDomain', () => {
     });
 
     // Create the construct
-    new PropertySearchDomain(stack, 'TestPropertySearchDomain', {
+    new PropertySearchConstruct(stack, 'TestPropertySearchConstruct', {
       stage,
       table,
       api,

@@ -4,7 +4,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import * as events from 'aws-cdk-lib/aws-events';
 import { UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
-import { crossUniPropServiceSubscription } from '../../../cdk/constructs/unicorn-properties-service-subscription';
+import { crossUniPropServiceSubscriptionConstruct } from '../../../cdk/constructs/unicorn-properties-service-subscription-construct';
 
 describe('crossUniPropServiceSubscription', () => {
   let app: cdk.App;
@@ -28,7 +28,7 @@ describe('crossUniPropServiceSubscription', () => {
     });
 
     // Create the subscription construct
-    new crossUniPropServiceSubscription(stack, 'TestSubscription', {
+    new crossUniPropServiceSubscriptionConstruct(stack, 'TestSubscription', {
       publisherEventBusArnParam: '/uni-prop/local/PublisherEventBusArn',
       subscriptionRuleName: 'TestSubscriptionRule',
       subscriptionDescription: 'Test subscription rule for unit tests',

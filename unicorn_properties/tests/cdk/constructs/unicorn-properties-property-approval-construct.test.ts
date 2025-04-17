@@ -8,10 +8,13 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 
-import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
-import { PropertyApprovalDomain } from '../../../cdk/constructs/unicorn-properties-property-approval-domain';
+import {
+  STAGE,
+  UNICORN_NAMESPACES,
+} from '../../../cdk/constructs/helper';
+import { PropertyApprovalConstruct } from '../../../cdk/constructs/unicorn-properties-property-approval-construct';
 
-describe('ContractsDomain', () => {
+describe('PropertyApprovalConstruct', () => {
   let app: cdk.App;
   let stack: cdk.Stack;
   let template: Template;
@@ -40,7 +43,7 @@ describe('ContractsDomain', () => {
       }
     );
     // Create construct within the test stack
-    new PropertyApprovalDomain(stack, 'TestPropertyApprovalDomain', {
+    new PropertyApprovalConstruct(stack, 'TestPropertyApprovalConstruct', {
       stage,
       eventBus,
       table,

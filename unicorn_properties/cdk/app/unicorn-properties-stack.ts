@@ -4,9 +4,9 @@ import * as cdk from 'aws-cdk-lib';
 import * as events from 'aws-cdk-lib/aws-events';
 
 import { STAGE, UNICORN_NAMESPACES } from '../constructs/helper';
-import { EventsDomain } from '../constructs/unicorn-properties-events-domain';
-import { PropertyApprovalDomain } from '../constructs/unicorn-properties-property-approval-domain';
-import { ContractsDomain } from '../constructs/unicorn-properties-contracts-domain';
+import { EventsConstruct } from '../constructs/unicorn-properties-events-construct';
+import { PropertyApprovalConstruct } from '../constructs/unicorn-properties-property-approval-construct';
+import { ContractsConstruct } from '../constructs/unicorn-properties-contracts-construct';
 
 /**
  * Properties for the UnicornPropertiesStack
@@ -47,9 +47,9 @@ export class UnicornPropertiesStack extends cdk.Stack {
    *
    * @remarks
    * This stack creates:
-   * - EventBridge event bus through Events Domain
-   * - Contracts Domain with associated DynamoDB table
-   * - Property Approval Domain integrated with Contracts
+   * - EventBridge event bus through Events Construct
+   * - Contracts Construct with associated DynamoDB table
+   * - Property Approval Construct integrated with Contracts
    * - Associated IAM roles and permissions
    */
   constructor(scope: cdk.App, id: string, props: UnicornPropertiesStackProps) {
@@ -63,49 +63,53 @@ export class UnicornPropertiesStack extends cdk.Stack {
     this.addStackTags();
 
     /* -------------------------------------------------------------------------- */
-    /*                                 EVENTS DOMAIN                                */
+    /*                                 EVENTS CONSTRUCT                             */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * Create Events Domain
-     * Establishes central event bus for inter-domain communication
+     * Create Events Construct
+     * Establishes central event bus for communication
      */
-    const propertiesEventDomain = new EventsDomain(this, 'EventsDomain', {
-      stage: this.stage,
-    });
-    this.eventBus = propertiesEventDomain.eventBus;
-
-    /* -------------------------------------------------------------------------- */
-    /*                              CONTRACTS DOMAIN                                */
-    /* -------------------------------------------------------------------------- */
-
-    /**
-     * Contracts Domain
-     * Handles contract-related operations and data storage
-     */
-    const propertiesContractsDomain = new ContractsDomain(
+    const propertiesEventConstruct = new EventsConstruct(
       this,
-      'ContractsDomain',
+      'EventsConstruct',
       {
         stage: this.stage,
-        eventBus: propertiesEventDomain.eventBus,
+      }
+    );
+    this.eventBus = propertiesEventConstruct.eventBus;
+
+    /* -------------------------------------------------------------------------- */
+    /*                              CONTRACTS CONSTRUCT                             */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * Contracts Construct
+     * Handles contract-related operations and data storage
+     */
+    const propertiesContractsConstruct = new ContractsConstruct(
+      this,
+      'ContractsConstruct',
+      {
+        stage: this.stage,
+        eventBus: propertiesEventConstruct.eventBus,
       }
     );
 
     /* -------------------------------------------------------------------------- */
-    /*                           PROPERTY APPROVAL DOMAIN                           */
+    /*                           PROPERTY APPROVAL CONSTRUCT                        */
     /* -------------------------------------------------------------------------- */
 
     /**
-     * Create Property Approval Domain
-     * Manages property approval workflow integrated with Contracts domain
+     * Create Property Approval Construct
+     * Manages property approval workflow integrated with Contracts Construct
      */
-    new PropertyApprovalDomain(this, 'PropertyApprovalDomain', {
+    new PropertyApprovalConstruct(this, 'PropertyApprovalConstruct', {
       stage: this.stage,
-      table: propertiesContractsDomain.table,
+      table: propertiesContractsConstruct.table,
       eventBus: this.eventBus,
       taskResponseFunction:
-        propertiesContractsDomain.propertiesApprovalSyncFunction,
+        propertiesContractsConstruct.propertiesApprovalSyncFunction,
     });
   }
 

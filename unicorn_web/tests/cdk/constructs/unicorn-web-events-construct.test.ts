@@ -2,23 +2,26 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
-import { EventsDomain } from '../../../cdk/constructs/unicorn-properties-events-domain';
+import {
+  STAGE,
+  UNICORN_NAMESPACES,
+} from '../../../cdk/constructs/helper';
+import { EventsConstruct } from '../../../cdk/constructs/unicorn-web-events-construct';
 
-describe('EventsDomain', () => {
+describe('EventsConstruct', () => {
   let app: cdk.App;
   let stack: cdk.Stack;
   let template: Template;
 
   const stage = STAGE.local; // use local for testing
-  const serviceNamespace = UNICORN_NAMESPACES.PROPERTIES;
+  const serviceNamespace = UNICORN_NAMESPACES.WEB;
 
   beforeEach(() => {
     // Create a new app and stack for each test
     app = new cdk.App();
     stack = new cdk.Stack(app, 'TestStack');
 
-    new EventsDomain(stack, 'TestEventsDomain', {
+    new EventsConstruct(stack, 'TestEventsConstruct', {
       stage,
     });
     template = Template.fromStack(stack);
@@ -26,18 +29,16 @@ describe('EventsDomain', () => {
 
   test('creates EventBridge event bus with correct properties', () => {
     template.hasResourceProperties('AWS::Events::EventBus', {
-      Name: 'UnicornPropertiesBus-local',
+      Name: 'UnicornWebBus-local',
     });
   });
 
   test('creates event bus policy with correct permissions', () => {
     template.hasResourceProperties('AWS::Events::EventBusPolicy', {
       EventBusName: {
-        Ref: Match.stringLikeRegexp(
-          'TestEventsDomainUnicornPropertiesBuslocal.*'
-        ),
+        Ref: Match.stringLikeRegexp('TestEventsConstructUnicornWebBuslocal.*'),
       },
-      StatementId: 'OnlyPropertiesServiceCanPublishToEventBus-local',
+      StatementId: 'OnlyWebServiceCanPublishToEventBus-local',
       Statement: {
         Effect: 'Allow',
         Principal: {
@@ -56,10 +57,7 @@ describe('EventsDomain', () => {
         },
         Action: 'events:PutEvents',
         Resource: {
-          'Fn::GetAtt': [
-            Match.stringLikeRegexp('UnicornPropertiesBus.*'),
-            'Arn',
-          ],
+          'Fn::GetAtt': [Match.stringLikeRegexp('UnicornWebBus.*'), 'Arn'],
         },
         Condition: {
           StringEquals: {
@@ -73,19 +71,19 @@ describe('EventsDomain', () => {
   test('creates SSM parameters for event bus', () => {
     // Test event bus name parameter
     template.hasResourceProperties('AWS::SSM::Parameter', {
-      Name: '/uni-prop/local/UnicornPropertiesEventBus',
+      Name: '/uni-prop/local/UnicornWebEventBus',
       Type: 'String',
       Value: {
-        Ref: Match.stringLikeRegexp('UnicornPropertiesBus.*'),
+        Ref: Match.stringLikeRegexp('UnicornWebBus.*'),
       },
     });
 
     // Test event bus ARN parameter
     template.hasResourceProperties('AWS::SSM::Parameter', {
-      Name: '/uni-prop/local/UnicornPropertiesEventBusArn',
+      Name: '/uni-prop/local/UnicornWebEventBusArn',
       Type: 'String',
       Value: {
-        'Fn::GetAtt': [Match.stringLikeRegexp('UnicornPropertiesBus.*'), 'Arn'],
+        'Fn::GetAtt': [Match.stringLikeRegexp('UnicornWebBus.*'), 'Arn'],
       },
     });
   });
@@ -93,20 +91,20 @@ describe('EventsDomain', () => {
   test('creates development logging resources when stage is local', () => {
     // Test log group creation
     template.hasResourceProperties('AWS::Logs::LogGroup', {
-      LogGroupName: '/aws/events/local/unicorn.properties-catchall',
+      LogGroupName: '/aws/events/local/unicorn.web-catchall',
       RetentionInDays: 1,
     });
 
     // Test EventBridge rule for logging
     template.hasResourceProperties('AWS::Events::Rule', {
-      Name: 'properties.catchall',
-      Description: 'Catch all events published by the Properties service.',
+      Name: 'web.catchall',
+      Description: 'Catch all events published by the Web service.',
       EventBusName: {
-        Ref: Match.stringLikeRegexp('UnicornPropertiesBus.*'),
+        Ref: Match.stringLikeRegexp('UnicornWebBus.*'),
       },
       EventPattern: {
         account: [{ Ref: 'AWS::AccountId' }],
-        source: ['unicorn.properties'],
+        source: ['unicorn.web'],
       },
       State: 'ENABLED',
     });
@@ -115,8 +113,8 @@ describe('EventsDomain', () => {
   test('creates Schema Registry with correct configuration', () => {
     // Test registry creation
     template.hasResourceProperties('AWS::EventSchemas::Registry', {
-      RegistryName: 'unicorn.properties-local',
-      Description: 'Event schemas for Unicorn Properties local',
+      RegistryName: 'unicorn.web-local',
+      Description: 'Event schemas for Unicorn Web local',
     });
 
     // Test schema creation
@@ -138,7 +136,7 @@ describe('EventsDomain', () => {
                 'RegistryName',
               ],
             },
-            '@PublicationEvaluationCompleted',
+            '@PublicationApprovalRequested',
           ],
         ],
       },
@@ -191,12 +189,12 @@ describe('EventsDomain', () => {
 
   test('SSM Parameters are created for EventBus', () => {
     template.hasResourceProperties('AWS::SSM::Parameter', {
-      Name: '/uni-prop/local/UnicornPropertiesEventBus',
+      Name: '/uni-prop/local/UnicornWebEventBus',
       Type: 'String',
     });
 
     template.hasResourceProperties('AWS::SSM::Parameter', {
-      Name: '/uni-prop/local/UnicornPropertiesEventBusArn',
+      Name: '/uni-prop/local/UnicornWebEventBusArn',
       Type: 'String',
     });
   });
@@ -208,11 +206,11 @@ describe('EventsDomain', () => {
     template.resourceCountIs('AWS::EventSchemas::Registry', 1);
     template.resourceCountIs('AWS::EventSchemas::Schema', 1);
     template.resourceCountIs('AWS::EventSchemas::RegistryPolicy', 1);
+    template.resourceCountIs('AWS::Logs::LogGroup', 1);
+    template.resourceCountIs('Custom::CloudwatchLogResourcePolicy', 1);
     template.resourceCountIs('AWS::IAM::Policy', 1);
     template.resourceCountIs('AWS::IAM::Role', 1);
     template.resourceCountIs('AWS::Lambda::Function', 1);
-    template.resourceCountIs('AWS::Logs::LogGroup', 1);
     template.resourceCountIs('AWS::SSM::Parameter', 2);
-    template.resourceCountIs('Custom::CloudwatchLogResourcePolicy', 1);
   });
 });

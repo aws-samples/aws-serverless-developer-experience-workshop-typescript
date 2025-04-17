@@ -24,10 +24,10 @@ import {
 } from './helper';
 
 /**
- * Properties for the ContractsDomain construct
- * @interface ContractsDomainProps
+ * Properties for the ContractsConstruct construct
+ * @interface ContractsConstructProps
  */
-interface ContractsDomainProps {
+interface ContractsConstructProps {
   /** Deployment stage of the application */
   stage: STAGE;
   /** EventBridge event bus for publishing events */
@@ -37,24 +37,24 @@ interface ContractsDomainProps {
 /**
  * Construct that manages the contracts domain including contract creation and status updates
  * Handles integration between Properties service and contract lifecycle events
- * @class ContractsDomain
+ * @class ContractsConstruct
  *
  * @example
  * ```typescript
- * const domain = new ContractsDomain(this, 'ContractsDomain', {
+ * const domain = new ContractsConstruct(this, 'ContractsConstruct', {
  *   stage: STAGE.dev,
  *   eventBus: myEventBus
  * });
  * ```
  */
-export class ContractsDomain extends Construct {
+export class ContractsConstruct extends Construct {
   /** DynamoDB table for storing contract data */
   public readonly table: dynamodb.TableV2;
   /** Lambda function for property approval synchronization */
   public readonly propertiesApprovalSyncFunction: nodejs.NodejsFunction;
 
   /**
-   * Creates a new ContractsDomain construct
+   * Creates a new ContractsConstruct construct
    * @param scope - The scope in which to define this construct
    * @param id - The scoped construct ID
    * @param props - Configuration properties
@@ -67,7 +67,7 @@ export class ContractsDomain extends Construct {
    * - EventBridge rules for contract status events
    * - Associated CloudWatch log groups
    */
-  constructor(scope: Construct, id: string, props: ContractsDomainProps) {
+  constructor(scope: Construct, id: string, props: ContractsConstructProps) {
     super(scope, id);
 
     /* -------------------------------------------------------------------------- */

@@ -22,10 +22,10 @@ import {
 } from './helper';
 
 /**
- * Properties for the PropertyPublicationDomain construct
- * @interface PropertyPublicationDomainProps
+ * Properties for the PropertyPublicationConstruct construct
+ * @interface PropertyPublicationConstructProps
  */
-interface PropertyPublicationDomainProps {
+interface PropertyPublicationConstructProps {
   /** Deployment stage of the application */
   stage: STAGE;
   /** DynamoDB table for storing property data */
@@ -37,12 +37,12 @@ interface PropertyPublicationDomainProps {
 }
 
 /**
- * Construct that manages the property publication domain including approval requests and publication workflows
- * @class PropertyPublicationDomain
+ * Construct that manages the property publication Construct including approval requests and publication workflows
+ * @class PropertyPublicationConstruct
  *
  * @example
  * ```typescript
- * const domain = new PropertyPublicationDomain(this, 'PublicationDomain', {
+ * const Construct = new PropertyPublicationConstruct(this, 'PublicationConstruct', {
  *   stage: STAGE.dev,
  *   table: myTable,
  *   api: myApi,
@@ -50,9 +50,9 @@ interface PropertyPublicationDomainProps {
  * });
  * ```
  */
-export class PropertyPublicationDomain extends Construct {
+export class PropertyPublicationConstruct extends Construct {
   /**
-   * Creates a new PropertyPublicationDomain construct
+   * Creates a new PropertyPublicationConstruct construct
    * @param scope - The scope in which to define this construct
    * @param id - The scoped construct ID
    * @param props - Configuration properties
@@ -69,7 +69,7 @@ export class PropertyPublicationDomain extends Construct {
   constructor(
     scope: Construct,
     id: string,
-    props: PropertyPublicationDomainProps
+    props: PropertyPublicationConstructProps
   ) {
     super(scope, id);
 

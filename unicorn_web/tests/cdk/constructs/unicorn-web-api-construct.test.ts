@@ -3,13 +3,13 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import { STAGE } from '../../../cdk/constructs/helper';
-import { ApiDomain } from '../../../cdk/constructs/unicorn-web-api-domain';
+import { ApiConstruct } from '../../../cdk/constructs/unicorn-web-api-construct';
 
-describe('ApiDomain', () => {
+describe('ApiConstruct', () => {
   let app: cdk.App;
   let stack: cdk.Stack;
   let template: Template;
-  let api: ApiDomain;
+  let api: ApiConstruct;
 
   const stage = STAGE.local; // use local for testing
 
@@ -19,7 +19,7 @@ describe('ApiDomain', () => {
     stack = new cdk.Stack(app, 'TestStack');
 
     // Create construct within the test stack
-    api = new ApiDomain(stack, 'TestApiDomain', {
+    api = new ApiConstruct(stack, 'TestApiConstruct', {
       stage,
     });
 

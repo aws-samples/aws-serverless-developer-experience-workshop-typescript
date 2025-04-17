@@ -14,44 +14,46 @@ import {
   STAGE,
   UNICORN_NAMESPACES,
 } from './helper';
-import PublicationApprovalRequestedEventSchema from '../../integration/PublicationApprovalRequested.json';
+import PublicationEvaluationCompletedEventSchema from '../../integration/PublicationEvaluationCompleted.json';
 
 /**
- * Properties for the EventsDomain construct
- * @interface EventsDomainProps
+ * Properties for the EventsConstruct construct
+ * @interface EventsConstructProps
  */
-interface EventsDomainProps {
+interface EventsConstructProps {
   /** Deployment stage of the application */
   stage: STAGE;
 }
 
 /**
- * Construct that defines the Events infrastructure for the Unicorn Web application
- * @class EventsDomain
+ * Construct that defines the Events infrastructure for the Unicorn Properties service.
+ * @class EventsConstruct
  *
  * @example
  * ```typescript
- * const eventsDomain = new EventsDomain(stack, 'EventsDomain', {
+ * const EventsConstruct = new EventsConstruct(stack, 'EventsConstruct', {
  *   stage: STAGE.dev
  * });
  * ```
  */
-export class EventsDomain extends Construct {
+export class EventsConstruct extends Construct {
   /** EventBridge event bus for application events */
   public readonly eventBus: events.EventBus;
 
   /**
-   * Creates a new EventsDomain construct
+   * Creates a new EventsConstruct construct
    * @param scope - The scope in which to define this construct
    * @param id - The scoped construct ID
    * @param props - Configuration properties
    *
    * @remarks
    * This construct creates:
-   * - Custom EventBridge event bus for the application
-   * - Associated CloudFormation outputs for cross-stack references
+   * - Custom EventBridge event bus
+   * - Event schema registry and schemas
+   * - Development environment logging
+   * - SSM parameters for cross-stack references
    */
-  constructor(scope: Construct, id: string, props: EventsDomainProps) {
+  constructor(scope: Construct, id: string, props: EventsConstructProps) {
     super(scope, id);
 
     /* -------------------------------------------------------------------------- */
@@ -62,9 +64,13 @@ export class EventsDomain extends Construct {
      * Custom EventBridge event bus for the application
      * Handles all application-specific events and enables event-driven architecture
      */
-    this.eventBus = new events.EventBus(this, `UnicornWebBus-${props.stage}`, {
-      eventBusName: `UnicornWebBus-${props.stage}`,
-    });
+    this.eventBus = new events.EventBus(
+      this,
+      `UnicornPropertiesBus-${props.stage}`,
+      {
+        eventBusName: `UnicornPropertiesBus-${props.stage}`,
+      }
+    );
 
     /**
      * Resource policy allowing subscribers to create rules and targets
@@ -72,7 +78,7 @@ export class EventsDomain extends Construct {
      */
     this.eventBus.addToResourcePolicy(
       new iam.PolicyStatement({
-        sid: `AllowSubscribersToCreateSubscriptionRules-web-${props.stage}`,
+        sid: `AllowSubscribersToCreateSubscriptionRules-properties-${props.stage}`,
         effect: iam.Effect.ALLOW,
         principals: [new iam.AccountRootPrincipal()],
         actions: ['events:*Rule', 'events:*Targets'],
@@ -87,17 +93,17 @@ export class EventsDomain extends Construct {
 
     /**
      * Event bus policy restricting event publishing permissions
-     * Only allows services from UnicornWebNamespace to publish events
+     * Only allows services from UnicornPropertiesNamespace to publish events
      */
-    new events.EventBusPolicy(this, 'UnicornWebEventsBusPublishPolicy', {
+    new events.EventBusPolicy(this, 'UnicornPropertiesEventsBusPublishPolicy', {
       eventBus: this.eventBus,
-      statementId: `OnlyWebServiceCanPublishToEventBus-${props.stage}`,
+      statementId: `OnlyPropertiesServiceCanPublishToEventBus-${props.stage}`,
       statement: new iam.PolicyStatement({
         principals: [new iam.AccountRootPrincipal()],
         actions: ['events:PutEvents'],
         resources: [this.eventBus.eventBusArn],
         conditions: {
-          StringEquals: { 'events:source': UNICORN_NAMESPACES.WEB },
+          StringEquals: { 'events:source': UNICORN_NAMESPACES.PROPERTIES },
         },
       }).toJSON(),
     });
@@ -105,8 +111,8 @@ export class EventsDomain extends Construct {
      * CloudFormation output exposing the EventBus name
      * Enables other stacks and services to reference this event bus
      */
-    new cdk.CfnOutput(this, 'UnicornWebEventBusName', {
-      exportName: 'UnicornWebEventBusName',
+    new cdk.CfnOutput(this, 'UnicornPropertiesEventBusName', {
+      key: 'UnicornPropertiesEventBusName',
       value: this.eventBus.eventBusName,
     });
 
@@ -118,8 +124,8 @@ export class EventsDomain extends Construct {
      * SSM Parameter storing the event bus name
      * Enables other services to discover the event bus without CloudFormation references
      */
-    new ssm.StringParameter(this, 'UnicornWebEventBusNameParam', {
-      parameterName: `/uni-prop/${props.stage}/UnicornWebEventBus`,
+    new ssm.StringParameter(this, 'UnicornPropertiesEventBusNameParam', {
+      parameterName: `/uni-prop/${props.stage}/UnicornPropertiesEventBus`,
       stringValue: this.eventBus.eventBusName,
     });
 
@@ -127,8 +133,8 @@ export class EventsDomain extends Construct {
      * SSM Parameter storing the event bus ARN
      * Enables other services to reference the event bus for IAM policies
      */
-    new ssm.StringParameter(this, 'UnicornWebEventBusArnParam', {
-      parameterName: `/uni-prop/${props.stage}/UnicornWebEventBusArn`,
+    new ssm.StringParameter(this, 'UnicornPropertiesEventBusArnParam', {
+      parameterName: `/uni-prop/${props.stage}/UnicornPropertiesEventBusArn`,
       stringValue: this.eventBus.eventBusArn,
     });
 
@@ -147,9 +153,9 @@ export class EventsDomain extends Construct {
        */
       const catchAllLogGroup = new logs.LogGroup(
         this,
-        'UnicornWebCatchAllLogGroup',
+        'UnicornPropertiesCatchAllLogGroup',
         {
-          logGroupName: `/aws/events/${props.stage}/${UNICORN_NAMESPACES.WEB}-catchall`,
+          logGroupName: `/aws/events/${props.stage}/${UNICORN_NAMESPACES.PROPERTIES}-catchall`,
           removalPolicy: cdk.RemovalPolicy.DESTROY,
           retention: getDefaultLogsRetentionPeriod(props.stage),
         }
@@ -159,13 +165,13 @@ export class EventsDomain extends Construct {
        * EventBridge rule to capture all events for development purposes
        * Routes all events to CloudWatch logs for visibility
        */
-      new events.Rule(this, 'web.catchall', {
-        ruleName: 'web.catchall',
-        description: 'Catch all events published by the Web service.',
+      new events.Rule(this, 'properties.catchall', {
+        ruleName: 'properties.catchall',
+        description: 'Catch all events published by the Properties service.',
         eventBus: this.eventBus,
         eventPattern: {
           account: [cdk.Stack.of(this).account],
-          source: [UNICORN_NAMESPACES.WEB],
+          source: [UNICORN_NAMESPACES.PROPERTIES],
         },
         enabled: true,
         targets: [new targets.CloudWatchLogGroup(catchAllLogGroup)],
@@ -175,13 +181,13 @@ export class EventsDomain extends Construct {
        * CloudFormation outputs for log group information
        * Provides easy access to logging resources
        */
-      new cdk.CfnOutput(this, 'UnicornWebCatchAllLogGroupName', {
-        exportName: 'UnicornWebCatchAllLogGroupName',
+      new cdk.CfnOutput(this, 'UnicornPropertiesCatchAllLogGroupName', {
+        key: 'UnicornPropertiesCatchAllLogGroupName',
         description: "Log all events on the service's EventBridge Bus",
         value: catchAllLogGroup.logGroupName,
       });
-      new cdk.CfnOutput(this, 'UnicornWebCatchAllLogGroupArn', {
-        exportName: 'UnicornWebCatchAllLogGroupArn',
+      new cdk.CfnOutput(this, 'UnicornPropertiesCatchAllLogGroupArn', {
+        key: 'UnicornPropertiesCatchAllLogGroupArn',
         description: "Log all events on the service's EventBridge Bus",
         value: catchAllLogGroup.logGroupArn,
       });
@@ -196,23 +202,23 @@ export class EventsDomain extends Construct {
      * Stores and validates event schemas for the application
      */
     const registry = new eventschemas.CfnRegistry(this, 'EventRegistry', {
-      registryName: `${UNICORN_NAMESPACES.WEB}-${props.stage}`,
-      description: `Event schemas for Unicorn Web ${props.stage}`,
+      registryName: `${UNICORN_NAMESPACES.PROPERTIES}-${props.stage}`,
+      description: `Event schemas for Unicorn Properties ${props.stage}`,
     });
 
     /**
      * Schema definition for publication approval requests
      * Ensures consistent event structure for property publication workflow
      */
-    const publicationApprovalRequestedSchema = new eventschemas.CfnSchema(
+    const publicationEvaluationCompletedSchema = new eventschemas.CfnSchema(
       this,
-      'PublicationApprovalRequestedEventSchema',
+      'PublicationEvaluationCompletedSchema',
       {
         type: 'OpenApi3',
         registryName: registry.attrRegistryName,
-        description: 'The schema for a request to publish a property',
-        schemaName: `${registry.attrRegistryName}@PublicationApprovalRequested`,
-        content: JSON.stringify(PublicationApprovalRequestedEventSchema),
+        description: 'The schema for when a property evaluation is completed',
+        schemaName: `${registry.attrRegistryName}@PublicationEvaluationCompleted`,
+        content: JSON.stringify(PublicationEvaluationCompletedEventSchema),
       }
     );
 
@@ -253,6 +259,6 @@ export class EventsDomain extends Construct {
         }),
       }
     );
-    registryPolicy.node.addDependency(publicationApprovalRequestedSchema);
+    registryPolicy.node.addDependency(publicationEvaluationCompletedSchema);
   }
 }

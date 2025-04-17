@@ -3,10 +3,13 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import * as events from 'aws-cdk-lib/aws-events';
-import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
-import { ContractsDomain } from '../../../cdk/constructs/unicorn-properties-contracts-domain';
+import {
+  STAGE,
+  UNICORN_NAMESPACES,
+} from '../../../cdk/constructs/helper';
+import { ContractsConstruct } from '../../../cdk/constructs/unicorn-properties-contracts-construct';
 
-describe('ContractsDomain', () => {
+describe('ContractsConstruct', () => {
   let app: cdk.App;
   let stack: cdk.Stack;
   let template: Template;
@@ -23,7 +26,7 @@ describe('ContractsDomain', () => {
     const eventBus = new events.EventBus(stack, 'TestEventBus');
 
     // Create construct within the test stack
-    new ContractsDomain(stack, 'TestContractsDomain', {
+    new ContractsConstruct(stack, 'TestContractsConstruct', {
       stage,
       eventBus,
     });
@@ -95,7 +98,7 @@ describe('ContractsDomain', () => {
           Variables: {
             DYNAMODB_TABLE: expect.objectContaining({
               Ref: expect.stringContaining(
-                'TestContractsDomainContractStatusTable'
+                'TestContractsConstructContractStatusTable'
               ),
             }),
             SERVICE_NAMESPACE: serviceNamespace,
@@ -136,7 +139,7 @@ describe('ContractsDomain', () => {
       EventSourceArn: {
         'Fn::GetAtt': [
           Match.stringLikeRegexp(
-            '.*TestContractsDomainContractStatusTableB4ACAC8D.*'
+            '.*TestContractsConstructContractStatusTable.*'
           ),
           'StreamArn',
         ],

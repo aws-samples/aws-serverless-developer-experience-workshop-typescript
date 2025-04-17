@@ -119,8 +119,9 @@ class ContractEventHandlerFunction implements LambdaInterface {
 
     // Send the command
     try {
-      const ddbPutCommandOutput: PutItemCommandOutput =
-        await ddbClient.send(ddbPutCommand);
+      const ddbPutCommandOutput: PutItemCommandOutput = await ddbClient.send(
+        ddbPutCommand
+      );
       tracer.putAnnotation('ContractStatus', dbEntry.contract_status);
 
       logger.debug('Inserted record for contract', {

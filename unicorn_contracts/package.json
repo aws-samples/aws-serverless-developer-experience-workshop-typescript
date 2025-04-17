@@ -8,6 +8,7 @@
   "main": "app.js",
   "scripts": {
     "lint": "eslint  --ext .ts --quiet --fix",
+    "prettier": "prettier --write '**/*.ts'",
     "build": "tsc",
     "compile": "tsc",
     "deploy": "sam build && sam deploy --no-confirm-changeset",
