@@ -4,10 +4,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
-import {
-  STAGE,
-  UNICORN_NAMESPACES,
-} from '../../../cdk/constructs/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
 import { PropertySearchConstruct } from '../../../cdk/constructs/unicorn-web-property-search-construct';
 
 describe('PropertySearchConstruct', () => {

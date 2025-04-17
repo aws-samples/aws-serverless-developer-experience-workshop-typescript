@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import {
-  STAGE,
-  UNICORN_NAMESPACES,
-} from '../../../cdk/constructs/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
 import { EventsConstruct } from '../../../cdk/constructs/unicorn-web-events-construct';
 
 describe('EventsConstruct', () => {

@@ -3,10 +3,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
 
-import {
-  STAGE,
-  UNICORN_NAMESPACES,
-} from '../../cdk/constructs/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/constructs/helper';
 import { UnicornPropertiesStack } from '../../cdk/app/unicorn-properties-stack';
 
 describe('Unicorn Properties Stack', () => {

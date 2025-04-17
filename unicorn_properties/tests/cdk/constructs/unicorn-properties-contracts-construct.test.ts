@@ -3,10 +3,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import * as events from 'aws-cdk-lib/aws-events';
-import {
-  STAGE,
-  UNICORN_NAMESPACES,
-} from '../../../cdk/constructs/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
 import { ContractsConstruct } from '../../../cdk/constructs/unicorn-properties-contracts-construct';
 
 describe('ContractsConstruct', () => {

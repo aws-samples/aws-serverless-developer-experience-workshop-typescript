@@ -5,10 +5,7 @@ import { Match, Template } from 'aws-cdk-lib/assertions';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
-import {
-  STAGE,
-  UNICORN_NAMESPACES,
-} from '../../../cdk/constructs/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
 import { PropertyPublicationConstruct } from '../../../cdk/constructs/unicorn-web-property-publication-construct';
 
 describe('PropertyPublicationConstruct', () => {

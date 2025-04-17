@@ -8,10 +8,7 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 
-import {
-  STAGE,
-  UNICORN_NAMESPACES,
-} from '../../../cdk/constructs/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
 import { PropertyApprovalConstruct } from '../../../cdk/constructs/unicorn-properties-property-approval-construct';
 
 describe('PropertyApprovalConstruct', () => {
