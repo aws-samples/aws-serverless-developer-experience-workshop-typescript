@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
-import * as events from 'aws-cdk-lib/aws-events';
-import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
-import { ContractsConstruct } from '../../../cdk/constructs/unicorn-properties-contracts-construct';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/constructs/helper';
+import { PropertyContractsStack } from '../../cdk/app/unicorn-properties-contracts-stack';
 
-describe('ContractsConstruct', () => {
+describe('ContractsStack', () => {
   let app: cdk.App;
   let stack: cdk.Stack;
   let template: Template;
@@ -17,15 +16,10 @@ describe('ContractsConstruct', () => {
   beforeEach(() => {
     // Create a new app and stack for each test
     app = new cdk.App();
-    stack = new cdk.Stack(app, 'TestStack');
-
-    // Create required props for the construct
-    const eventBus = new events.EventBus(stack, 'TestEventBus');
 
     // Create construct within the test stack
-    new ContractsConstruct(stack, 'TestContractsConstruct', {
+    stack = new PropertyContractsStack(app, 'TestContractsStack', {
       stage,
-      eventBus,
     });
 
     // Prepare the template for assertions
@@ -94,9 +88,7 @@ describe('ContractsConstruct', () => {
         Environment: {
           Variables: {
             DYNAMODB_TABLE: expect.objectContaining({
-              Ref: expect.stringContaining(
-                'TestContractsConstructContractStatusTable'
-              ),
+              Ref: expect.stringContaining('ContractStatusTable'),
             }),
             SERVICE_NAMESPACE: serviceNamespace,
           },
@@ -135,9 +127,7 @@ describe('ContractsConstruct', () => {
       },
       EventSourceArn: {
         'Fn::GetAtt': [
-          Match.stringLikeRegexp(
-            '.*TestContractsConstructContractStatusTable.*'
-          ),
+          Match.stringLikeRegexp('.*ContractStatusTable.*'),
           'StreamArn',
         ],
       },
@@ -166,7 +156,6 @@ describe('ContractsConstruct', () => {
 
   test('configures correct resource count', () => {
     template.resourceCountIs('AWS::DynamoDB::GlobalTable', 1);
-    template.resourceCountIs('AWS::Events::EventBus', 1);
     template.resourceCountIs('AWS::Events::Rule', 1);
     template.resourceCountIs('AWS::IAM::Role', 2);
     template.resourceCountIs('AWS::IAM::Policy', 2);

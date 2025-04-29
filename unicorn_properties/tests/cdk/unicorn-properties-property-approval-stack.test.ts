@@ -1,19 +1,14 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import * as path from 'path';
 
 import * as cdk from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as events from 'aws-cdk-lib/aws-events';
-import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 
-import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
-import { PropertyApprovalConstruct } from '../../../cdk/constructs/unicorn-properties-property-approval-construct';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/constructs/helper';
+import { PropertyApprovalStack } from '../../cdk/app/unicorn-properties-property-approval-stack';
 
-describe('PropertyApprovalConstruct', () => {
+describe('PropertyApprovalStack', () => {
   let app: cdk.App;
-  let stack: cdk.Stack;
   let template: Template;
 
   const stage = STAGE.local; // use local for testing
@@ -22,29 +17,12 @@ describe('PropertyApprovalConstruct', () => {
   beforeEach(() => {
     // Create a new app and stack for each test
     app = new cdk.App();
-    stack = new cdk.Stack(app, 'TestStack');
 
-    // Create required props for the construct
-    const eventBus = new events.EventBus(stack, 'TestEventBus');
-    const table = new dynamodb.TableV2(stack, 'TestTable', {
-      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
-    });
-    const taskResponseFunction = new nodejs.NodejsFunction(
-      stack,
-      'TestFunction',
-      {
-        entry: path.join(
-          __dirname,
-          '../../../src/properties_service/contractStatusChangedEventHandler.ts'
-        ),
-      }
-    );
     // Create construct within the test stack
-    new PropertyApprovalConstruct(stack, 'TestPropertyApprovalConstruct', {
+    const stack = new PropertyApprovalStack(app, 'TestPropertyApprovalStack', {
       stage,
-      eventBus,
-      table,
-      taskResponseFunction,
+      contractStatusTableName: 'TestContractStatusTable',
+      propertyApprovalSyncFunctionName: 'TestApprovalFunction',
     });
 
     // Prepare the template for assertions
@@ -52,8 +30,6 @@ describe('PropertyApprovalConstruct', () => {
   });
 
   test('creates Lambda functions', () => {
-    template.resourceCountIs('AWS::Lambda::Function', 2);
-
     const functions = template.findResources('AWS::Lambda::Function');
 
     // Check that we have functions with expected logical IDs
@@ -78,7 +54,9 @@ describe('PropertyApprovalConstruct', () => {
         Environment: {
           Variables: {
             DYNAMODB_TABLE: expect.objectContaining({
-              Ref: expect.stringContaining('TestTable'),
+              'Fn::ImportValue': expect.stringContaining(
+                'TestContractStatusTable'
+              ),
             }),
             SERVICE_NAMESPACE: serviceNamespace,
           },
@@ -184,12 +162,12 @@ describe('PropertyApprovalConstruct', () => {
   });
 
   test('configures correct resource count', () => {
-    template.resourceCountIs('AWS::DynamoDB::GlobalTable', 1);
-    template.resourceCountIs('AWS::IAM::Role', 4);
-    template.resourceCountIs('AWS::IAM::Policy', 4);
-    template.resourceCountIs('AWS::Events::EventBus', 1);
+    template.resourceCountIs('AWS::DynamoDB::GlobalTable', 0);
+    template.resourceCountIs('AWS::IAM::Role', 3);
+    template.resourceCountIs('AWS::IAM::Policy', 3);
+    template.resourceCountIs('AWS::Events::EventBus', 0);
     template.resourceCountIs('AWS::Events::Rule', 1);
-    template.resourceCountIs('AWS::Lambda::Function', 2);
+    template.resourceCountIs('AWS::Lambda::Function', 1);
     template.resourceCountIs('AWS::Logs::LogGroup', 2);
     template.resourceCountIs('AWS::StepFunctions::StateMachine', 1);
     template.resourceCountIs('AWS::SQS::Queue', 1);

@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
-import { EventsConstruct } from '../../../cdk/constructs/unicorn-properties-events-construct';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/constructs/helper';
+import { PropertiesEventStack } from '../../cdk/app/unicorn-properties-events-stack';
 
-describe('EventsConstruct', () => {
+describe('EventsStack', () => {
   let app: cdk.App;
   let stack: cdk.Stack;
   let template: Template;
@@ -16,9 +16,8 @@ describe('EventsConstruct', () => {
   beforeEach(() => {
     // Create a new app and stack for each test
     app = new cdk.App();
-    stack = new cdk.Stack(app, 'TestStack');
 
-    new EventsConstruct(stack, 'TestEventsConstruct', {
+    stack = new PropertiesEventStack(app, 'TestEventsStack', {
       stage,
     });
     template = Template.fromStack(stack);
@@ -33,9 +32,7 @@ describe('EventsConstruct', () => {
   test('creates event bus policy with correct permissions', () => {
     template.hasResourceProperties('AWS::Events::EventBusPolicy', {
       EventBusName: {
-        Ref: Match.stringLikeRegexp(
-          'TestEventsConstructUnicornPropertiesBuslocal.*'
-        ),
+        Ref: Match.stringLikeRegexp('UnicornPropertiesBuslocal.*'),
       },
       StatementId: 'OnlyPropertiesServiceCanPublishToEventBus-local',
       Statement: {

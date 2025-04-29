@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT-0
 import * as path from 'path';
 
-import { Construct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
@@ -15,60 +14,97 @@ import {
 } from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 
 import {
   LambdaHelper,
+  StackHelper,
   getDefaultLogsRetentionPeriod,
   STAGE,
   UNICORN_NAMESPACES,
-} from './helper';
+} from '../constructs/helper';
 
 /**
- * Properties for the ContractsConstruct construct
- * @interface ContractsConstructProps
+ * Properties for the PropertyContractsStackProps
+ * @interface PropertyContractsStackProps
  */
-interface ContractsConstructProps {
+interface PropertyContractsStackProps extends cdk.StackProps {
   /** Deployment stage of the application */
   stage: STAGE;
-  /** EventBridge event bus for publishing events */
-  eventBus: events.EventBus;
 }
 
 /**
- * Construct that manages the contracts domain including contract creation and status updates
- * Handles integration between Properties service and contract lifecycle events
- * @class ContractsConstruct
+ * Stack that defines the Properties service's Contract Management infrastructure
+ * @class PropertyContractsStack
+ *
+ * This stack manages the integration between the Properties service and Contracts service,
+ * handling contract status changes and property approval synchronization.
  *
  * @example
  * ```typescript
- * const domain = new ContractsConstruct(this, 'ContractsConstruct', {
+ * const app = new cdk.App();
+ * new PropertyContractsStack(app, 'PropertyContractsStack', {
  *   stage: STAGE.dev,
- *   eventBus: myEventBus
+ *   env: {
+ *     account: process.env.CDK_DEFAULT_ACCOUNT,
+ *     region: process.env.CDK_DEFAULT_REGION
+ *   }
  * });
  * ```
  */
-export class ContractsConstruct extends Construct {
-  /** DynamoDB table for storing contract data */
-  public readonly table: dynamodb.TableV2;
-  /** Lambda function for property approval synchronization */
-  public readonly propertiesApprovalSyncFunction: nodejs.NodejsFunction;
+export class PropertyContractsStack extends cdk.Stack {
+  /** Current deployment stage of the application */
+  private readonly stage: STAGE;
+  /** Name of the DynamoDB table tracking contract status */
+  public contractStatusTableName: string;
+  /** Name of the Lambda function handling property approval synchronization */
+  public propertyApprovalSyncFunctionName: string;
 
   /**
-   * Creates a new ContractsConstruct construct
+   * Creates a new PropertyContractsStack
    * @param scope - The scope in which to define this construct
    * @param id - The scoped construct ID
    * @param props - Configuration properties
    *
    * @remarks
-   * This construct creates:
-   * - DynamoDB table for contract status tracking
-   * - Lambda functions for contract event processing
+   * This stack creates:
+   * - DynamoDB table for contract status tracking with stream enabled
    * - Dead Letter Queues for error handling
-   * - EventBridge rules for contract status events
-   * - Associated CloudWatch log groups
+   * - Lambda function to handle ContractStatusChange events from EventBridge
+   * - Lambda function to sync property approvals based on DynamoDB stream events
+   * - EventBridge rule for routing ContractStatusChanged events
+   * - Associated IAM roles and permissions
    */
-  constructor(scope: Construct, id: string, props: ContractsConstructProps) {
-    super(scope, id);
+  constructor(scope: cdk.App, id: string, props: PropertyContractsStackProps) {
+    super(scope, id, props);
+    this.stage = props.stage;
+
+    /**
+     * Add standard tags to the CloudFormation stack for resource organization
+     * and cost allocation
+     */
+    StackHelper.addStackTags(this, {
+      namespace: UNICORN_NAMESPACES.PROPERTIES,
+      stage: this.stage,
+    });
+
+    this.contractStatusTableName = 'ContractStatusTableName';
+    this.propertyApprovalSyncFunctionName =
+      'PropertiesApprovalSyncFunctionName';
+    /**
+     * Retrieve the Properties service EventBus name from SSM Parameter Store
+     * and create a reference to the existing EventBus
+     */
+    const eventBusName = ssm.StringParameter.fromStringParameterName(
+      this,
+      'PropertiesEventBusName',
+      `/uni-prop/${props.stage}/UnicornPropertiesEventBus`
+    );
+    const eventBus = events.EventBus.fromEventBusName(
+      this,
+      'PropertiesEventBus',
+      eventBusName.stringValue
+    );
 
     /* -------------------------------------------------------------------------- */
     /*                                  STORAGE                                     */
@@ -77,8 +113,9 @@ export class ContractsConstruct extends Construct {
     /**
      * DynamoDB table for storing contract status data
      * Uses property_id as partition key for efficient querying
+     * Includes stream configuration to trigger the PropertiesApprovalSync function
      */
-    this.table = new dynamodb.TableV2(this, `ContractStatusTable`, {
+    const table = new dynamodb.TableV2(this, `ContractStatusTable`, {
       tableName: `uni-prop-${props.stage}-properties-ContractStatusTable`,
       partitionKey: {
         name: 'property_id',
@@ -91,10 +128,11 @@ export class ContractsConstruct extends Construct {
     /**
      * CloudFormation output for Contracts table name
      */
-    new cdk.CfnOutput(this, 'ContractStatusTableName', {
-      key: 'ContractStatusTableName',
+    StackHelper.createOutput(this, {
+      name: 'ContractStatusTableName',
       description: 'DynamoDB table storing contract status information',
-      value: this.table.tableName,
+      value: table.tableName,
+      export: true,
     });
 
     /* -------------------------------------------------------------------------- */
@@ -140,7 +178,7 @@ export class ContractsConstruct extends Construct {
         ),
         environment: {
           ...LambdaHelper.getDefaultEnvironmentVariables({
-            table: this.table,
+            table: table,
             stage: props.stage,
             serviceNamespace: UNICORN_NAMESPACES.PROPERTIES,
           }),
@@ -163,7 +201,7 @@ export class ContractsConstruct extends Construct {
       ruleName: 'unicorn.properties-ContractStatusChanged',
       description:
         'ContractStatusChanged events published by the Contracts service.',
-      eventBus: props.eventBus,
+      eventBus: eventBus,
       eventPattern: {
         source: [UNICORN_NAMESPACES.CONTRACTS],
         detailType: ['ContractStatusChanged'],
@@ -178,23 +216,26 @@ export class ContractsConstruct extends Construct {
       ],
     });
     // Grant permissions for contract status changed function
-    this.table.grantReadWriteData(contractStatusChangedFunction);
+    table.grantReadWriteData(contractStatusChangedFunction);
 
     // CloudFormation outputs for contract status changed function
-    new cdk.CfnOutput(this, 'ContractStatusChangedHandlerFunctionArn', {
-      key: 'ContractStatusChangedHandlerFunctionArn',
+    StackHelper.createOutput(this, {
+      name: 'ContractStatusChangedHandlerFunctionArn',
       value: contractStatusChangedFunction.functionArn,
     });
-    new cdk.CfnOutput(this, 'ContractStatusChangedHandlerFunctionName', {
-      key: 'ContractStatusChangedHandlerFunctionName',
+    StackHelper.createOutput(this, {
+      name: 'ContractStatusChangedHandlerFunctionName',
       value: contractStatusChangedFunction.functionName,
     });
 
     /**
-     * Lambda function which listens to Contract status changes from
-     * ContractStatusTable to un-pause StepFunctions.
+     * Lambda function that processes DynamoDB stream events from ContractStatusTable
+     * to synchronize property approval states. This function:
+     * - Listens to changes in contract status
+     * - Processes the changes to update property approval workflows
+     * - Handles failures using a Dead Letter Queue
      */
-    this.propertiesApprovalSyncFunction = new nodejs.NodejsFunction(
+    const propertiesApprovalSyncFunction = new nodejs.NodejsFunction(
       this,
       `PropertiesApprovalSyncFunction-${props.stage}`,
       {
@@ -205,7 +246,7 @@ export class ContractsConstruct extends Construct {
         ),
         environment: {
           ...LambdaHelper.getDefaultEnvironmentVariables({
-            table: this.table,
+            table: table,
             stage: props.stage,
             serviceNamespace: UNICORN_NAMESPACES.PROPERTIES,
           }),
@@ -226,22 +267,23 @@ export class ContractsConstruct extends Construct {
       }
     );
     // Add DynamoDB Stream as an event source for the Properties Approval Sync Function
-    this.propertiesApprovalSyncFunction.addEventSource(
-      new DynamoEventSource(this.table, {
+    propertiesApprovalSyncFunction.addEventSource(
+      new DynamoEventSource(table, {
         startingPosition: lambda.StartingPosition.TRIM_HORIZON,
         onFailure: new SqsDlq(propertiesServiceDlq),
       })
     );
     // Allow Properties Approval Sync function to send messages to the Properties Service Dead Letter Queue
-    propertiesServiceDlq.grantSendMessages(this.propertiesApprovalSyncFunction);
+    propertiesServiceDlq.grantSendMessages(propertiesApprovalSyncFunction);
     // Allow Properties Approval Sync function to read data and stream data from Contract Status DynamoDB table
-    this.table.grantReadData(this.propertiesApprovalSyncFunction);
-    this.table.grantStreamRead(this.propertiesApprovalSyncFunction);
+    table.grantReadData(propertiesApprovalSyncFunction);
+    table.grantStreamRead(propertiesApprovalSyncFunction);
 
     // CloudFormation output for properties approval sync function
-    new cdk.CfnOutput(this, 'PropertiesApprovalSyncFunctionName', {
-      key: 'PropertiesApprovalSyncFunctionName',
-      value: this.propertiesApprovalSyncFunction.functionName,
+    StackHelper.createOutput(this, {
+      name: this.propertyApprovalSyncFunctionName,
+      value: propertiesApprovalSyncFunction.functionName,
+      export: true,
     });
   }
 }

@@ -143,7 +143,10 @@ export async function initializeDatabase() {
   const client = new DynamoDBClient({
     region: process.env.AWS_DEFAULT_REGION,
   });
-  const tableName = await findOutputValue('ContractStatusTableName');
+  const tableName = await findOutputValue(
+    'uni-prop-local-properties-contracts',
+    'ContractStatusTableName'
+  );
 
   const putItemRequest: PutCommandInput = {
     TableName: tableName,

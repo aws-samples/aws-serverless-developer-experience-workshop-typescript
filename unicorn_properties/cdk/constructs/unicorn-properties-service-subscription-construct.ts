@@ -6,22 +6,26 @@ import { Lazy } from 'aws-cdk-lib';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
+import { UNICORN_NAMESPACES } from './helper';
 
 /**
- * Parameters for creating a cross-service event subscription
- * @interface crossUniPropServiceSubscriptionParameters
+ * Properties for the CrossUniPropServiceSubscriptionProps
+ * @interface CrossUniPropServiceSubscriptionProps
+ *
+ * Defines configuration properties required for creating cross-service event subscriptions,
+ * enabling type-safe event routing between Unicorn services.
  */
-export interface crossUniPropServiceSubscriptionConstructProps {
+interface CrossUniPropServiceSubscriptionProps {
   /** SSM parameter name containing the publisher's EventBus ARN */
   publisherEventBusArnParam: string;
-  /** Name of the EventBridge rule for the subscription */
-  subscriptionRuleName: string;
-  /** Description of the subscription's purpose */
-  subscriptionDescription: string;
-  /** Event pattern defining which events to subscribe to */
-  subscriptionEventPattern: events.EventPattern;
-  /** Target EventBus where matched events will be sent */
+  /** EventBus instance that will receive the events */
   subscriberEventBus: events.IEventBus;
+  /** Namespace identifier for the publishing service */
+  publisherNameSpace: UNICORN_NAMESPACES;
+  /** Namespace identifier for the subscribing service */
+  subscriberNameSpace: UNICORN_NAMESPACES;
+  /** Name of the event type to subscribe to */
+  eventTypeName: string;
 }
 
 /**
@@ -43,7 +47,7 @@ export interface crossUniPropServiceSubscriptionConstructProps {
  * });
  * ```
  */
-export class crossUniPropServiceSubscriptionConstruct extends Construct {
+export class CrossUniPropServiceSubscriptionConstruct extends Construct {
   /**
    * Creates a new cross-service event subscription
    * @param scope - The scope in which to define this construct
@@ -59,7 +63,7 @@ export class crossUniPropServiceSubscriptionConstruct extends Construct {
   constructor(
     scope: Construct,
     id: string,
-    props: crossUniPropServiceSubscriptionConstructProps
+    props: CrossUniPropServiceSubscriptionProps
   ) {
     super(scope, id);
 
@@ -109,11 +113,16 @@ export class crossUniPropServiceSubscriptionConstruct extends Construct {
      * - Event pattern for filtering events
      * - Target EventBus for forwarding events
      */
-    new events.Rule(this, props.subscriptionRuleName, {
-      ruleName: props.subscriptionRuleName,
-      description: props.subscriptionDescription,
+
+    const ruleName = `${props.publisherNameSpace}-${props.eventTypeName}`;
+    new events.Rule(this, ruleName, {
+      ruleName,
+      description: `Subscription to ${props.eventTypeName} events by the ${props.subscriberNameSpace} service.`,
       eventBus: publisherEventBus,
-      eventPattern: props.subscriptionEventPattern,
+      eventPattern: {
+        source: [props.publisherNameSpace],
+        detailType: [props.eventTypeName],
+      },
       enabled: true,
       targets: [new targets.EventBus(props.subscriberEventBus)],
     });

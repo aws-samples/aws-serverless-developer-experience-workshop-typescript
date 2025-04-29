@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT-0
 import * as path from 'path';
 
-import { Construct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
@@ -17,65 +16,113 @@ import * as ssm from 'aws-cdk-lib/aws-ssm';
 
 import {
   LambdaHelper,
+  StackHelper,
   getDefaultLogsRetentionPeriod,
   STAGE,
   UNICORN_NAMESPACES,
-} from './helper';
+} from '../constructs/helper';
 
 /**
- * Properties for the PropertyApprovalConstruct construct
- * @interface PropertyApprovalConstructProps
+ * Properties for the PropertyApprovalStackProps
+ * @interface PropertyApprovalStackProps
+ *
+ * Defines configuration properties required for the property approval workflow stack,
+ * including cross-stack references and environment configuration.
  */
-interface PropertyApprovalConstructProps {
-  /** Deployment stage of the application */
+interface PropertyApprovalStackProps extends cdk.StackProps {
+  /** Deployment stage of the application (local, dev, prod) */
   stage: STAGE;
-  /** EventBridge event bus for publishing events */
-  eventBus: events.EventBus;
-  /** DynamoDB table for property data storage */
-  table: dynamodb.TableV2;
-  /** Lambda function for resuming the StepFunction workflow */
-  taskResponseFunction: lambda.Function;
+  /** Name of the DynamoDB table tracking contract status */
+  contractStatusTableName: string;
+  /** Name of the Lambda function handling property approval synchronization */
+  propertyApprovalSyncFunctionName: string;
 }
 
 /**
- * Construct that defines the Property Approval infrastructure
- * Manages property approval workflow and state machine
- * @class PropertyApprovalConstruct
+ * Stack that implements the Property services's approval workflow infrastructure
+ * @class PropertyApprovalStack
+ *
+ * This stack demonstrates advanced serverless patterns including:
+ * - Step Functions workflow orchestration
+ * - Event-driven architecture integration
+ * - Asynchronous approval processes
+ * - Integration with AI services for content moderation
+ * - Error handling and dead letter queues
  *
  * @example
  * ```typescript
- * const approvalDomain = new PropertyApprovalConstruct(stack, 'PropertyApprovalConstruct', {
+ * const app = new cdk.App();
+ * new PropertyApprovalStack(app, 'PropertyApprovalStack', {
  *   stage: STAGE.dev,
- *   eventBus: myEventBus,
- *   table: myDynamoTable,
- *   taskResponseFunction: myTaskResponseFunction
+ *   contractStatusTableName: 'ContractTable',
+ *   propertyApprovalSyncFunctionName: 'ApprovalSyncFunction',
+ *   env: {
+ *     account: process.env.CDK_DEFAULT_ACCOUNT,
+ *     region: process.env.CDK_DEFAULT_REGION
+ *   }
  * });
  * ```
  */
-export class PropertyApprovalConstruct extends Construct {
-  /** Step Functions state machine for property approval workflow */
-  public readonly stateMachine: sfn.StateMachine;
+
+export class PropertyApprovalStack extends cdk.Stack {
+  /** Current deployment stage of the application */
+  private readonly stage: STAGE;
 
   /**
-   * Creates a new PropertyApprovalConstruct construct
+   * Creates a new UnicornPropertiesStack
    * @param scope - The scope in which to define this construct
    * @param id - The scoped construct ID
    * @param props - Configuration properties
    *
    * @remarks
-   * This construct creates:
-   * - Lambda function for contract approval workflow
-   * - Step Functions state machine for approval process
-   * - Dead Letter Queues for error handling
-   * - EventBridge rules for approval events
-   * - Associated CloudWatch log groups
+   * This stack creates:
+   * - EventBridge event bus through Events Construct
+   * - Contracts Construct with associated DynamoDB table
+   * - Property Approval Construct integrated with Contracts
+   * - Associated IAM roles and permissions
    */
-  constructor(
-    scope: Construct,
-    id: string,
-    props: PropertyApprovalConstructProps
-  ) {
-    super(scope, id);
+  constructor(scope: cdk.App, id: string, props: PropertyApprovalStackProps) {
+    super(scope, id, props);
+    this.stage = props.stage;
+
+    /**
+     * Add standard tags to the CloudFormation stack for resource organization
+     * and cost allocation
+     */
+    StackHelper.addStackTags(this, {
+      namespace: UNICORN_NAMESPACES.PROPERTIES,
+      stage: this.stage,
+    });
+
+    /**
+     * Retrieve the Properties service EventBus name from SSM Parameter Store
+     * and create a reference to the existing EventBus
+     */
+    const eventBusName = ssm.StringParameter.fromStringParameterName(
+      this,
+      'PropertiesEventBusName',
+      `/uni-prop/${props.stage}/UnicornPropertiesEventBus`
+    );
+    const eventBus = events.EventBus.fromEventBusName(
+      this,
+      'PropertiesEventBus',
+      eventBusName.stringValue
+    );
+
+    const tableName = cdk.Fn.importValue(props.contractStatusTableName);
+    const table = dynamodb.TableV2.fromTableName(
+      this,
+      'ContractStatusTable',
+      tableName
+    );
+    const functionName = cdk.Fn.importValue(
+      props.propertyApprovalSyncFunctionName
+    );
+    const taskResponseFunction = lambda.Function.fromFunctionName(
+      this,
+      'PropertiesApprovalSyncFunction',
+      functionName
+    );
 
     /* -------------------------------------------------------------------------- */
     /*                              LAMBDA FUNCTION                                 */
@@ -97,7 +144,7 @@ export class PropertyApprovalConstruct extends Construct {
         ),
         environment: {
           ...LambdaHelper.getDefaultEnvironmentVariables({
-            table: props.table,
+            table: table,
             stage: props.stage,
             serviceNamespace: UNICORN_NAMESPACES.PROPERTIES,
           }),
@@ -113,18 +160,18 @@ export class PropertyApprovalConstruct extends Construct {
       }
     );
     // Grant read and write access to DynamoDB table
-    props.table.grantReadWriteData(waitForContractApprovalFunction);
+    table.grantReadWriteData(waitForContractApprovalFunction);
 
     /**
      * CloudFormation outputs for Lambda function details
      * Useful for cross-stack references and operational monitoring
      */
-    new cdk.CfnOutput(this, 'WaitForContractApprovalFunctionName', {
-      key: 'WaitForContractApprovalFunctionName',
+    StackHelper.createOutput(this, {
+      name: 'WaitForContractApprovalFunctionName',
       value: waitForContractApprovalFunction.functionName,
     });
-    new cdk.CfnOutput(this, 'WaitForContractApprovalFunctionArn', {
-      key: 'WaitForContractApprovalFunctionArn',
+    StackHelper.createOutput(this, {
+      name: 'WaitForContractApprovalFunctionArn',
       value: waitForContractApprovalFunction.functionArn,
     });
 
@@ -133,9 +180,24 @@ export class PropertyApprovalConstruct extends Construct {
     /* -------------------------------------------------------------------------- */
 
     /**
-     * Retrieve images bucket name from SSM parameter store
-     * Used for property image processing in approval workflow
+     * Step Functions state machine for property approval workflow
+     *
+     * Implements a complex approval workflow demonstrating:
+     * - Content moderation using AI services (Rekognition, Comprehend)
+     * - Human approval task integration
+     * - Parallel processing of approval tasks
+     * - Error handling and recovery
+     * - Event-driven status updates
+     *
+     * The workflow coordinates:
+     * - Image analysis and moderation
+     * - Text content review
+     * - Contract status verification
+     * - Manual approval processes
+     * - Status event publication
      */
+
+    // Looks up the existing bucket containing our images's bucket name
     const imagesBucketName = ssm.StringParameter.valueForTypedStringParameterV2(
       this,
       `/uni-prop/${props.stage}/ImagesBucket`,
@@ -160,7 +222,7 @@ export class PropertyApprovalConstruct extends Construct {
      * Step Functions state machine for property approval workflow
      * Orchestrates the end-to-end approval process
      */
-    this.stateMachine = new sfn.StateMachine(this, `ApprovalStateMachine`, {
+    const stateMachine = new sfn.StateMachine(this, `ApprovalStateMachine`, {
       stateMachineName: `${cdk.Stack.of(this).stackName}-ApprovalStateMachine`,
       definitionBody: sfn.DefinitionBody.fromFile(
         path.join(
@@ -170,9 +232,9 @@ export class PropertyApprovalConstruct extends Construct {
       ),
       definitionSubstitutions: {
         WaitForContractApprovalArn: waitForContractApprovalFunction.functionArn,
-        TableName: props.table.tableName,
+        TableName: table.tableName,
         ImageUploadBucketName: imagesBucketName,
-        EventBusName: props.eventBus.eventBusName,
+        EventBusName: eventBus.eventBusName,
         ServiceName: UNICORN_NAMESPACES.PROPERTIES,
       },
       tracingEnabled: true,
@@ -223,10 +285,10 @@ export class PropertyApprovalConstruct extends Construct {
       }),
     });
     // Grant necessary permissions for state machine
-    this.stateMachine.grantTaskResponse(props.taskResponseFunction);
-    props.table.grantReadData(this.stateMachine);
-    props.eventBus.grantPutEventsTo(this.stateMachine);
-    waitForContractApprovalFunction.grantInvoke(this.stateMachine);
+    stateMachine.grantTaskResponse(taskResponseFunction);
+    table.grantReadData(stateMachine);
+    eventBus.grantPutEventsTo(stateMachine);
+    waitForContractApprovalFunction.grantInvoke(stateMachine);
 
     /* -------------------------------------------------------------------------- */
     /*                              EVENT HANDLING                                  */
@@ -251,14 +313,14 @@ export class PropertyApprovalConstruct extends Construct {
       ruleName: 'unicorn.properties-PublicationApprovalRequested',
       description:
         'PublicationApprovalRequested events published by the Web service.',
-      eventBus: props.eventBus,
+      eventBus: eventBus,
       eventPattern: {
         source: [UNICORN_NAMESPACES.WEB],
         detailType: ['PublicationApprovalRequested'],
       },
       enabled: true,
       targets: [
-        new targets.SfnStateMachine(this.stateMachine, {
+        new targets.SfnStateMachine(stateMachine, {
           deadLetterQueue: workflowEventsDlq,
           retryAttempts: 5,
           maxEventAge: cdk.Duration.minutes(15),
@@ -270,17 +332,17 @@ export class PropertyApprovalConstruct extends Construct {
      * CloudFormation outputs for state machine resources
      * Enables operational monitoring and cross-stack references
      */
-    new cdk.CfnOutput(this, 'ApprovalStateMachineLogGroupName', {
-      key: 'ApprovalStateMachineLogGroupName',
+    StackHelper.createOutput(this, {
+      name: 'ApprovalStateMachineLogGroupName',
       value: stateMachineLogGroup.logGroupName,
     });
-    new cdk.CfnOutput(this, 'ApprovalStateMachineName', {
-      key: 'ApprovalStateMachineName',
-      value: this.stateMachine.stateMachineName,
+    StackHelper.createOutput(this, {
+      name: 'ApprovalStateMachineName',
+      value: stateMachine.stateMachineName,
     });
-    new cdk.CfnOutput(this, 'ApprovalStateMachineArn', {
-      key: 'ApprovalStateMachineArn',
-      value: this.stateMachine.stateMachineArn,
+    StackHelper.createOutput(this, {
+      name: 'ApprovalStateMachineArn',
+      value: stateMachine.stateMachineArn,
     });
   }
 }

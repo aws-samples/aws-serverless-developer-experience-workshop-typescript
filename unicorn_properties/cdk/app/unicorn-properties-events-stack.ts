@@ -1,6 +1,5 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import { Construct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as eventschemas from 'aws-cdk-lib/aws-eventschemas';
@@ -11,50 +10,78 @@ import * as ssm from 'aws-cdk-lib/aws-ssm';
 
 import {
   getDefaultLogsRetentionPeriod,
+  StackHelper,
   STAGE,
   UNICORN_NAMESPACES,
-} from './helper';
+} from '../constructs/helper';
 import PublicationEvaluationCompletedEventSchema from '../../integration/PublicationEvaluationCompleted.json';
 
 /**
- * Properties for the EventsConstruct construct
- * @interface EventsConstructProps
+ * Properties for the PropertiesEventStackProps
+ * @interface PropertiesEventStackProps
+ *
+ * Defines configuration properties required for the event infrastructure stack
+ * including the deployment stage for environment-specific configurations.
  */
-interface EventsConstructProps {
-  /** Deployment stage of the application */
+interface PropertiesEventStackProps extends cdk.StackProps {
+  /** Deployment stage of the application (local, dev, prod) */
   stage: STAGE;
 }
 
 /**
- * Construct that defines the Events infrastructure for the Unicorn Properties service.
- * @class EventsConstruct
+ * Stack that defines the core event infrastructure for the Properties service.
+ * @class PropertiesEventStack
+ *
+ * This stack establishes the event backbone of the application, demonstrating
+ * key concepts of event-driven architectures including:
+ * - Custom event buses for domain-specific events
+ * - Event schema management and validation
+ * - Development-time event logging
+ * - Cross-service event routing
  *
  * @example
  * ```typescript
- * const EventsConstruct = new EventsConstruct(stack, 'EventsConstruct', {
- *   stage: STAGE.dev
+ * const app = new cdk.App();
+ * new PropertiesEventStack(app, 'PropertiesEventStack', {
+ *   stage: STAGE.dev,
+ *   env: {
+ *     account: process.env.CDK_DEFAULT_ACCOUNT,
+ *     region: process.env.CDK_DEFAULT_REGION
+ *   }
  * });
  * ```
  */
-export class EventsConstruct extends Construct {
-  /** EventBridge event bus for application events */
-  public readonly eventBus: events.EventBus;
+export class PropertiesEventStack extends cdk.Stack {
+  /** Current deployment stage of the application */
+  private readonly stage: STAGE;
 
   /**
-   * Creates a new EventsConstruct construct
+   * Creates a new PropertiesEventStack
    * @param scope - The scope in which to define this construct
    * @param id - The scoped construct ID
    * @param props - Configuration properties
    *
    * @remarks
-   * This construct creates:
-   * - Custom EventBridge event bus
-   * - Event schema registry and schemas
-   * - Development environment logging
-   * - SSM parameters for cross-stack references
+   * This stack creates:
+   * - Custom EventBridge event bus for the Properties service's domain events
+   * - Event bus resource policies for cross-account access
+   * - Event schema registry for maintaining event contract definitions
+   * - SSM parameters for service discovery
+   * - Development environment logging infrastructure
+   * - Event schemas for property publication workflow
    */
-  constructor(scope: Construct, id: string, props: EventsConstructProps) {
-    super(scope, id);
+  constructor(scope: cdk.App, id: string, props: PropertiesEventStackProps) {
+    super(scope, id, props);
+    this.stage = props.stage;
+
+    /**
+     * Add standard tags to the CloudFormation stack for resource organization
+     * and cost allocation
+     */
+    StackHelper.addStackTags(this, {
+      namespace: UNICORN_NAMESPACES.PROPERTIES,
+      stage: this.stage,
+    });
 
     /* -------------------------------------------------------------------------- */
     /*                                 EVENT BUS                                    */
@@ -64,7 +91,7 @@ export class EventsConstruct extends Construct {
      * Custom EventBridge event bus for the application
      * Handles all application-specific events and enables event-driven architecture
      */
-    this.eventBus = new events.EventBus(
+    const eventBus = new events.EventBus(
       this,
       `UnicornPropertiesBus-${props.stage}`,
       {
@@ -76,13 +103,13 @@ export class EventsConstruct extends Construct {
      * Resource policy allowing subscribers to create rules and targets
      * Enables other services to subscribe to events from this bus
      */
-    this.eventBus.addToResourcePolicy(
+    eventBus.addToResourcePolicy(
       new iam.PolicyStatement({
         sid: `AllowSubscribersToCreateSubscriptionRules-properties-${props.stage}`,
         effect: iam.Effect.ALLOW,
         principals: [new iam.AccountRootPrincipal()],
         actions: ['events:*Rule', 'events:*Targets'],
-        resources: [this.eventBus.eventBusArn],
+        resources: [eventBus.eventBusArn],
         conditions: {
           StringEqualsIfExists: {
             'events:creatorAccount': cdk.Stack.of(this).account,
@@ -96,12 +123,12 @@ export class EventsConstruct extends Construct {
      * Only allows services from UnicornPropertiesNamespace to publish events
      */
     new events.EventBusPolicy(this, 'UnicornPropertiesEventsBusPublishPolicy', {
-      eventBus: this.eventBus,
+      eventBus: eventBus,
       statementId: `OnlyPropertiesServiceCanPublishToEventBus-${props.stage}`,
       statement: new iam.PolicyStatement({
         principals: [new iam.AccountRootPrincipal()],
         actions: ['events:PutEvents'],
-        resources: [this.eventBus.eventBusArn],
+        resources: [eventBus.eventBusArn],
         conditions: {
           StringEquals: { 'events:source': UNICORN_NAMESPACES.PROPERTIES },
         },
@@ -111,9 +138,9 @@ export class EventsConstruct extends Construct {
      * CloudFormation output exposing the EventBus name
      * Enables other stacks and services to reference this event bus
      */
-    new cdk.CfnOutput(this, 'UnicornPropertiesEventBusName', {
-      key: 'UnicornPropertiesEventBusName',
-      value: this.eventBus.eventBusName,
+    StackHelper.createOutput(this, {
+      name: 'UnicornPropertiesEventBusName',
+      value: eventBus.eventBusName,
     });
 
     /* -------------------------------------------------------------------------- */
@@ -126,7 +153,7 @@ export class EventsConstruct extends Construct {
      */
     new ssm.StringParameter(this, 'UnicornPropertiesEventBusNameParam', {
       parameterName: `/uni-prop/${props.stage}/UnicornPropertiesEventBus`,
-      stringValue: this.eventBus.eventBusName,
+      stringValue: eventBus.eventBusName,
     });
 
     /**
@@ -135,7 +162,7 @@ export class EventsConstruct extends Construct {
      */
     new ssm.StringParameter(this, 'UnicornPropertiesEventBusArnParam', {
       parameterName: `/uni-prop/${props.stage}/UnicornPropertiesEventBusArn`,
-      stringValue: this.eventBus.eventBusArn,
+      stringValue: eventBus.eventBusArn,
     });
 
     /* -------------------------------------------------------------------------- */
@@ -143,8 +170,14 @@ export class EventsConstruct extends Construct {
     /* -------------------------------------------------------------------------- */
 
     /**
-     * Development environment logging configuration
-     * Creates CloudWatch log groups to capture all events for debugging
+     * Development environment event logging infrastructure
+     *
+     * Demonstrates debugging patterns for event-driven architectures:
+     * - Captures all events for development visibility
+     * - Implements environment-specific logging
+     * - Provides audit trail for event flow
+     *
+     * Note: This logging is only enabled in local and dev environments
      */
     if (props.stage === STAGE.local || STAGE.dev) {
       /**
@@ -168,7 +201,7 @@ export class EventsConstruct extends Construct {
       new events.Rule(this, 'properties.catchall', {
         ruleName: 'properties.catchall',
         description: 'Catch all events published by the Properties service.',
-        eventBus: this.eventBus,
+        eventBus: eventBus,
         eventPattern: {
           account: [cdk.Stack.of(this).account],
           source: [UNICORN_NAMESPACES.PROPERTIES],
@@ -181,13 +214,13 @@ export class EventsConstruct extends Construct {
        * CloudFormation outputs for log group information
        * Provides easy access to logging resources
        */
-      new cdk.CfnOutput(this, 'UnicornPropertiesCatchAllLogGroupName', {
-        key: 'UnicornPropertiesCatchAllLogGroupName',
+      StackHelper.createOutput(this, {
+        name: 'UnicornPropertiesCatchAllLogGroupName',
         description: "Log all events on the service's EventBridge Bus",
         value: catchAllLogGroup.logGroupName,
       });
-      new cdk.CfnOutput(this, 'UnicornPropertiesCatchAllLogGroupArn', {
-        key: 'UnicornPropertiesCatchAllLogGroupArn',
+      StackHelper.createOutput(this, {
+        name: 'UnicornPropertiesCatchAllLogGroupArn',
         description: "Log all events on the service's EventBridge Bus",
         value: catchAllLogGroup.logGroupArn,
       });
@@ -207,8 +240,15 @@ export class EventsConstruct extends Construct {
     });
 
     /**
-     * Schema definition for publication approval requests
-     * Ensures consistent event structure for property publication workflow
+     * Publication Evaluation Completed Event Schema
+     *
+     * Defines the contract for property publication workflow events:
+     * - Ensures consistent event structure
+     * - Enables strong typing for consumers
+     * - Facilitates service integration testing
+     *
+     * This schema is used to validate events at runtime and generate
+     * type-safe code bindings for consumers.
      */
     const publicationEvaluationCompletedSchema = new eventschemas.CfnSchema(
       this,

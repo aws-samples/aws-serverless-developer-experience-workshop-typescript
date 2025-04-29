@@ -20,7 +20,7 @@ export enum STAGE {
 }
 
 /**
- * Service namespaces for different components of the Unicorn application
+ * Service namespaces for different components of the Unicorn Properties application
  * @enum {string}
  */
 export enum UNICORN_NAMESPACES {
@@ -83,6 +83,85 @@ export const getStageFromContext = (app: cdk.App): STAGE => {
 
   return STAGE.local;
 };
+
+/**
+ * Helper class providing utility methods for AWS CDK stack operations
+ */
+export class StackHelper {
+  /**
+   * Creates a CloudFormation output with standardized formatting
+   * @param scope The construct scope (typically 'this' from the stack)
+   * @param props Configuration for the output
+   * @param props.name Name to be used for export/key and construct ID (if id not provided)
+   * @param props.value Value of the output
+   * @param props.description Optional description of the output
+   * @param props.export Optional flag to determine if name should be used as exportName (default: false)
+   * @param id Optional unique identifier for the output (defaults to props.name)
+   * @returns cdk.CfnOutput
+   */
+  public static createOutput(
+    scope: cdk.Stack,
+    props: {
+      /** Name to be used for export/key and construct ID (if id not provided) */
+      name: string;
+      /** Value of the output */
+      value: string;
+      /** Optional description of the output */
+      description?: string;
+      /** Optional flag to determine if name should be used as exportName (default: false) */
+      export?: boolean;
+    },
+    id?: string
+  ): cdk.CfnOutput {
+    return new cdk.CfnOutput(scope, id ?? props.name, {
+      value: props.value,
+      [props.export ? 'exportName' : 'key']: props.name,
+      ...(props.description && { description: props.description }),
+    });
+  }
+
+  /**
+   * Adds standard tags to a CDK stack
+   * @param scope The construct scope (typically 'this' from the stack)
+   * @param props Configuration for the tags
+   * @param props.namespace The namespace tag value
+   * @param props.stage The stage tag value
+   * @param props.project Optional project tag value (defaults to 'AWS Serverless Developer Experience')
+   *
+   * @example
+   * ```typescript
+   * StackHelper.addStackTags(this, {
+   *   namespace: UNICORN_NAMESPACES.PROPERTIES,
+   *   stage: STAGE.dev
+   * });
+   *
+   * // With custom project name
+   * StackHelper.addStackTags(this, {
+   *   namespace: UNICORN_NAMESPACES.PROPERTIES,
+   *   stage: STAGE.dev,
+   *   project: 'My Custom Project'
+   * });
+   * ```
+   */
+  public static addStackTags(
+    scope: cdk.Stack,
+    props: {
+      /** The namespace tag value */
+      namespace: UNICORN_NAMESPACES;
+      /** The stage tag value */
+      stage: STAGE;
+      /** Optional project tag value */
+      project?: string;
+    }
+  ): void {
+    cdk.Tags.of(scope).add('namespace', props.namespace);
+    cdk.Tags.of(scope).add('stage', props.stage);
+    cdk.Tags.of(scope).add(
+      'project',
+      props.project ?? 'AWS Serverless Developer Experience'
+    );
+  }
+}
 
 interface LambdaOptionsProps {
   table: dynamodb.ITableV2;
