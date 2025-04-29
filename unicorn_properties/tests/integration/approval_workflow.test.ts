@@ -11,11 +11,11 @@ import {
   GetExecutionHistoryCommand,
 } from '@aws-sdk/client-sfn';
 
-import PublicationApprovalNonExistingContractEvent from '../events/eventbridge/publicaction_approval_requested_event_non_existing_contract.json';
-import PublicationApprovalInappropriateDescriptionEvent from '../events/eventbridge/publicaction_approval_requested_event_inappropriate_description.json';
-import PublicationApprovalInappropriateImagesEvent from '../events/eventbridge/publicaction_approval_requested_event_inappropriate_images.json';
-import PublicationApprovalPausedEvent from '../events/eventbridge/publicaction_approval_requested_event_pause_workflow.json';
-import PublicationApprovalAllApprovedEvent from '../events/eventbridge/publicaction_approval_requested_event_all_good.json';
+import PublicationApprovalNonExistingContractEvent from '../events/eventbridge/publication_approval_requested_event_non_existing_contract.json';
+import PublicationApprovalInappropriateDescriptionEvent from '../events/eventbridge/publication_approval_requested_event_inappropriate_description.json';
+import PublicationApprovalInappropriateImagesEvent from '../events/eventbridge/publication_approval_requested_event_inappropriate_images.json';
+import PublicationApprovalPausedEvent from '../events/eventbridge/publication_approval_requested_event_pause_workflow.json';
+import PublicationApprovalAllApprovedEvent from '../events/eventbridge/publication_approval_requested_event_all_good.json';
 import ContractApprovedEvent from '../events/eventbridge/contract_status_changed_event_contract_1_approved.json';
 
 describe('Tests that failed workflow', () => {
