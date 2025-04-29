@@ -7,6 +7,8 @@
   "author": "Amazon.com, Inc.",
   "main": "app.js",
   "scripts": {
+    "build": "tsc",
+    "deploy": "cdk deploy uni-prop-local-contracts --require-approval never",
     "lint": "eslint  --ext .ts --quiet --fix",
     "prettier": "prettier --write '**/*.ts'",
     "build": "tsc",

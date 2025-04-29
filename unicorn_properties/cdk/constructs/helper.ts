@@ -146,9 +146,9 @@ export class LambdaHelper {
    * - LOG_LEVEL: INFO
    * - NODE_OPTIONS: Source maps enabled for non-prod stages
    */
-  public static getDefaultEnvironmentVariables(props: LambdaOptionsProps): {
-    [key: string]: string;
-  } {
+  public static getDefaultEnvironmentVariables(
+    props: LambdaOptionsProps
+  ): Record<string, string> {
     return {
       DYNAMODB_TABLE: props.table.tableName,
       SERVICE_NAMESPACE: props.serviceNamespace,

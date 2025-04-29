@@ -8,7 +8,7 @@ export class NamespacesConstruct extends Construct {
   public readonly unicornPropertiesNamespace: ssm.StringParameter;
   public readonly unicornWebNamespace: ssm.StringParameter;
 
-  constructor(scope: Construct, id: string, props: {}) {
+  constructor(scope: Construct, id: string) {
     super(scope, id);
 
     this.unicornContractsNamespace = new ssm.StringParameter(

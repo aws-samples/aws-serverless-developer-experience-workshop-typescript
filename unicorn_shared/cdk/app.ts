@@ -1,13 +1,11 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import { AwsSolutionsChecks } from 'cdk-nag';
-import { App, Aspects } from 'aws-cdk-lib';
+import { App } from 'aws-cdk-lib';
 import { UnicornNamespacesStack } from './unicornNamespaces';
 import { UnicornImagesStack } from './unicornImages';
 import { STAGE } from './constructs/images-construct';
 
 const app = new App();
-// Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
 
 new UnicornNamespacesStack(app, 'uni-prop-namespaces', {
   description:

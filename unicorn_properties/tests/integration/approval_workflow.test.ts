@@ -1,12 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
-import {
-  sleep,
-  findOutputValue,
-  clearDatabase,
-  initializeDatabase,
-} from './helper';
+import { sleep, findOutputValue } from './helper';
 import {
   EventBridgeClient,
   PutEventsCommand,

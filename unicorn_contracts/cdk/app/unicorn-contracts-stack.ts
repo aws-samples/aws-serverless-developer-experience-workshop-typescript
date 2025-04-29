@@ -170,10 +170,11 @@ export class UnicornConstractsStack extends cdk.Stack {
     table.grantStreamRead(pipeRole);
     eventBus.grantPutEventsTo(pipeRole);
 
-    const ContractsTableStreamToEventPiptLogGroup = new logs.LogGroup(
+    const ContractsTableStreamToEventPipeLogGroup = new logs.LogGroup(
       this,
       'ContractsTableStreamToEventPipeLogGroup',
       {
+        logGroupName: `/aws/pipe/${props.stage}/ContractsTableStreamToEventPipe`,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
         retention: retentionPeriod,
       }
@@ -225,7 +226,7 @@ export class UnicornConstractsStack extends cdk.Stack {
       },
       logConfiguration: {
         cloudwatchLogsLogDestination: {
-          logGroupArn: ContractsTableStreamToEventPiptLogGroup.logGroupArn,
+          logGroupArn: ContractsTableStreamToEventPipeLogGroup.logGroupArn,
         },
         level: 'ERROR',
       },
@@ -331,7 +332,7 @@ export class UnicornConstractsStack extends cdk.Stack {
         dataTraceEnabled: true,
         tracingEnabled: true,
         metricsEnabled: true,
-        loggingLevel: apigateway.MethodLoggingLevel.INFO,
+        loggingLevel: apigateway.MethodLoggingLevel.OFF,
         accessLogDestination: new apigateway.LogGroupLogDestination(
           apiLogGroup
         ),
@@ -352,17 +353,6 @@ export class UnicornConstractsStack extends cdk.Stack {
             status: apigateway.AccessLogField.contextStatus(),
           })
         ),
-        // accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields({
-        //     caller: false,
-        //     httpMethod: true,
-        //     ip: true,
-        //     protocol: true,
-        //     requestTime: true,
-        //     resourcePath: true,
-        //     responseLength: true,
-        //     status: true,
-        //     user: true,
-        // }),
         methodOptions: {
           '/*/*': {
             throttlingRateLimit: 10,
@@ -611,7 +601,7 @@ export class UnicornConstractsStack extends cdk.Stack {
       [
         apiLogGroup,
         catchAllLogGroup,
-        ContractsTableStreamToEventPiptLogGroup,
+        ContractsTableStreamToEventPipeLogGroup,
         eventHandlerLogs,
       ],
       [

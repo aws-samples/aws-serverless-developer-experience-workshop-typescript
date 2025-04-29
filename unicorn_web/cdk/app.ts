@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import { App, Aspects } from 'aws-cdk-lib';
-import { AwsSolutionsChecks } from 'cdk-nag';
+import { App } from 'aws-cdk-lib';
 
 import { getStageFromContext } from './constructs/helper';
 import { UnicornWebStack } from './app/unicorn-web-stack';
@@ -21,7 +20,6 @@ const env = {
  * Initialize the CDK application
  */
 const app = new App();
-// Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }));
 
 /**
  * Retrieve deployment stage from CDK context

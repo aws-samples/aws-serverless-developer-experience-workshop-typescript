@@ -96,7 +96,6 @@ describe('Helper Functions and Enums', () => {
 
     describe('getDefaultEnvironmentVariables', () => {
       let mockTable: dynamodb.ITableV2;
-      const stage = STAGE.local;
       const serviceNamespace = UNICORN_NAMESPACES.PROPERTIES;
 
       beforeEach(() => {

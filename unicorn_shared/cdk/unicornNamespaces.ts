@@ -8,7 +8,7 @@ export class UnicornNamespacesStack extends Stack {
   constructor(scope: Construct, id: string, props: StackProps) {
     super(scope, id, props);
 
-    const namespaces = new NamespacesConstruct(this, 'Namespaces', {});
+    const namespaces = new NamespacesConstruct(this, 'Namespaces');
 
     new CfnOutput(this, 'UnicornContractsNamespace', {
       description: 'Unicorn Contracts namespace parameter',

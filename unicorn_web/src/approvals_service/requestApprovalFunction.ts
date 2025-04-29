@@ -56,7 +56,7 @@ interface PropertyDetailsEvent {
   description: string;
 }
 
-type PropertyDetailsEvent = {
+interface PropertyDetailsEvent {
   property_id: string;
   address: {
     country: string;
@@ -68,7 +68,7 @@ type PropertyDetailsEvent = {
   listprice?: number;
   images?: string[];
   description: string;
-};
+}
 
 class RequestApprovalFunction implements LambdaInterface {
   /**

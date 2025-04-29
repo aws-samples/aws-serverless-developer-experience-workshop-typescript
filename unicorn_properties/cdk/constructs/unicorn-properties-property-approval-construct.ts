@@ -169,7 +169,7 @@ export class PropertyApprovalConstruct extends Construct {
         )
       ),
       definitionSubstitutions: {
-        WaitForContractApproval: waitForContractApprovalFunction.functionArn,
+        WaitForContractApprovalArn: waitForContractApprovalFunction.functionArn,
         TableName: props.table.tableName,
         ImageUploadBucketName: imagesBucketName,
         EventBusName: props.eventBus.eventBusName,

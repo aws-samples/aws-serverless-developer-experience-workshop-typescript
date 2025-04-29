@@ -157,7 +157,7 @@ export async function initializeDatabase() {
   const putItemCommand = new PutItemCommand(putItemRequest);
   // Execute the batch write command to delete all items
   try {
-    const putItemResponse = await client.send(putItemCommand);
+    await client.send(putItemCommand);
   } catch (error) {
     console.error('Error itinialising database:', error);
   }

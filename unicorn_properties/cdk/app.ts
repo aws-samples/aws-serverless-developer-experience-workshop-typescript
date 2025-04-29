@@ -2,7 +2,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
-import { AwsSolutionsChecks } from 'cdk-nag';
+// import { AwsSolutionsChecks } from 'cdk-nag';
 
 import { getStageFromContext } from './constructs/helper';
 import { UnicornPropertiesStack } from './app/unicorn-properties-stack';

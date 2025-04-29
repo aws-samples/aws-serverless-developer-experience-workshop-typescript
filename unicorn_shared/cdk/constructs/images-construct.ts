@@ -86,21 +86,17 @@ export class ImagesInfraConstruct extends Construct {
       'propertyImagesBucket',
       'aws-serverless-developer-experience-workshop-assets'
     );
-    const propertyImagesDeployment = new s3deploy.BucketDeployment(
-      this,
-      'DeployImages',
-      {
-        sources: [
-          s3deploy.Source.bucket(
-            propertyImagesBucket,
-            'property_images/property_images.zip'
-          ),
-        ],
-        destinationBucket: this.imagesBucket,
-        destinationKeyPrefix: '/',
-        retainOnDelete: false,
-        extract: true,
-      }
-    );
+    new s3deploy.BucketDeployment(this, 'DeployImages', {
+      sources: [
+        s3deploy.Source.bucket(
+          propertyImagesBucket,
+          'property_images/property_images.zip'
+        ),
+      ],
+      destinationBucket: this.imagesBucket,
+      destinationKeyPrefix: '/',
+      retainOnDelete: false,
+      extract: true,
+    });
   }
 }

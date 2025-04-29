@@ -1,7 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
-import { Match, Template } from 'aws-cdk-lib/assertions';
+import { Template } from 'aws-cdk-lib/assertions';
 
 import { STAGE, UNICORN_NAMESPACES } from '../../cdk/constructs/helper';
 import { UnicornWebStack } from '../../cdk/app/unicorn-web-stack';
