@@ -22,7 +22,6 @@ const mockContext: Context = {
   done: () => {},
   fail: () => {},
   succeed: () => {},
-  /* eslint-disable @typescript-eslint/no-empty-function */
 };
 
 const defaultSQSRecord: SQSRecord = {
