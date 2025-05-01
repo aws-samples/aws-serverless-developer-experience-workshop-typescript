@@ -2,17 +2,13 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as apigateway from 'aws-cdk-lib/aws-apigateway';
-import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
-import { PropertySearchConstruct } from '../../../cdk/constructs/unicorn-web-property-search-construct';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/lib/helper';
+import { WebPropertySearchStack } from '../../cdk/app/unicorn-web-property-search-stack';
 
-describe('PropertySearchConstruct', () => {
+describe('PropertySearchStack', () => {
   let app: cdk.App;
   let stack: cdk.Stack;
   let template: Template;
-  let table: dynamodb.TableV2;
-  let api: apigateway.RestApi;
 
   const stage = STAGE.local; // use local for testing
   const serviceNamespace = UNICORN_NAMESPACES.WEB;
@@ -20,22 +16,15 @@ describe('PropertySearchConstruct', () => {
   beforeEach(() => {
     // Create a new app and stack for each test
     app = new cdk.App();
-    stack = new cdk.Stack(app, 'TestStack');
-
-    // Create the required dependencies
-    table = new dynamodb.TableV2(stack, 'TestTable', {
-      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
-    });
-
-    api = new apigateway.RestApi(stack, 'TestApi', {
-      restApiName: 'TestApi',
-    });
 
     // Create the construct
-    new PropertySearchConstruct(stack, 'TestPropertySearchConstruct', {
+    stack = new WebPropertySearchStack(app, 'TestPropertySearchStack', {
       stage,
-      table,
-      api,
+      eventBusName: 'testEventBus',
+      tableName: 'testTable',
+      restApiId: 'testApiId',
+      restApiRootResourceId: 'testRootResourceId',
+      restApiUrl: 'https://test.local',
     });
 
     // Prepare the template for assertions
@@ -68,7 +57,7 @@ describe('PropertySearchConstruct', () => {
         Environment: {
           Variables: {
             DYNAMODB_TABLE: expect.objectContaining({
-              Ref: expect.stringContaining('TestTable'),
+              Ref: 'uniproplocaltestTableParameter',
             }),
             SERVICE_NAMESPACE: serviceNamespace,
             POWERTOOLS_SERVICE_NAME: serviceNamespace,
@@ -80,6 +69,23 @@ describe('PropertySearchConstruct', () => {
     }
   });
 
+  test('creates IAM role for API Gateway integration', () => {
+    template.hasResourceProperties('AWS::IAM::Role', {
+      RoleName: 'WebApiSearchIntegrationRole-local',
+      AssumeRolePolicyDocument: {
+        Statement: [
+          {
+            Action: 'sts:AssumeRole',
+            Effect: 'Allow',
+            Principal: {
+              Service: 'apigateway.amazonaws.com',
+            },
+          },
+        ],
+      },
+    });
+  });
+
   test('creates API Gateway resources with correct structure', () => {
     // Verify API Gateway resources
     template.resourceCountIs('AWS::ApiGateway::Resource', 9); // /search + country, city and street.  /properties + country, city, street and number
@@ -87,10 +93,7 @@ describe('PropertySearchConstruct', () => {
     // Verify the search endpoint
     template.hasResourceProperties('AWS::ApiGateway::Resource', {
       ParentId: {
-        'Fn::GetAtt': [
-          Match.stringLikeRegexp('TestApi[A-Z0-9]+'),
-          'RootResourceId',
-        ],
+        Ref: 'uniproplocaltestRootResourceIdParameter',
       },
       PathPart: 'search',
     });
@@ -98,7 +101,7 @@ describe('PropertySearchConstruct', () => {
     // Verify country endpoint
     template.hasResourceProperties('AWS::ApiGateway::Resource', {
       ParentId: {
-        Ref: Match.stringLikeRegexp('TestApisearch[A-Z0-9]+'),
+        Ref: Match.stringLikeRegexp('Apisearch[A-Z0-9]+'),
       },
       PathPart: '{country}',
     });
@@ -106,7 +109,7 @@ describe('PropertySearchConstruct', () => {
     // Verify city endpoint
     template.hasResourceProperties('AWS::ApiGateway::Resource', {
       ParentId: {
-        Ref: Match.stringLikeRegexp('TestApisearchcountry[A-Z0-9]+'),
+        Ref: Match.stringLikeRegexp('Apisearchcountry[A-Z0-9]+'),
       },
       PathPart: '{city}',
     });
@@ -114,7 +117,7 @@ describe('PropertySearchConstruct', () => {
     // Verify street endpoint
     template.hasResourceProperties('AWS::ApiGateway::Resource', {
       ParentId: {
-        Ref: Match.stringLikeRegexp('TestApisearchcountrycity[A-Z0-9]+'),
+        Ref: Match.stringLikeRegexp('Apisearchcountrycity[A-Z0-9]+'),
       },
       PathPart: '{street}',
     });
@@ -122,10 +125,7 @@ describe('PropertySearchConstruct', () => {
     // Verify the properties endpoint
     template.hasResourceProperties('AWS::ApiGateway::Resource', {
       ParentId: {
-        'Fn::GetAtt': [
-          Match.stringLikeRegexp('TestApi[A-Z0-9]+'),
-          'RootResourceId',
-        ],
+        Ref: 'uniproplocaltestRootResourceIdParameter',
       },
       PathPart: 'properties',
     });
@@ -133,7 +133,7 @@ describe('PropertySearchConstruct', () => {
     // Verify country endpoint
     template.hasResourceProperties('AWS::ApiGateway::Resource', {
       ParentId: {
-        Ref: Match.stringLikeRegexp('TestApiproperties[A-Z0-9]+'),
+        Ref: Match.stringLikeRegexp('Apiproperties[A-Z0-9]+'),
       },
       PathPart: '{country}',
     });
@@ -141,7 +141,7 @@ describe('PropertySearchConstruct', () => {
     // Verify city endpoint
     template.hasResourceProperties('AWS::ApiGateway::Resource', {
       ParentId: {
-        Ref: Match.stringLikeRegexp('TestApipropertiescountry[A-Z0-9]+'),
+        Ref: Match.stringLikeRegexp('Apipropertiescountry[A-Z0-9]+'),
       },
       PathPart: '{city}',
     });
@@ -149,24 +149,38 @@ describe('PropertySearchConstruct', () => {
     // Verify street endpoint
     template.hasResourceProperties('AWS::ApiGateway::Resource', {
       ParentId: {
-        Ref: Match.stringLikeRegexp('TestApipropertiescountrycity[A-Z0-9]+'),
+        Ref: Match.stringLikeRegexp('Apipropertiescountrycity[A-Z0-9]+'),
       },
       PathPart: '{street}',
     });
     // Verify street number endpoint
     template.hasResourceProperties('AWS::ApiGateway::Resource', {
       ParentId: {
-        Ref: Match.stringLikeRegexp(
-          'TestApipropertiescountrycitystreet[A-Z0-9]+'
-        ),
+        Ref: Match.stringLikeRegexp('Apipropertiescountrycitystreet[A-Z0-9]+'),
       },
       PathPart: '{number}',
     });
   });
 
+  test('creates API Gateway integration', () => {
+    template.hasResourceProperties('AWS::ApiGateway::Method', {
+      HttpMethod: 'GET',
+      ResourceId: Match.objectEquals({
+        Ref: Match.stringLikeRegexp('webRestApisearchcountrycity[A-Z0-9]+'),
+      }),
+      RestApiId: Match.objectEquals({
+        Ref: 'uniproplocaltestApiIdParameter',
+      }),
+      Integration: {
+        IntegrationHttpMethod: 'POST',
+        Type: 'AWS_PROXY',
+      },
+    });
+  });
+
   test('creates API Gateway methods with correct configuration', () => {
     // Verify GET methods are created
-    template.resourceCountIs('AWS::ApiGateway::Method', 4); // Base search + country, city, street, property details
+    template.resourceCountIs('AWS::ApiGateway::Method', 3); // Base search + country+city, street, property details
 
     // Verify method properties
     template.hasResourceProperties('AWS::ApiGateway::Method', {
@@ -186,17 +200,14 @@ describe('PropertySearchConstruct', () => {
   });
 
   test('configures correct resource count', () => {
-    template.resourceCountIs('AWS::DynamoDB::GlobalTable', 1);
-    template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
-    template.resourceCountIs('AWS::ApiGateway::Account', 1);
     template.resourceCountIs('AWS::ApiGateway::Deployment', 1);
-    template.resourceCountIs('AWS::ApiGateway::Stage', 1);
     template.resourceCountIs('AWS::ApiGateway::Resource', 9);
-    template.resourceCountIs('AWS::ApiGateway::Method', 4);
+    template.resourceCountIs('AWS::ApiGateway::Method', 3);
+    template.resourceCountIs('AWS::ApiGateway::Deployment', 1);
     template.resourceCountIs('AWS::Logs::LogGroup', 1);
     template.resourceCountIs('AWS::IAM::Role', 2);
-    template.resourceCountIs('AWS::IAM::Policy', 1);
+    template.resourceCountIs('AWS::IAM::Policy', 2);
     template.resourceCountIs('AWS::Lambda::Function', 1);
-    template.resourceCountIs('AWS::Lambda::Permission', 8);
+    template.resourceCountIs('AWS::Lambda::Permission', 6);
   });
 });

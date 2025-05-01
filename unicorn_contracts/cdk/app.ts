@@ -4,7 +4,7 @@
 import * as cdk from 'aws-cdk-lib';
 // import { AwsSolutionsChecks } from 'cdk-nag';
 
-import { getStageFromContext } from './app/helper';
+import { getStageFromContext } from './lib/helper';
 import { UnicornConstractsStack } from './app/unicorn-contracts-stack';
 
 const env = {

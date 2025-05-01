@@ -9,7 +9,7 @@ import {
   getStageFromContext,
   getDefaultLogsRetentionPeriod,
   LambdaHelper,
-} from '../../../cdk/constructs/helper';
+} from '../../../cdk/lib/helper';
 
 describe('Helper Functions and Enums', () => {
   describe('STAGE enum', () => {

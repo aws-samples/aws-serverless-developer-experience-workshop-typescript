@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT-0
 import * as path from 'path';
 
-import { Construct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
@@ -15,63 +14,121 @@ import * as sqs from 'aws-cdk-lib/aws-sqs';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 import {
-  LambdaHelper,
   getDefaultLogsRetentionPeriod,
+  LambdaHelper,
+  StackHelper,
   STAGE,
   UNICORN_NAMESPACES,
-} from './helper';
+} from '../lib/helper';
 
 /**
- * Properties for the PropertyPublicationConstruct construct
- * @interface PropertyPublicationConstructProps
+ * Properties for the WebPropertyPublicationStack
+ * @interface WebPropertyPublicationStackProps
  */
-interface PropertyPublicationConstructProps {
+interface WebPropertyPublicationStackProps extends cdk.StackProps {
   /** Deployment stage of the application */
   stage: STAGE;
-  /** DynamoDB table for storing property data */
-  table: dynamodb.TableV2;
-  /** REST API Gateway instance */
-  api: apigateway.RestApi;
-  /** EventBridge event bus for publishing events */
-  eventBus: events.EventBus;
+  /** Name of SSM Parameter that holds the EventBus for this service */
+  eventBusName: string;
+  /** Name of SSM Parameter that holds the DynamoDB table tracking property status. */
+  tableName: string;
+  /** Name of SSM Parameter that holds the RestApId of Web service's Rest Api */
+  restApiId: string;
+  /** Name of SSM Parameter that holds the RootResourceId of Web service's Rest Api */
+  restApiRootResourceId: string;
+  /** Name of SSM Parameter that holds the Url of Web service's Rest Api */
+  restApiUrl: string;
 }
 
 /**
- * Construct that manages the property publication Construct including approval requests and publication workflows
- * @class PropertyPublicationConstruct
+ * Stack that defines the Unicorn Web infrastructure
+ * @class WebPropertyPublicationStack
  *
  * @example
  * ```typescript
- * const Construct = new PropertyPublicationConstruct(this, 'PublicationConstruct', {
+ * const app = new cdk.App();
+ * new WebPropertyPublicationStack(app, 'WebPropertyPublicationStack', {
  *   stage: STAGE.dev,
- *   table: myTable,
- *   api: myApi,
- *   eventBus: myEventBus
+ *   env: {
+ *     account: process.env.CDK_DEFAULT_ACCOUNT,
+ *     region: process.env.CDK_DEFAULT_REGION
+ *   }
  * });
  * ```
  */
-export class PropertyPublicationConstruct extends Construct {
+export class WebPropertyPublicationStack extends cdk.Stack {
+  /** Current deployment stage of the application */
+  private readonly stage: STAGE;
+
   /**
-   * Creates a new PropertyPublicationConstruct construct
+   * Creates a new WebPropertyPublicationStack
    * @param scope - The scope in which to define this construct
    * @param id - The scoped construct ID
    * @param props - Configuration properties
    *
    * @remarks
-   * This construct creates:
-   * - Dead letter queues for handling failed messages
-   * - SQS queue for approval requests
-   * - IAM roles for API Gateway integration
-   * - Lambda functions for request processing and publication handling
-   * - EventBridge rules for publication evaluation
-   * - API Gateway integration with SQS
+   * This stack creates:
+   * - DynamoDB table for data storage
+   * - API Gateway REST API
+   * - EventBridge event bus
+   * - Property publication Construct
+   * - Property eventing Construct
+   * - Associated IAM roles and permissions
    */
   constructor(
-    scope: Construct,
+    scope: cdk.App,
     id: string,
-    props: PropertyPublicationConstructProps
+    props: WebPropertyPublicationStackProps
   ) {
-    super(scope, id);
+    super(scope, id, props);
+    this.stage = props.stage;
+
+    /**
+     * Add standard tags to the CloudFormation stack for resource organization
+     * and cost allocation
+     */
+    StackHelper.addStackTags(this, {
+      namespace: UNICORN_NAMESPACES.WEB,
+      stage: this.stage,
+    });
+
+    /**
+     * Import resources based on details from SSM Parameter Store
+     * Create CDK references to these existing resources.
+     */
+    const eventBus = events.EventBus.fromEventBusName(
+      this,
+      'WebEventBus',
+      StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.eventBusName}`
+      )
+    );
+
+    const table = dynamodb.TableV2.fromTableName(
+      this,
+      'webTable',
+      StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.tableName}`
+      )
+    );
+
+    const apiUrl = StackHelper.lookupSsmParameter(
+      this,
+      `/uni-prop/${props.stage}/${props.restApiUrl}`
+    );
+
+    const api = apigateway.RestApi.fromRestApiAttributes(this, 'webRestApi', {
+      restApiId: StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.restApiId}`
+      ),
+      rootResourceId: StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.restApiRootResourceId}`
+      ),
+    });
 
     /* -------------------------------------------------------------------------- */
     /*                                SQS QUEUES                                    */
@@ -113,10 +170,11 @@ export class PropertyPublicationConstruct extends Construct {
     /**
      * CloudFormation output for ApprovalRequestQueue URL
      */
-    new cdk.CfnOutput(this, 'ApprovalRequestQueueUrl', {
-      exportName: 'ApprovalRequestQueueUrl',
+    StackHelper.createOutput(this, {
+      name: 'ApprovalRequestQueueUrl',
       description: 'URL for the Ingest SQS Queue',
       value: approvalRequestQueue.queueUrl,
+      stage: props.stage,
     });
 
     /* -------------------------------------------------------------------------- */
@@ -127,11 +185,11 @@ export class PropertyPublicationConstruct extends Construct {
      * IAM role for API Gateway to SQS integration
      * Allows API Gateway to send messages to the approval request queue
      */
-    const apiRole = new iam.Role(this, 'UnicornWebApiIntegrationRole', {
-      roleName: `UnicornWebApiIntegrationRole-${props.stage}`,
+    const apiIntegrationRole = new iam.Role(this, 'WebApiSqsIntegrationRole', {
+      roleName: `WebApiSqsIntegrationRole-${props.stage}`,
       assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
     });
-    approvalRequestQueue.grantSendMessages(apiRole);
+    approvalRequestQueue.grantSendMessages(apiIntegrationRole);
 
     /* -------------------------------------------------------------------------- */
     /*                            LAMBDA FUNCTIONS                                  */
@@ -167,11 +225,11 @@ export class PropertyPublicationConstruct extends Construct {
         ),
         environment: {
           ...LambdaHelper.getDefaultEnvironmentVariables({
-            table: props.table,
+            table: table,
             stage: props.stage,
             serviceNamespace: UNICORN_NAMESPACES.WEB,
           }),
-          EVENT_BUS: props.eventBus.eventBusName,
+          EVENT_BUS: eventBus.eventBusName,
         },
         logGroup: new logs.LogGroup(this, 'RequestApprovalFunctionLogs', {
           removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -181,8 +239,8 @@ export class PropertyPublicationConstruct extends Construct {
       }
     );
     // Grant permissions to the approval request function
-    props.eventBus.grantPutEventsTo(approvalRequestFunction);
-    props.table.grantReadData(approvalRequestFunction);
+    eventBus.grantPutEventsTo(approvalRequestFunction);
+    table.grantReadData(approvalRequestFunction);
 
     /**
      * Configure SQS event source for the approval request function
@@ -210,7 +268,7 @@ export class PropertyPublicationConstruct extends Construct {
         ),
         environment: {
           ...LambdaHelper.getDefaultEnvironmentVariables({
-            table: props.table,
+            table: table,
             stage: props.stage,
             serviceNamespace: UNICORN_NAMESPACES.WEB,
           }),
@@ -222,16 +280,19 @@ export class PropertyPublicationConstruct extends Construct {
         deadLetterQueue: publicationApprovedEventHandlerDLQ,
       }
     );
-    props.table.grantWriteData(publicationApprovedFunction);
+    table.grantWriteData(publicationApprovedFunction);
 
     // CloudFormation Stack Outputs for publicationApprovedFunction
-    new cdk.CfnOutput(this, 'PublicationApprovedEventHandlerFunctionName', {
-      exportName: 'PublicationApprovedEventHandlerFunctionName',
+    StackHelper.createOutput(this, {
+      name: 'PublicationApprovedEventHandlerFunctionName',
       value: publicationApprovedFunction.functionName,
+      stage: props.stage,
     });
-    new cdk.CfnOutput(this, 'PublicationApprovedEventHandlerFunctionArn', {
-      exportName: 'PublicationApprovedEventHandlerFunctionArn',
+
+    StackHelper.createOutput(this, {
+      name: 'PublicationApprovedEventHandlerFunctionArn',
       value: publicationApprovedFunction.functionArn,
+      stage: props.stage,
     });
 
     /* -------------------------------------------------------------------------- */
@@ -246,7 +307,7 @@ export class PropertyPublicationConstruct extends Construct {
       ruleName: 'unicorn.web-PublicationEvaluationCompleted',
       description:
         'PublicationEvaluationCompleted events published by the Properties service.',
-      eventBus: props.eventBus,
+      eventBus: eventBus,
       eventPattern: {
         source: [UNICORN_NAMESPACES.PROPERTIES],
         detailType: ['PublicationEvaluationCompleted'],
@@ -267,7 +328,7 @@ export class PropertyPublicationConstruct extends Construct {
       integrationHttpMethod: 'POST',
       path: approvalRequestQueue.queueName,
       options: {
-        credentialsRole: apiRole,
+        credentialsRole: apiIntegrationRole,
         integrationResponses: [
           {
             statusCode: '200',
@@ -293,16 +354,21 @@ export class PropertyPublicationConstruct extends Construct {
      * Path: POST /request_approval
      * Integrates with SQS for asynchronous processing
      */
-    props.api.root
-      .addResource('request_approval')
-      .addMethod('POST', sqsIntegration, {
-        methodResponses: [{ statusCode: '200' }],
-      });
-    // CloudFormation stack output for /request_approval path
-    new cdk.CfnOutput(this, 'ApiPropertyApproval', {
-      exportName: 'ApiPropertyApproval',
-      description: 'POST request to add a property to the database',
-      value: `${props.api.url}request_approval`,
+    api.root.addResource('request_approval').addMethod('POST', sqsIntegration, {
+      methodResponses: [{ statusCode: '200' }],
     });
+    // CloudFormation stack output for /request_approval path
+    StackHelper.createOutput(this, {
+      name: 'ApiPropertyApproval',
+      description: 'POST request to add a property to the database',
+      value: `${apiUrl}request_approval`,
+      stage: props.stage,
+    });
+
+    const deployment = new apigateway.Deployment(this, 'deployment', {
+      api: api,
+      stageName: props.stage,
+    });
+    deployment.node.addDependency(api.root);
   }
 }

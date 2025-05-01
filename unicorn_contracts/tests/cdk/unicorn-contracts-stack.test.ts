@@ -5,7 +5,7 @@ import { Match, Template } from 'aws-cdk-lib/assertions';
 
 import { RetentionDays } from 'aws-cdk-lib/aws-logs';
 
-import { STAGE, UNICORN_NAMESPACES } from '../../cdk/app/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/lib/helper';
 import { UnicornConstractsStack } from '../../cdk/app/unicorn-contracts-stack';
 
 describe('Unicorn Contracts Stack', () => {

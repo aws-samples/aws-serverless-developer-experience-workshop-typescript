@@ -20,7 +20,7 @@ import {
   getDefaultLogsRetentionPeriod,
   STAGE,
   UNICORN_NAMESPACES,
-} from '../constructs/helper';
+} from '../lib/helper';
 
 /**
  * Properties for the PropertyApprovalStackProps
@@ -32,10 +32,12 @@ import {
 interface PropertyApprovalStackProps extends cdk.StackProps {
   /** Deployment stage of the application (local, dev, prod) */
   stage: STAGE;
-  /** Name of the DynamoDB table tracking contract status */
-  contractStatusTableName: string;
-  /** Name of the Lambda function handling property approval synchronization */
-  propertyApprovalSyncFunctionName: string;
+  /** Name of SSM Parameter containing this service's Event Bus name */
+  eventBusNameParameter: string;
+  /** Name of SSM Parameter containing the DynamoDB table tracking contract status */
+  contractStatusTableNameParameter: string;
+  /** Name of SSM Parameter containing the Lambda function handling property approval synchronization */
+  propertyApprovalSyncFunctionNameParameter: string;
 }
 
 /**
@@ -63,7 +65,6 @@ interface PropertyApprovalStackProps extends cdk.StackProps {
  * });
  * ```
  */
-
 export class PropertyApprovalStack extends cdk.Stack {
   /** Current deployment stage of the application */
   private readonly stage: STAGE;
@@ -95,33 +96,34 @@ export class PropertyApprovalStack extends cdk.Stack {
     });
 
     /**
-     * Retrieve the Properties service EventBus name from SSM Parameter Store
-     * and create a reference to the existing EventBus
+     * Import resources based on details from SSM Parameter Store
+     * Create CDK references to these existing resources.
      */
-    const eventBusName = ssm.StringParameter.fromStringParameterName(
-      this,
-      'PropertiesEventBusName',
-      `/uni-prop/${props.stage}/UnicornPropertiesEventBus`
-    );
     const eventBus = events.EventBus.fromEventBusName(
       this,
       'PropertiesEventBus',
-      eventBusName.stringValue
+      StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.eventBusNameParameter}`
+      )
     );
 
-    const tableName = cdk.Fn.importValue(props.contractStatusTableName);
     const table = dynamodb.TableV2.fromTableName(
       this,
       'ContractStatusTable',
-      tableName
+      StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.contractStatusTableNameParameter}`
+      )
     );
-    const functionName = cdk.Fn.importValue(
-      props.propertyApprovalSyncFunctionName
-    );
+
     const taskResponseFunction = lambda.Function.fromFunctionName(
       this,
       'PropertiesApprovalSyncFunction',
-      functionName
+      StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.propertyApprovalSyncFunctionNameParameter}`
+      )
     );
 
     /* -------------------------------------------------------------------------- */
@@ -169,10 +171,12 @@ export class PropertyApprovalStack extends cdk.Stack {
     StackHelper.createOutput(this, {
       name: 'WaitForContractApprovalFunctionName',
       value: waitForContractApprovalFunction.functionName,
+      stage: props.stage,
     });
     StackHelper.createOutput(this, {
       name: 'WaitForContractApprovalFunctionArn',
       value: waitForContractApprovalFunction.functionArn,
+      stage: props.stage,
     });
 
     /* -------------------------------------------------------------------------- */
@@ -335,14 +339,17 @@ export class PropertyApprovalStack extends cdk.Stack {
     StackHelper.createOutput(this, {
       name: 'ApprovalStateMachineLogGroupName',
       value: stateMachineLogGroup.logGroupName,
+      stage: props.stage,
     });
     StackHelper.createOutput(this, {
       name: 'ApprovalStateMachineName',
       value: stateMachine.stateMachineName,
+      stage: props.stage,
     });
     StackHelper.createOutput(this, {
       name: 'ApprovalStateMachineArn',
       value: stateMachine.stateMachineArn,
+      stage: props.stage,
     });
   }
 }

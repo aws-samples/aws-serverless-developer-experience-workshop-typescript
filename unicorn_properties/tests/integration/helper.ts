@@ -145,7 +145,7 @@ export async function initializeDatabase() {
   });
   const tableName = await findOutputValue(
     'uni-prop-local-properties-contracts',
-    'ContractStatusTableName'
+    'ContractStatusTableNamelocal'
   );
 
   const putItemRequest: PutCommandInput = {
@@ -162,7 +162,7 @@ export async function initializeDatabase() {
   try {
     await client.send(putItemCommand);
   } catch (error) {
-    console.error('Error itinialising database:', error);
+    console.error('Error initialising database:', error);
   }
 }
 

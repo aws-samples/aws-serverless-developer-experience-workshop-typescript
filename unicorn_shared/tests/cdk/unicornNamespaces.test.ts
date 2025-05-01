@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import { UnicornNamespacesStack } from '../../cdk/unicornNamespaces';
+import { UnicornNamespacesStack } from '../../cdk/app/unicornNamespaces';
 
 describe('Unicorn Namespaces Stack', () => {
   let app: cdk.App;

@@ -4,7 +4,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
 
-import { STAGE, UNICORN_NAMESPACES } from '../../cdk/constructs/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/lib/helper';
 import { PropertyApprovalStack } from '../../cdk/app/unicorn-properties-property-approval-stack';
 
 describe('PropertyApprovalStack', () => {
@@ -20,9 +20,15 @@ describe('PropertyApprovalStack', () => {
 
     // Create construct within the test stack
     const stack = new PropertyApprovalStack(app, 'TestPropertyApprovalStack', {
+      // env required as Construct expects to look up SSM Parameters
+      env: {
+        account: '123456789012',
+        region: 'us-east-1',
+      },
       stage,
-      contractStatusTableName: 'TestContractStatusTable',
-      propertyApprovalSyncFunctionName: 'TestApprovalFunction',
+      eventBusNameParameter: 'testEventBus',
+      contractStatusTableNameParameter: 'TestContractStatusTable',
+      propertyApprovalSyncFunctionNameParameter: 'TestApprovalFunction',
     });
 
     // Prepare the template for assertions
@@ -54,9 +60,7 @@ describe('PropertyApprovalStack', () => {
         Environment: {
           Variables: {
             DYNAMODB_TABLE: expect.objectContaining({
-              'Fn::ImportValue': expect.stringContaining(
-                'TestContractStatusTable'
-              ),
+              Ref: 'uniproplocalTestContractStatusTableParameter',
             }),
             SERVICE_NAMESPACE: serviceNamespace,
           },

@@ -5,6 +5,7 @@ import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 
 /**
  * Deployment stages for the application
@@ -90,14 +91,6 @@ export const getStageFromContext = (app: cdk.App): STAGE => {
 export class StackHelper {
   /**
    * Creates a CloudFormation output with standardized formatting
-   * @param scope The construct scope (typically 'this' from the stack)
-   * @param props Configuration for the output
-   * @param props.name Name to be used for export/key and construct ID (if id not provided)
-   * @param props.value Value of the output
-   * @param props.description Optional description of the output
-   * @param props.export Optional flag to determine if name should be used as exportName (default: false)
-   * @param id Optional unique identifier for the output (defaults to props.name)
-   * @returns cdk.CfnOutput
    */
   public static createOutput(
     scope: cdk.Stack,
@@ -106,42 +99,58 @@ export class StackHelper {
       name: string;
       /** Value of the output */
       value: string;
+      /** Stage of the stack this output is in */
+      stage: STAGE;
       /** Optional description of the output */
       description?: string;
       /** Optional flag to determine if name should be used as exportName (default: false) */
       export?: boolean;
+      /** Optional flag to create SSM Parameter (default: false) */
+      createSsmStringParameter?: boolean;
     },
     id?: string
-  ): cdk.CfnOutput {
-    return new cdk.CfnOutput(scope, id ?? props.name, {
+  ): { output: cdk.CfnOutput; parameter?: ssm.StringParameter } {
+    // Create the CloudFormation output
+    const output = new cdk.CfnOutput(scope, id ?? props.name, {
       value: props.value,
       [props.export ? 'exportName' : 'key']: props.name,
       ...(props.description && { description: props.description }),
     });
+
+    let parameter: ssm.StringParameter | undefined;
+
+    // Create SSM Parameter if requested
+    if (props.createSsmStringParameter) {
+      const parameterProps: ssm.StringParameterProps = {
+        parameterName: `/uni-prop/${props.stage}/${props.name}`,
+        stringValue: props.value,
+        ...(props.description && { description: props.description }),
+      };
+      parameter = parameter = new ssm.StringParameter(
+        scope,
+        `/uni-prop/${props.stage}/${props.name}Parameter`,
+        parameterProps
+      );
+    }
+
+    return { output, parameter };
+  }
+
+  public static lookupSsmParameter(
+    scope: cdk.Stack,
+    /** Name to be used for ParameterName and construct Id */
+    name: string
+  ): string {
+    const parameter = ssm.StringParameter.fromStringParameterName(
+      scope,
+      name,
+      name
+    );
+    return parameter.stringValue;
   }
 
   /**
    * Adds standard tags to a CDK stack
-   * @param scope The construct scope (typically 'this' from the stack)
-   * @param props Configuration for the tags
-   * @param props.namespace The namespace tag value
-   * @param props.stage The stage tag value
-   * @param props.project Optional project tag value (defaults to 'AWS Serverless Developer Experience')
-   *
-   * @example
-   * ```typescript
-   * StackHelper.addStackTags(this, {
-   *   namespace: UNICORN_NAMESPACES.PROPERTIES,
-   *   stage: STAGE.dev
-   * });
-   *
-   * // With custom project name
-   * StackHelper.addStackTags(this, {
-   *   namespace: UNICORN_NAMESPACES.PROPERTIES,
-   *   stage: STAGE.dev,
-   *   project: 'My Custom Project'
-   * });
-   * ```
    */
   public static addStackTags(
     scope: cdk.Stack,

@@ -3,7 +3,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 
-import { STAGE, UNICORN_NAMESPACES } from '../../cdk/constructs/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/lib/helper';
 import { PropertiesToContractsIntegrationStack } from '../../cdk/app/unicorn-properties-integration-with-contracts-stack';
 
 describe('PropertiesToWebIntegrationStack', () => {
@@ -23,7 +23,7 @@ describe('PropertiesToWebIntegrationStack', () => {
         region: 'us-east-1',
       },
       stage,
-      // propertiesEventBus,
+      eventBusNameParameter: 'testEventBus',
       contractsEventBusArnParam: `/uni-prop/${stage}/UnicornContractsEventBusArn`,
     });
 
@@ -75,7 +75,7 @@ describe('PropertiesToWebIntegrationStack', () => {
                 'arn:',
                 { Ref: 'AWS::Partition' },
                 ':events:us-east-1:123456789012:event-bus/',
-                { Ref: 'PropertiesEventBusNameParameter' },
+                { Ref: 'uniproplocaltestEventBusParameter' },
               ],
             ],
           },

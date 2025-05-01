@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import { STAGE, UNICORN_NAMESPACES } from '../../cdk/constructs/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/lib/helper';
 import { PropertiesEventStack } from '../../cdk/app/unicorn-properties-events-stack';
 
 describe('EventsStack', () => {
@@ -97,7 +97,8 @@ describe('EventsStack', () => {
     // Test EventBridge rule for logging
     template.hasResourceProperties('AWS::Events::Rule', {
       Name: 'properties.catchall',
-      Description: 'Catch all events published by the Properties service.',
+      Description:
+        'Catch all events published by the unicorn.properties service.',
       EventBusName: {
         Ref: Match.stringLikeRegexp('UnicornPropertiesBus.*'),
       },

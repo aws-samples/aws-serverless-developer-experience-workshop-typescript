@@ -3,10 +3,9 @@
 import { Construct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 import * as events from 'aws-cdk-lib/aws-events';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
 
 import { CrossUniPropServiceSubscriptionConstruct } from '../constructs/unicorn-properties-service-subscription-construct';
-import { StackHelper, STAGE, UNICORN_NAMESPACES } from '../constructs/helper';
+import { StackHelper, STAGE, UNICORN_NAMESPACES } from '../lib/helper';
 
 /**
  * Properties for the PropertiesToWebIntegrationStack
@@ -19,6 +18,8 @@ import { StackHelper, STAGE, UNICORN_NAMESPACES } from '../constructs/helper';
 interface PropertiesToWebIntegrationStackProps extends cdk.StackProps {
   /** Deployment stage of the application (local, dev, prod) */
   stage: STAGE;
+  /** Name of SSM Parameter containing this service's Event Bus name */
+  eventBusNameParameter: string;
   /** SSM parameter name containing the Web service EventBus ARN */
   webEventBusArnParam: string;
 }
@@ -79,15 +80,13 @@ export class PropertiesToWebIntegrationStack extends cdk.Stack {
      * Retrieve the Properties service EventBus name from SSM Parameter Store
      * and create a reference to the existing EventBus
      */
-    const eventBusName = ssm.StringParameter.fromStringParameterName(
-      this,
-      'PropertiesEventBusName',
-      `/uni-prop/${props.stage}/UnicornPropertiesEventBus`
-    );
     const eventBus = events.EventBus.fromEventBusName(
       this,
       'PropertiesEventBus',
-      eventBusName.stringValue
+      StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.eventBusNameParameter}`
+      )
     );
     /**
      * Cross-service event subscription
@@ -105,7 +104,6 @@ export class PropertiesToWebIntegrationStack extends cdk.Stack {
         // SSM parameter containing the publisher's (Web service) EventBus ARN
         publisherEventBusArnParam: props.webEventBusArnParam,
         publisherNameSpace: UNICORN_NAMESPACES.WEB,
-        // Target EventBus in the Properties service
         subscriberEventBus: eventBus,
         subscriberNameSpace: UNICORN_NAMESPACES.PROPERTIES,
         eventTypeName: 'PublicationApprovalRequested',

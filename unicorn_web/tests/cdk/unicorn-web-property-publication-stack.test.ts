@@ -2,13 +2,10 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import * as apigateway from 'aws-cdk-lib/aws-apigateway';
-import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as events from 'aws-cdk-lib/aws-events';
-import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
-import { PropertyPublicationConstruct } from '../../../cdk/constructs/unicorn-web-property-publication-construct';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/lib/helper';
+import { WebPropertyPublicationStack } from '../../cdk/app/unicorn-web-property-publication-stack';
 
-describe('PropertyPublicationConstruct', () => {
+describe('PropertyPublicationStack', () => {
   let app: cdk.App;
   let stack: cdk.Stack;
   let template: Template;
@@ -19,22 +16,15 @@ describe('PropertyPublicationConstruct', () => {
   beforeEach(() => {
     // Create a new app and stack for each test
     app = new cdk.App();
-    stack = new cdk.Stack(app, 'TestStack');
-
-    // Create required props for the construct
-    const table = new dynamodb.TableV2(stack, 'TestTable', {
-      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
-    });
-    const api = new apigateway.RestApi(stack, 'TestApi');
-
-    const eventBus = new events.EventBus(stack, 'TestEventBus');
 
     // Create the construct
-    new PropertyPublicationConstruct(stack, 'TestConstruct', {
+    stack = new WebPropertyPublicationStack(app, 'TestStack', {
       stage,
-      table,
-      api,
-      eventBus,
+      eventBusName: 'testEventBus',
+      tableName: 'testTableName',
+      restApiId: 'testApiId',
+      restApiRootResourceId: 'testRootResourceId',
+      restApiUrl: 'https://test.local',
     });
 
     // Prepare the template for assertions
@@ -60,7 +50,7 @@ describe('PropertyPublicationConstruct', () => {
 
   test('creates IAM role for API Gateway integration', () => {
     template.hasResourceProperties('AWS::IAM::Role', {
-      RoleName: 'UnicornWebApiIntegrationRole-local',
+      RoleName: 'WebApiSqsIntegrationRole-local',
       AssumeRolePolicyDocument: {
         Statement: [
           {
@@ -101,10 +91,10 @@ describe('PropertyPublicationConstruct', () => {
         Environment: {
           Variables: {
             DYNAMODB_TABLE: expect.objectContaining({
-              Ref: expect.stringContaining('TestTable'),
+              Ref: 'uniproplocaltestTableNameParameter',
             }),
             EVENT_BUS: expect.objectContaining({
-              Ref: expect.stringContaining('TestEventBus'),
+              Ref: expect.stringContaining('uniproplocaltestEventBusParameter'),
             }),
             SERVICE_NAMESPACE: serviceNamespace,
           },
@@ -129,7 +119,7 @@ describe('PropertyPublicationConstruct', () => {
         Environment: {
           Variables: {
             DYNAMODB_TABLE: expect.objectContaining({
-              Ref: expect.stringContaining('Table'),
+              Ref: 'uniproplocaltestTableNameParameter',
             }),
             SERVICE_NAMESPACE: serviceNamespace,
           },
@@ -155,7 +145,7 @@ describe('PropertyPublicationConstruct', () => {
         Ref: Match.stringLikeRegexp('requestapproval[A-Z0-9]+'),
       }),
       RestApiId: Match.objectEquals({
-        Ref: Match.stringLikeRegexp('^TestApi[A-Z0-9]+'),
+        Ref: 'uniproplocaltestApiIdParameter',
       }),
       Integration: {
         IntegrationHttpMethod: 'POST',
@@ -171,18 +161,13 @@ describe('PropertyPublicationConstruct', () => {
   });
 
   test('configures correct resource count', () => {
-    template.resourceCountIs('AWS::DynamoDB::GlobalTable', 1);
-    template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
-    template.resourceCountIs('AWS::ApiGateway::Account', 1);
     template.resourceCountIs('AWS::ApiGateway::Deployment', 1);
-    template.resourceCountIs('AWS::ApiGateway::Stage', 1);
     template.resourceCountIs('AWS::ApiGateway::Resource', 1);
     template.resourceCountIs('AWS::ApiGateway::Method', 1);
-    template.resourceCountIs('AWS::Events::EventBus', 1);
     template.resourceCountIs('AWS::Events::Rule', 1);
     template.resourceCountIs('AWS::SQS::Queue', 3);
     template.resourceCountIs('AWS::SQS::QueuePolicy', 3);
-    template.resourceCountIs('AWS::IAM::Role', 4);
+    template.resourceCountIs('AWS::IAM::Role', 3);
     template.resourceCountIs('AWS::IAM::Policy', 3);
     template.resourceCountIs('AWS::Logs::LogGroup', 2);
     template.resourceCountIs('AWS::Lambda::Function', 2);

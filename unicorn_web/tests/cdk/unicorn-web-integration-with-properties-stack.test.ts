@@ -2,25 +2,20 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import * as events from 'aws-cdk-lib/aws-events';
 
-import { STAGE, UNICORN_NAMESPACES } from '../../cdk/constructs/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/lib/helper';
 import { WebToPropertiesIntegrationStack } from '../../cdk/app/unicorn-web-integration-with-properties-stack';
 
 describe('UnicornWebIntegrationWithPropertiesStack', () => {
   let app: cdk.App;
   let stack: cdk.Stack;
   let template: Template;
-  let webEventBus: events.EventBus;
 
   const stage = STAGE.local; // use local for testing
 
   beforeEach(() => {
     app = new cdk.App();
-    const resourceStack = new cdk.Stack(app, 'ResourceStack');
-    webEventBus = new events.EventBus(resourceStack, 'TestWebEventBus', {
-      eventBusName: 'TestWebEventBus',
-    });
+
     stack = new WebToPropertiesIntegrationStack(app, 'TestStack', {
       // env required as Construct expects to look up SSM Parameters
       env: {
@@ -28,12 +23,8 @@ describe('UnicornWebIntegrationWithPropertiesStack', () => {
         region: 'us-east-1',
       },
       stage,
-      webEventBus: webEventBus,
+      eventBusNameParameter: `/uni-prop/${stage}/UnicornWebEventBusArn`,
       propertiesEventBusArnParam: `/uni-prop/${stage}/UnicornPropertiesEventBusArn`,
-    });
-
-    webEventBus = new events.EventBus(stack, 'TestWebEventBus', {
-      eventBusName: 'TestWebEventBus',
     });
 
     template = Template.fromStack(stack);
@@ -83,11 +74,10 @@ describe('UnicornWebIntegrationWithPropertiesStack', () => {
               [
                 'arn:',
                 { Ref: 'AWS::Partition' },
-                ':events:',
-                { Ref: 'AWS::Region' },
-                ':',
-                { Ref: 'AWS::AccountId' },
-                ':event-bus/TestWebEventBus',
+                ':events:us-east-1:123456789012:event-bus/',
+                {
+                  Ref: 'uniproplocaluniproplocalUnicornWebEventBusArnParameter',
+                },
               ],
             ],
           },
@@ -97,7 +87,6 @@ describe('UnicornWebIntegrationWithPropertiesStack', () => {
   });
 
   test('configures correct resource count', () => {
-    template.resourceCountIs('AWS::Events::EventBus', 1);
     template.resourceCountIs('AWS::Events::Rule', 1);
     template.resourceCountIs('AWS::IAM::Role', 1);
     template.resourceCountIs('AWS::IAM::Policy', 1);

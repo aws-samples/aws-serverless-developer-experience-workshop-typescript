@@ -6,7 +6,7 @@ import { Lazy } from 'aws-cdk-lib';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
-import { UNICORN_NAMESPACES } from './helper';
+import { UNICORN_NAMESPACES } from '../lib/helper';
 
 /**
  * Properties for the CrossUniPropServiceSubscriptionProps

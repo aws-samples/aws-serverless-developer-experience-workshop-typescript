@@ -19,7 +19,7 @@ import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
 import { NagSuppressions } from 'cdk-nag';
 
-import { STAGE, UNICORN_NAMESPACES } from './helper';
+import { STAGE, UNICORN_NAMESPACES } from '../lib/helper';
 import ContractStatusChangedEventSchema from '../../integration/ContractStatusChangedEventSchema.json';
 
 interface UnicornConstractsStackProps extends cdk.StackProps {

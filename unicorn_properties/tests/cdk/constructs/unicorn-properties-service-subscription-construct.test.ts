@@ -3,7 +3,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import * as events from 'aws-cdk-lib/aws-events';
-import { UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
+import { UNICORN_NAMESPACES } from '../../../cdk/lib/helper';
 import { CrossUniPropServiceSubscriptionConstruct } from '../../../cdk/constructs/unicorn-properties-service-subscription-construct';
 
 describe('crossUniPropServiceSubscription', () => {

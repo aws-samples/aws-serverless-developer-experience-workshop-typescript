@@ -1,58 +1,79 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import { Construct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 import * as events from 'aws-cdk-lib/aws-events';
 import * as eventschemas from 'aws-cdk-lib/aws-eventschemas';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
 
 import {
   getDefaultLogsRetentionPeriod,
+  StackHelper,
   STAGE,
   UNICORN_NAMESPACES,
-} from './helper';
+} from '../lib/helper';
 import PublicationApprovalRequestedEventSchema from '../../integration/PublicationApprovalRequested.json';
 
 /**
- * Properties for the EventsConstruct construct
- * @interface EventsConstructProps
+ * Properties for the WebEventsStack
+ * @interface WebEventsStackProps
  */
-interface EventsConstructProps {
+interface WebEventsStackProps extends cdk.StackProps {
   /** Deployment stage of the application */
   stage: STAGE;
 }
 
 /**
- * Construct that defines the Events infrastructure for the Unicorn Web application
- * @class EventsConstruct
+ * Stack that defines the Unicorn Web infrastructure
+ * @class WebEventsStack
  *
  * @example
  * ```typescript
- * const eventsConstruct = new EventsConstruct(stack, 'EventsConstruct', {
- *   stage: STAGE.dev
+ * const app = new cdk.App();
+ * new WebEventsStack(app, 'WebEventsStack', {
+ *   stage: STAGE.dev,
+ *   env: {
+ *     account: process.env.CDK_DEFAULT_ACCOUNT,
+ *     region: process.env.CDK_DEFAULT_REGION
+ *   }
  * });
  * ```
  */
-export class EventsConstruct extends Construct {
-  /** EventBridge event bus for application events */
-  public readonly eventBus: events.EventBus;
+export class WebEventsStack extends cdk.Stack {
+  /** Current deployment stage of the application */
+  private readonly stage: STAGE;
+  /** Name of SSM Parameter that holds the EventBus for this service */
+  public readonly eventBusNameParameter: string;
 
   /**
-   * Creates a new EventsConstruct construct
+   * Creates a new WebEventsStack
    * @param scope - The scope in which to define this construct
    * @param id - The scoped construct ID
    * @param props - Configuration properties
    *
    * @remarks
-   * This construct creates:
-   * - Custom EventBridge event bus for the application
-   * - Associated CloudFormation outputs for cross-stack references
+   * This stack creates:
+   * - DynamoDB table for data storage
+   * - API Gateway REST API
+   * - EventBridge event bus
+   * - Property publication Construct
+   * - Property eventing Construct
+   * - Associated IAM roles and permissions
    */
-  constructor(scope: Construct, id: string, props: EventsConstructProps) {
-    super(scope, id);
+  constructor(scope: cdk.App, id: string, props: WebEventsStackProps) {
+    super(scope, id, props);
+    this.stage = props.stage;
+    this.eventBusNameParameter = 'UnicornWebEventBus';
+
+    /**
+     * Add standard tags to the CloudFormation stack for resource organization
+     * and cost allocation
+     */
+    StackHelper.addStackTags(this, {
+      namespace: UNICORN_NAMESPACES.WEB,
+      stage: this.stage,
+    });
 
     /* -------------------------------------------------------------------------- */
     /*                                 EVENT BUS                                    */
@@ -62,7 +83,7 @@ export class EventsConstruct extends Construct {
      * Custom EventBridge event bus for the application
      * Handles all application-specific events and enables event-driven architecture
      */
-    this.eventBus = new events.EventBus(this, `UnicornWebBus-${props.stage}`, {
+    const eventBus = new events.EventBus(this, `UnicornWebBus-${props.stage}`, {
       eventBusName: `UnicornWebBus-${props.stage}`,
     });
 
@@ -70,13 +91,13 @@ export class EventsConstruct extends Construct {
      * Resource policy allowing subscribers to create rules and targets
      * Enables other services to subscribe to events from this bus
      */
-    this.eventBus.addToResourcePolicy(
+    eventBus.addToResourcePolicy(
       new iam.PolicyStatement({
         sid: `AllowSubscribersToCreateSubscriptionRules-web-${props.stage}`,
         effect: iam.Effect.ALLOW,
         principals: [new iam.AccountRootPrincipal()],
         actions: ['events:*Rule', 'events:*Targets'],
-        resources: [this.eventBus.eventBusArn],
+        resources: [eventBus.eventBusArn],
         conditions: {
           StringEqualsIfExists: {
             'events:creatorAccount': cdk.Stack.of(this).account,
@@ -90,12 +111,12 @@ export class EventsConstruct extends Construct {
      * Only allows services from UnicornWebNamespace to publish events
      */
     new events.EventBusPolicy(this, 'UnicornWebEventsBusPublishPolicy', {
-      eventBus: this.eventBus,
+      eventBus: eventBus,
       statementId: `OnlyWebServiceCanPublishToEventBus-${props.stage}`,
       statement: new iam.PolicyStatement({
         principals: [new iam.AccountRootPrincipal()],
         actions: ['events:PutEvents'],
-        resources: [this.eventBus.eventBusArn],
+        resources: [eventBus.eventBusArn],
         conditions: {
           StringEquals: { 'events:source': UNICORN_NAMESPACES.WEB },
         },
@@ -105,31 +126,19 @@ export class EventsConstruct extends Construct {
      * CloudFormation output exposing the EventBus name
      * Enables other stacks and services to reference this event bus
      */
-    new cdk.CfnOutput(this, 'UnicornWebEventBusName', {
-      exportName: 'UnicornWebEventBusName',
-      value: this.eventBus.eventBusName,
+    StackHelper.createOutput(this, {
+      name: this.eventBusNameParameter,
+      value: eventBus.eventBusName,
+      stage: props.stage,
+      // Create an SSM Parameter to allow other services to discover the event bus
+      createSsmStringParameter: true,
     });
-
-    /* -------------------------------------------------------------------------- */
-    /*                              SSM PARAMETERS                                  */
-    /* -------------------------------------------------------------------------- */
-
-    /**
-     * SSM Parameter storing the event bus name
-     * Enables other services to discover the event bus without CloudFormation references
-     */
-    new ssm.StringParameter(this, 'UnicornWebEventBusNameParam', {
-      parameterName: `/uni-prop/${props.stage}/UnicornWebEventBus`,
-      stringValue: this.eventBus.eventBusName,
-    });
-
-    /**
-     * SSM Parameter storing the event bus ARN
-     * Enables other services to reference the event bus for IAM policies
-     */
-    new ssm.StringParameter(this, 'UnicornWebEventBusArnParam', {
-      parameterName: `/uni-prop/${props.stage}/UnicornWebEventBusArn`,
-      stringValue: this.eventBus.eventBusArn,
+    StackHelper.createOutput(this, {
+      name: `${this.eventBusNameParameter}Arn`,
+      value: eventBus.eventBusArn,
+      stage: props.stage,
+      // Create an SSM Parameter to allow other services to discover the event bus
+      createSsmStringParameter: true,
     });
 
     /* -------------------------------------------------------------------------- */
@@ -161,8 +170,8 @@ export class EventsConstruct extends Construct {
        */
       new events.Rule(this, 'web.catchall', {
         ruleName: 'web.catchall',
-        description: 'Catch all events published by the Web service.',
-        eventBus: this.eventBus,
+        description: `Catch all events published by the ${UNICORN_NAMESPACES.WEB} service.`,
+        eventBus: eventBus,
         eventPattern: {
           account: [cdk.Stack.of(this).account],
           source: [UNICORN_NAMESPACES.WEB],
@@ -175,15 +184,17 @@ export class EventsConstruct extends Construct {
        * CloudFormation outputs for log group information
        * Provides easy access to logging resources
        */
-      new cdk.CfnOutput(this, 'UnicornWebCatchAllLogGroupName', {
-        exportName: 'UnicornWebCatchAllLogGroupName',
+      StackHelper.createOutput(this, {
+        name: 'UnicornWebCatchAllLogGroupName',
         description: "Log all events on the service's EventBridge Bus",
         value: catchAllLogGroup.logGroupName,
+        stage: props.stage,
       });
-      new cdk.CfnOutput(this, 'UnicornWebCatchAllLogGroupArn', {
-        exportName: 'UnicornWebCatchAllLogGroupArn',
+      StackHelper.createOutput(this, {
+        name: 'UnicornWebCatchAllLogGroupArn',
         description: "Log all events on the service's EventBridge Bus",
         value: catchAllLogGroup.logGroupArn,
+        stage: props.stage,
       });
     }
 

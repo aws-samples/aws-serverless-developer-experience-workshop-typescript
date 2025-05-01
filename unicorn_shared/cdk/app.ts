@@ -1,8 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import { App } from 'aws-cdk-lib';
-import { UnicornNamespacesStack } from './unicornNamespaces';
-import { UnicornImagesStack } from './unicornImages';
+import { UnicornNamespacesStack } from './app/unicornNamespaces';
+import { UnicornImagesStack } from './app/unicornImages';
 import { STAGE } from './constructs/images-construct';
 
 const app = new App();

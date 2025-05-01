@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import { UnicornImagesStack } from '../../cdk/unicornImages';
+import { UnicornImagesStack } from '../../cdk/app/unicornImages';
 import { STAGE } from '../../cdk/constructs/images-construct';
 
 describe('Unicorn Namespaces Stack', () => {

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
-import { STAGE, UNICORN_NAMESPACES } from '../../cdk/constructs/helper';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/lib/helper';
 import { PropertyContractsStack } from '../../cdk/app/unicorn-properties-contracts-stack';
 
 describe('ContractsStack', () => {
@@ -20,6 +20,12 @@ describe('ContractsStack', () => {
     // Create construct within the test stack
     stack = new PropertyContractsStack(app, 'TestContractsStack', {
       stage,
+      eventBusNameParameter: 'testEventBus',
+      // env required as Construct expects to look up SSM Parameters
+      env: {
+        account: '123456789012',
+        region: 'us-east-1',
+      },
     });
 
     // Prepare the template for assertions
@@ -149,8 +155,7 @@ describe('ContractsStack', () => {
 
   test('creates required CloudFormation outputs', () => {
     template.hasOutput('ContractStatusTableName', {});
-    template.hasOutput('ContractStatusChangedHandlerFunctionArn', {});
-    template.hasOutput('ContractStatusChangedHandlerFunctionName', {});
+    template.hasOutput('ContractEventHandlerFunction', {});
     template.hasOutput('PropertiesApprovalSyncFunctionName', {});
   });
 

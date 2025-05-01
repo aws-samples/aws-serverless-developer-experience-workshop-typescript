@@ -6,14 +6,13 @@ import * as eventschemas from 'aws-cdk-lib/aws-eventschemas';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
 
 import {
   getDefaultLogsRetentionPeriod,
   StackHelper,
   STAGE,
   UNICORN_NAMESPACES,
-} from '../constructs/helper';
+} from '../lib/helper';
 import PublicationEvaluationCompletedEventSchema from '../../integration/PublicationEvaluationCompleted.json';
 
 /**
@@ -54,7 +53,8 @@ interface PropertiesEventStackProps extends cdk.StackProps {
 export class PropertiesEventStack extends cdk.Stack {
   /** Current deployment stage of the application */
   private readonly stage: STAGE;
-
+  /** Name of SSM Parameter that holds the EventBus for this service */
+  public readonly eventBusNameParameter: string;
   /**
    * Creates a new PropertiesEventStack
    * @param scope - The scope in which to define this construct
@@ -73,6 +73,7 @@ export class PropertiesEventStack extends cdk.Stack {
   constructor(scope: cdk.App, id: string, props: PropertiesEventStackProps) {
     super(scope, id, props);
     this.stage = props.stage;
+    this.eventBusNameParameter = 'UnicornPropertiesEventBus';
 
     /**
      * Add standard tags to the CloudFormation stack for resource organization
@@ -134,35 +135,24 @@ export class PropertiesEventStack extends cdk.Stack {
         },
       }).toJSON(),
     });
+
     /**
      * CloudFormation output exposing the EventBus name
      * Enables other stacks and services to reference this event bus
      */
     StackHelper.createOutput(this, {
-      name: 'UnicornPropertiesEventBusName',
+      name: this.eventBusNameParameter,
       value: eventBus.eventBusName,
+      stage: props.stage,
+      // Create an SSM Parameter to allow other services to discover the event bus
+      createSsmStringParameter: true,
     });
-
-    /* -------------------------------------------------------------------------- */
-    /*                              SSM PARAMETERS                                  */
-    /* -------------------------------------------------------------------------- */
-
-    /**
-     * SSM Parameter storing the event bus name
-     * Enables other services to discover the event bus without CloudFormation references
-     */
-    new ssm.StringParameter(this, 'UnicornPropertiesEventBusNameParam', {
-      parameterName: `/uni-prop/${props.stage}/UnicornPropertiesEventBus`,
-      stringValue: eventBus.eventBusName,
-    });
-
-    /**
-     * SSM Parameter storing the event bus ARN
-     * Enables other services to reference the event bus for IAM policies
-     */
-    new ssm.StringParameter(this, 'UnicornPropertiesEventBusArnParam', {
-      parameterName: `/uni-prop/${props.stage}/UnicornPropertiesEventBusArn`,
-      stringValue: eventBus.eventBusArn,
+    StackHelper.createOutput(this, {
+      name: `${this.eventBusNameParameter}Arn`,
+      value: eventBus.eventBusArn,
+      stage: props.stage,
+      // Create an SSM Parameter to allow other services to discover the event bus
+      createSsmStringParameter: true,
     });
 
     /* -------------------------------------------------------------------------- */
@@ -200,7 +190,7 @@ export class PropertiesEventStack extends cdk.Stack {
        */
       new events.Rule(this, 'properties.catchall', {
         ruleName: 'properties.catchall',
-        description: 'Catch all events published by the Properties service.',
+        description: `Catch all events published by the ${UNICORN_NAMESPACES.PROPERTIES} service.`,
         eventBus: eventBus,
         eventPattern: {
           account: [cdk.Stack.of(this).account],
@@ -218,11 +208,13 @@ export class PropertiesEventStack extends cdk.Stack {
         name: 'UnicornPropertiesCatchAllLogGroupName',
         description: "Log all events on the service's EventBridge Bus",
         value: catchAllLogGroup.logGroupName,
+        stage: props.stage,
       });
       StackHelper.createOutput(this, {
         name: 'UnicornPropertiesCatchAllLogGroupArn',
         description: "Log all events on the service's EventBridge Bus",
         value: catchAllLogGroup.logGroupArn,
+        stage: props.stage,
       });
     }
 

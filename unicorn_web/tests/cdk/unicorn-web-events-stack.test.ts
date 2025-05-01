@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import { STAGE, UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
-import { EventsConstruct } from '../../../cdk/constructs/unicorn-web-events-construct';
+import { STAGE, UNICORN_NAMESPACES } from '../../cdk/lib/helper';
+import { WebEventsStack } from '../../cdk/app/unicorn-web-events-stack';
 
-describe('EventsConstruct', () => {
+describe('EventsStack', () => {
   let app: cdk.App;
   let stack: cdk.Stack;
   let template: Template;
@@ -16,9 +16,7 @@ describe('EventsConstruct', () => {
   beforeEach(() => {
     // Create a new app and stack for each test
     app = new cdk.App();
-    stack = new cdk.Stack(app, 'TestStack');
-
-    new EventsConstruct(stack, 'TestEventsConstruct', {
+    stack = new WebEventsStack(app, 'TestEventsStack', {
       stage,
     });
     template = Template.fromStack(stack);
@@ -33,7 +31,7 @@ describe('EventsConstruct', () => {
   test('creates event bus policy with correct permissions', () => {
     template.hasResourceProperties('AWS::Events::EventBusPolicy', {
       EventBusName: {
-        Ref: Match.stringLikeRegexp('TestEventsConstructUnicornWebBuslocal.*'),
+        Ref: Match.stringLikeRegexp('UnicornWebBuslocal.*'),
       },
       StatementId: 'OnlyWebServiceCanPublishToEventBus-local',
       Statement: {
@@ -95,7 +93,7 @@ describe('EventsConstruct', () => {
     // Test EventBridge rule for logging
     template.hasResourceProperties('AWS::Events::Rule', {
       Name: 'web.catchall',
-      Description: 'Catch all events published by the Web service.',
+      Description: 'Catch all events published by the unicorn.web service.',
       EventBusName: {
         Ref: Match.stringLikeRegexp('UnicornWebBus.*'),
       },

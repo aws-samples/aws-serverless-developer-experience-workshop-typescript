@@ -2,30 +2,22 @@
 // SPDX-License-Identifier: MIT-0
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
-import { STAGE } from '../../../cdk/constructs/helper';
-import { ApiConstruct } from '../../../cdk/constructs/unicorn-web-api-construct';
+import { STAGE } from '../../cdk/lib/helper';
+import { WebApiStack } from '../../cdk/app/unicorn-web-api-stack';
 
-describe('ApiConstruct', () => {
+describe('ApiStack', () => {
   let app: cdk.App;
   let stack: cdk.Stack;
   let template: Template;
-  let api: ApiConstruct;
 
   const stage = STAGE.local; // use local for testing
 
   beforeEach(() => {
     // Create a new app and stack for each test
     app = new cdk.App();
-    stack = new cdk.Stack(app, 'TestStack');
-
-    // Create construct within the test stack
-    api = new ApiConstruct(stack, 'TestApiConstruct', {
+    stack = new WebApiStack(app, 'TestApiStack', {
       stage,
     });
-
-    // cannot create RestApi without at least one method
-    const testResource = api.api.root.addResource('test');
-    testResource.addMethod('GET');
 
     template = Template.fromStack(stack);
   });
@@ -111,14 +103,36 @@ describe('ApiConstruct', () => {
     });
   });
 
+  test('SSM Parameters are created for export', () => {
+    template.hasResourceProperties('AWS::SSM::Parameter', {
+      Name: '/uni-prop/local/UnicornWebTableName',
+      Type: 'String',
+    });
+
+    template.hasResourceProperties('AWS::SSM::Parameter', {
+      Name: '/uni-prop/local/UnicornWebRestApiId',
+      Type: 'String',
+    });
+
+    template.hasResourceProperties('AWS::SSM::Parameter', {
+      Name: '/uni-prop/local/UnicornWebRestApiRootResourceId',
+      Type: 'String',
+    });
+
+    template.hasResourceProperties('AWS::SSM::Parameter', {
+      Name: '/uni-prop/local/UnicornWebRestApiUrl',
+      Type: 'String',
+    });
+  });
+
   test('configures correct resource count', () => {
     template.resourceCountIs('AWS::ApiGateway::RestApi', 1);
     template.resourceCountIs('AWS::ApiGateway::Account', 1);
     template.resourceCountIs('AWS::ApiGateway::Stage', 1);
     template.resourceCountIs('AWS::ApiGateway::Deployment', 1);
-    template.resourceCountIs('AWS::ApiGateway::Resource', 1);
     template.resourceCountIs('AWS::ApiGateway::Method', 1);
     template.resourceCountIs('AWS::Logs::LogGroup', 1);
     template.resourceCountIs('AWS::IAM::Role', 1);
+    template.resourceCountIs('AWS::SSM::Parameter', 4);
   });
 });

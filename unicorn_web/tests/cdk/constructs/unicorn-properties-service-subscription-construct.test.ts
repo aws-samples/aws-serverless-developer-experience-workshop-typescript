@@ -3,8 +3,8 @@
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import * as events from 'aws-cdk-lib/aws-events';
-import { UNICORN_NAMESPACES } from '../../../cdk/constructs/helper';
-import { crossUniPropServiceSubscriptionConstruct } from '../../../cdk/constructs/unicorn-properties-service-subscription-construct';
+import { UNICORN_NAMESPACES } from '../../../cdk/lib/helper';
+import { CrossUniPropServiceSubscriptionConstruct } from '../../../cdk/constructs/unicorn-properties-service-subscription-construct';
 
 describe('crossUniPropServiceSubscription', () => {
   let app: cdk.App;
@@ -28,15 +28,12 @@ describe('crossUniPropServiceSubscription', () => {
     });
 
     // Create the subscription construct
-    new crossUniPropServiceSubscriptionConstruct(stack, 'TestSubscription', {
+    new CrossUniPropServiceSubscriptionConstruct(stack, 'TestSubscription', {
       publisherEventBusArnParam: '/uni-prop/local/PublisherEventBusArn',
-      subscriptionRuleName: 'TestSubscriptionRule',
-      subscriptionDescription: 'Test subscription rule for unit tests',
-      subscriptionEventPattern: {
-        source: [UNICORN_NAMESPACES.PROPERTIES],
-        detailType: ['PublicationEvaluationCompleted'],
-      },
+      publisherNameSpace: UNICORN_NAMESPACES.PROPERTIES,
       subscriberEventBus: subscriberEventBus,
+      subscriberNameSpace: UNICORN_NAMESPACES.WEB,
+      eventTypeName: 'PublicationEvaluationCompleted',
     });
 
     template = Template.fromStack(stack);
@@ -44,8 +41,9 @@ describe('crossUniPropServiceSubscription', () => {
 
   test('creates EventBridge rule with correct properties', () => {
     template.hasResourceProperties('AWS::Events::Rule', {
-      Name: 'TestSubscriptionRule',
-      Description: 'Test subscription rule for unit tests',
+      Name: 'unicorn.properties-PublicationEvaluationCompleted',
+      Description:
+        'Subscription to PublicationEvaluationCompleted events by the unicorn.web service.',
       EventPattern: {
         source: ['unicorn.properties'],
         'detail-type': ['PublicationEvaluationCompleted'],

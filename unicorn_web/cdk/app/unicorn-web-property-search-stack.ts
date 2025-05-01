@@ -2,67 +2,116 @@
 // SPDX-License-Identifier: MIT-0
 import * as path from 'path';
 
-import { Construct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 
 import {
-  LambdaHelper,
   getDefaultLogsRetentionPeriod,
+  LambdaHelper,
+  StackHelper,
   STAGE,
   UNICORN_NAMESPACES,
-} from './helper';
+} from '../lib/helper';
 
 /**
- * Properties for the PropertySearchConstruct construct
- * @interface PropertySearchConstructProps
+ * Properties for the WebPropertySearchStack
+ * @interface WebPropertySearchStackProps
  */
-interface PropertySearchConstructProps {
+interface WebPropertySearchStackProps extends cdk.StackProps {
   /** Deployment stage of the application */
   stage: STAGE;
-  /** DynamoDB table for property data storage */
-  table: dynamodb.TableV2;
-  /** REST API Gateway instance */
-  api: apigateway.RestApi;
+  /** Name of SSM Parameter that holds the EventBus for this service */
+  eventBusName: string;
+  /** Name of SSM Parameter that holds the DynamoDB table tracking property status. */
+  tableName: string;
+  /** Name of SSM Parameter that holds the RestApId of Web service's Rest Api */
+  restApiId: string;
+  /** Name of SSM Parameter that holds the RootResourceId of Web service's Rest Api */
+  restApiRootResourceId: string;
+  /** Name of SSM Parameter that holds the Url of Web service's Rest Api */
+  restApiUrl: string;
 }
 
 /**
- * Construct that defines the Property Search infrastructure
- * Handles property search and retrieval functionality
- * @class PropertySearchConstruct
+ * Stack that defines the Unicorn Web infrastructure
+ * @class WebPropertySearchStack
  *
  * @example
  * ```typescript
- * const searchConstruct = new PropertySearchConstruct(stack, 'PropertySearchConstruct', {
+ * const app = new cdk.App();
+ * new WebPropertySearchStack(app, 'WebPropertySearchStack', {
  *   stage: STAGE.dev,
- *   table: myDynamoTable,
- *   api: myApiGateway
+ *   env: {
+ *     account: process.env.CDK_DEFAULT_ACCOUNT,
+ *     region: process.env.CDK_DEFAULT_REGION
+ *   }
  * });
  * ```
  */
-export class PropertySearchConstruct extends Construct {
+export class WebPropertySearchStack extends cdk.Stack {
+  /** Current deployment stage of the application */
+  private readonly stage: STAGE;
+
   /**
-   * Creates a new PropertySearchConstruct construct
+   * Creates a new WebPropertySearchStack
    * @param scope - The scope in which to define this construct
    * @param id - The scoped construct ID
    * @param props - Configuration properties
    *
    * @remarks
-   * This construct creates:
-   * - Lambda function for property search
-   * - API Gateway endpoints for search operations
+   * This stack creates:
+   * - DynamoDB table for data storage
+   * - API Gateway REST API
+   * - EventBridge event bus
+   * - Property publication Construct
+   * - Property eventing Construct
    * - Associated IAM roles and permissions
-   * - CloudFormation outputs for API endpoints
    */
-  constructor(
-    scope: Construct,
-    id: string,
-    props: PropertySearchConstructProps
-  ) {
-    super(scope, id);
+  constructor(scope: cdk.App, id: string, props: WebPropertySearchStackProps) {
+    super(scope, id, props);
+    this.stage = props.stage;
+
+    /**
+     * Add standard tags to the CloudFormation stack for resource organization
+     * and cost allocation
+     */
+    StackHelper.addStackTags(this, {
+      namespace: UNICORN_NAMESPACES.WEB,
+      stage: this.stage,
+    });
+
+    /**
+     * Import resources based on details from SSM Parameter Store
+     * Create CDK references to these existing resources.
+     */
+    const table = dynamodb.TableV2.fromTableName(
+      this,
+      'webTable',
+      StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.tableName}`
+      )
+    );
+
+    const apiUrl = StackHelper.lookupSsmParameter(
+      this,
+      `/uni-prop/${props.stage}/${props.restApiUrl}`
+    );
+
+    const api = apigateway.RestApi.fromRestApiAttributes(this, 'webRestApi', {
+      restApiId: StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.restApiId}`
+      ),
+      rootResourceId: StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.restApiRootResourceId}`
+      ),
+    });
 
     /* -------------------------------------------------------------------------- */
     /*                              LAMBDA FUNCTION                                 */
@@ -83,7 +132,7 @@ export class PropertySearchConstruct extends Construct {
         ),
         environment: {
           ...LambdaHelper.getDefaultEnvironmentVariables({
-            table: props.table,
+            table: table,
             stage: props.stage,
             serviceNamespace: UNICORN_NAMESPACES.WEB,
           }),
@@ -99,24 +148,36 @@ export class PropertySearchConstruct extends Construct {
       }
     );
     // Grant read access to DynamoDB table
-    props.table.grantReadData(searchFunction);
+    table.grantReadData(searchFunction);
 
     /**
      * CloudFormation outputs for Lambda function details
      * Useful for cross-stack references and operational monitoring
      */
-    new cdk.CfnOutput(this, 'searchFunctionName', {
-      exportName: 'SearchFunctionName',
+    StackHelper.createOutput(this, {
+      name: 'searchFunctionName',
       value: searchFunction.functionName,
+      stage: props.stage,
     });
-    new cdk.CfnOutput(this, 'searchFunctionArn', {
-      exportName: 'SearchFunctionArn',
+    StackHelper.createOutput(this, {
+      name: 'searchFunctionArn',
       value: searchFunction.functionArn,
+      stage: props.stage,
     });
 
     /* -------------------------------------------------------------------------- */
     /*                           API GATEWAY RESOURCES                              */
     /* -------------------------------------------------------------------------- */
+
+    const apiIntegrationRole = new iam.Role(
+      this,
+      'WebApiSearchIntegrationRole',
+      {
+        roleName: `WebApiSearchIntegrationRole-${props.stage}`,
+        assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      }
+    );
+    searchFunction.grantInvoke(apiIntegrationRole);
 
     /**
      * Base search endpoint
@@ -124,17 +185,21 @@ export class PropertySearchConstruct extends Construct {
      * Path: GET /search
      * Returns: List of all properties
      */
-    const searchResource = props.api.root.addResource('search', {
-      defaultIntegration: new apigateway.LambdaIntegration(searchFunction),
+    const searchResource = api.root.addResource('search', {
+      defaultIntegration: new apigateway.LambdaIntegration(searchFunction, {
+        credentialsRole: apiIntegrationRole,
+      }),
     });
+
     /**
      * CloudFormation output for base search endpoint
      * Provides URL for general property searches
      */
-    new cdk.CfnOutput(this, 'ApiSearchProperties', {
-      exportName: 'ApiSearchProperties',
+    StackHelper.createOutput(this, {
+      name: 'ApiSearchProperties',
       description: 'GET request to list all properties in a given city',
-      value: `${props.api.url}search`,
+      value: `${apiUrl}search`,
+      stage: props.stage,
     });
 
     /**
@@ -143,22 +208,42 @@ export class PropertySearchConstruct extends Construct {
      * Path: GET /search/{country}
      */
     const listPropertiesByCountry = searchResource.addResource('{country}');
-    listPropertiesByCountry.addMethod('GET');
+
     /**
      * City-level search endpoint
      * Enables searching properties by city within a country
      * Path: GET /search/{country}/{city}
      */
     const listPropertiesByCity = listPropertiesByCountry.addResource('{city}');
-    listPropertiesByCity.addMethod('GET');
+    listPropertiesByCity.addMethod(
+      'GET',
+      new apigateway.LambdaIntegration(searchFunction, {
+        credentialsRole: apiIntegrationRole,
+      }),
+      {
+        requestParameters: {
+          'method.request.path.country': true,
+          'method.request.path.city': true,
+        },
+        methodResponses: [
+          {
+            statusCode: '200',
+            responseModels: {
+              'application/json': apigateway.Model.EMPTY_MODEL,
+            },
+          },
+        ],
+      }
+    );
+
     /**
      * CloudFormation output for city search endpoint
      * Provides URL for city-specific property searches
      */
     new cdk.CfnOutput(this, 'ApiSearchPropertiesByCity', {
-      exportName: 'ApiSearchPropertiesByCity',
+      key: 'ApiSearchPropertiesByCity',
       description: 'GET request to list all properties in a given city',
-      value: `${props.api.url}search/{country}/{city}`,
+      value: `${apiUrl}search/{country}/{city}`,
     });
 
     /**
@@ -168,14 +253,15 @@ export class PropertySearchConstruct extends Construct {
      */
     const listPropertiesByStreet = listPropertiesByCity.addResource('{street}');
     listPropertiesByStreet.addMethod('GET');
+
     /**
      * CloudFormation output for street search endpoint
      * Provides URL for street-specific property searches
      */
     new cdk.CfnOutput(this, 'ApiSearchPropertiesByStreet', {
-      exportName: 'ApiSearchPropertiesByStreet',
+      key: 'ApiSearchPropertiesByStreet',
       description: 'GET request to list all properties in a given street',
-      value: `${props.api.url}search/{country}/{city}/{street}`,
+      value: `${apiUrl}search/{country}/{city}/{street}`,
     });
 
     /* -------------------------------------------------------------------------- */
@@ -187,7 +273,7 @@ export class PropertySearchConstruct extends Construct {
      * Enables retrieving specific property details by address
      * Base path: /properties
      */
-    const propertiesResource = props.api.root.addResource('properties');
+    const propertiesResource = api.root.addResource('properties');
     const propertyByCountry = propertiesResource.addResource('{country}');
     const propertyByCity = propertyByCountry.addResource('{city}');
     const propertyByStreet = propertyByCity.addResource('{street}');
@@ -207,9 +293,26 @@ export class PropertySearchConstruct extends Construct {
      * Provides URL for retrieving specific property details
      */
     new cdk.CfnOutput(this, 'ApiPropertyDetails', {
-      exportName: 'ApiPropertyDetails',
+      key: 'ApiPropertyDetails',
       description: 'GET request to get the full details of a single property',
-      value: `${props.api.url}properties/{country}/{city}/{street}/{number}`,
+      value: `${apiUrl}properties/{country}/{city}/{street}/{number}`,
     });
+
+    const deployment = new apigateway.Deployment(this, 'deployment', {
+      api: api,
+      stageName: props.stage,
+    });
+    deployment.node.addDependency(
+      propertiesResource,
+      propertyByCountry,
+      propertyByCity,
+      propertyByStreet
+    );
+    deployment.node.addDependency(
+      searchResource,
+      listPropertiesByCountry,
+      listPropertiesByCity,
+      listPropertiesByStreet
+    );
   }
 }

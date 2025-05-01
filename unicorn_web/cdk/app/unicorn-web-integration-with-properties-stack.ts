@@ -4,20 +4,24 @@ import { Construct } from 'constructs';
 import * as cdk from 'aws-cdk-lib';
 import * as events from 'aws-cdk-lib/aws-events';
 
-import { crossUniPropServiceSubscriptionConstruct } from '../constructs/unicorn-properties-service-subscription-construct';
-import { STAGE, UNICORN_NAMESPACES } from '../constructs/helper';
+import { CrossUniPropServiceSubscriptionConstruct } from '../constructs/unicorn-properties-service-subscription-construct';
+import { StackHelper, STAGE, UNICORN_NAMESPACES } from '../lib/helper';
 
 /**
  * Properties for the WebToPropertiesIntegrationStack
  * @interface WebToPropertiesIntegrationStackProps
+ *
+ * Defines configuration properties required for service integration between
+ * the Web and Properties services, demonstrating loose coupling through
+ * event-driven integration patterns.
  */
 interface WebToPropertiesIntegrationStackProps extends cdk.StackProps {
   /** Deployment stage of the application */
   stage: STAGE;
+  /** Name of SSM Parameter containing this service's Event Bus name */
+  eventBusNameParameter: string;
   /** SSM parameter name containing the Properties service EventBus ARN */
   propertiesEventBusArnParam: string;
-  /** EventBus instance from the Web service */
-  webEventBus: events.IEventBus;
 }
 
 /**
@@ -25,12 +29,19 @@ interface WebToPropertiesIntegrationStackProps extends cdk.StackProps {
  * Handles event routing and subscriptions between the two services
  * @class WebToPropertiesIntegrationStack
  *
+ * This stack demonstrates microservice integration patterns including:
+ * - Event-driven service communication
+ * - Cross-service event routing
+ * - Service discovery using SSM parameters
+ * - Loose coupling through event subscriptions
+ * - Domain event filtering
+ *
  * @example
  * ```typescript
+ * const app = new cdk.App();
  * const integrationStack = new WebToPropertiesIntegrationStack(app, 'WebPropertiesIntegration', {
  *   stage: STAGE.dev,
  *   propertiesEventBusArnParam: '/uni-prop/dev/PropertiesEventBusArn',
- *   webEventBus: myWebEventBus
  * });
  * ```
  */
@@ -60,7 +71,23 @@ export class WebToPropertiesIntegrationStack extends cdk.Stack {
      * Add standard tags to the CloudFormation stack for resource organization
      * and cost allocation
      */
-    this.addStackTags();
+    StackHelper.addStackTags(this, {
+      namespace: UNICORN_NAMESPACES.WEB,
+      stage: this.stage,
+    });
+
+    /**
+     * Retrieve the Properties service EventBus name from SSM Parameter Store
+     * and create a reference to the existing EventBus
+     */
+    const eventBus = events.EventBus.fromEventBusName(
+      this,
+      'WebEventBus',
+      StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.eventBusNameParameter}`
+      )
+    );
 
     /**
      * Cross-service event subscription
@@ -71,42 +98,17 @@ export class WebToPropertiesIntegrationStack extends cdk.Stack {
      * - Source filtered to Properties service namespace
      * - Forwards events to Web service event bus
      */
-    new crossUniPropServiceSubscriptionConstruct(
+    new CrossUniPropServiceSubscriptionConstruct(
       this,
       'unicorn.web-PublicationEvaluationCompletedSubscription',
       {
         // SSM parameter containing the publisher's (Properties service) EventBus ARN
         publisherEventBusArnParam: props.propertiesEventBusArnParam,
-
-        // Target EventBus in the Web service
-        subscriberEventBus: props.webEventBus,
-
-        // Rule configuration for event routing
-        subscriptionRuleName: 'unicorn.web-PublicationEvaluationCompleted',
-        subscriptionDescription:
-          'Subscription to PublicationEvaluationCompleted events by the Web Service.',
-
-        // Event pattern defining which events to forward
-        subscriptionEventPattern: {
-          source: [UNICORN_NAMESPACES.PROPERTIES],
-          detailType: ['PublicationEvaluationCompleted'],
-        },
+        publisherNameSpace: UNICORN_NAMESPACES.PROPERTIES,
+        subscriberEventBus: eventBus,
+        subscriberNameSpace: UNICORN_NAMESPACES.WEB,
+        eventTypeName: 'PublicationEvaluationCompleted',
       }
     );
-  }
-  /**
-   * Adds standard tags to the CloudFormation stack
-   * @private
-   *
-   * @remarks
-   * Tags added:
-   * - namespace: Identifies the service namespace
-   * - stage: Identifies the deployment stage
-   * - project: Identifies the project name
-   */
-  private addStackTags(): void {
-    cdk.Tags.of(this).add('namespace', UNICORN_NAMESPACES.WEB);
-    cdk.Tags.of(this).add('stage', this.stage);
-    cdk.Tags.of(this).add('project', 'AWS Serverless Developer Experience');
   }
 }

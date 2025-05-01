@@ -14,7 +14,6 @@ import {
 } from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
-import * as ssm from 'aws-cdk-lib/aws-ssm';
 
 import {
   LambdaHelper,
@@ -22,7 +21,7 @@ import {
   getDefaultLogsRetentionPeriod,
   STAGE,
   UNICORN_NAMESPACES,
-} from '../constructs/helper';
+} from '../lib/helper';
 
 /**
  * Properties for the PropertyContractsStackProps
@@ -31,6 +30,8 @@ import {
 interface PropertyContractsStackProps extends cdk.StackProps {
   /** Deployment stage of the application */
   stage: STAGE;
+  /** Name of SSM Parameter containing this service's Event Bus name */
+  eventBusNameParameter: string;
 }
 
 /**
@@ -56,9 +57,9 @@ export class PropertyContractsStack extends cdk.Stack {
   /** Current deployment stage of the application */
   private readonly stage: STAGE;
   /** Name of the DynamoDB table tracking contract status */
-  public contractStatusTableName: string;
+  public contractStatusTableNameParameter: string;
   /** Name of the Lambda function handling property approval synchronization */
-  public propertyApprovalSyncFunctionName: string;
+  public propertyApprovalSyncFunctionNameParameter: string;
 
   /**
    * Creates a new PropertyContractsStack
@@ -78,6 +79,8 @@ export class PropertyContractsStack extends cdk.Stack {
   constructor(scope: cdk.App, id: string, props: PropertyContractsStackProps) {
     super(scope, id, props);
     this.stage = props.stage;
+    this.contractStatusTableNameParameter = `ContractStatusTableName`;
+    this.propertyApprovalSyncFunctionNameParameter = `PropertiesApprovalSyncFunctionName`;
 
     /**
      * Add standard tags to the CloudFormation stack for resource organization
@@ -88,22 +91,17 @@ export class PropertyContractsStack extends cdk.Stack {
       stage: this.stage,
     });
 
-    this.contractStatusTableName = 'ContractStatusTableName';
-    this.propertyApprovalSyncFunctionName =
-      'PropertiesApprovalSyncFunctionName';
     /**
      * Retrieve the Properties service EventBus name from SSM Parameter Store
      * and create a reference to the existing EventBus
      */
-    const eventBusName = ssm.StringParameter.fromStringParameterName(
-      this,
-      'PropertiesEventBusName',
-      `/uni-prop/${props.stage}/UnicornPropertiesEventBus`
-    );
     const eventBus = events.EventBus.fromEventBusName(
       this,
       'PropertiesEventBus',
-      eventBusName.stringValue
+      StackHelper.lookupSsmParameter(
+        this,
+        `/uni-prop/${props.stage}/${props.eventBusNameParameter}`
+      )
     );
 
     /* -------------------------------------------------------------------------- */
@@ -129,10 +127,12 @@ export class PropertyContractsStack extends cdk.Stack {
      * CloudFormation output for Contracts table name
      */
     StackHelper.createOutput(this, {
-      name: 'ContractStatusTableName',
+      name: this.contractStatusTableNameParameter,
       description: 'DynamoDB table storing contract status information',
       value: table.tableName,
-      export: true,
+      stage: props.stage,
+      // Create an SSM Parameter to allow other services to discover the event bus
+      createSsmStringParameter: true,
     });
 
     /* -------------------------------------------------------------------------- */
@@ -194,6 +194,7 @@ export class PropertyContractsStack extends cdk.Stack {
         ),
       }
     );
+
     /**
      * EventBridge rule for ContractStatusChange events
      */
@@ -220,12 +221,9 @@ export class PropertyContractsStack extends cdk.Stack {
 
     // CloudFormation outputs for contract status changed function
     StackHelper.createOutput(this, {
-      name: 'ContractStatusChangedHandlerFunctionArn',
-      value: contractStatusChangedFunction.functionArn,
-    });
-    StackHelper.createOutput(this, {
-      name: 'ContractStatusChangedHandlerFunctionName',
+      name: 'ContractEventHandlerFunction',
       value: contractStatusChangedFunction.functionName,
+      stage: props.stage,
     });
 
     /**
@@ -281,9 +279,10 @@ export class PropertyContractsStack extends cdk.Stack {
 
     // CloudFormation output for properties approval sync function
     StackHelper.createOutput(this, {
-      name: this.propertyApprovalSyncFunctionName,
+      name: this.propertyApprovalSyncFunctionNameParameter,
       value: propertiesApprovalSyncFunction.functionName,
-      export: true,
+      stage: props.stage,
+      createSsmStringParameter: true,
     });
   }
 }
