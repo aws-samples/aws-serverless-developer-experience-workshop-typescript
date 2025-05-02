@@ -234,38 +234,32 @@ export class PropertiesEventStack extends cdk.Stack {
      * Registry access policy
      * Controls who can access and use the event schemas
      */
-    new eventschemas.CfnRegistryPolicy(
-      this,
-      'RegistryPolicy',
-      {
-        registryName: registry.attrRegistryName,
-        policy: new iam.PolicyDocument({
-          statements: [
-            new iam.PolicyStatement({
-              sid: 'AllowExternalServices',
-              effect: iam.Effect.ALLOW,
-              principals: [
-                new iam.AccountPrincipal(cdk.Stack.of(this).account),
-              ],
-              actions: [
-                'schemas:DescribeCodeBinding',
-                'schemas:DescribeRegistry',
-                'schemas:DescribeSchema',
-                'schemas:GetCodeBindingSource',
-                'schemas:ListSchemas',
-                'schemas:ListSchemaVersions',
-                'schemas:SearchSchemas',
-              ],
-              resources: [
-                registry.attrRegistryArn,
-                `arn:aws:schemas:${cdk.Stack.of(this).region}:${
-                  cdk.Stack.of(this).account
-                }:schema/${registry.attrRegistryName}*`,
-              ],
-            }),
-          ],
-        }),
-      }
-    );
+    new eventschemas.CfnRegistryPolicy(this, 'RegistryPolicy', {
+      registryName: registry.attrRegistryName,
+      policy: new iam.PolicyDocument({
+        statements: [
+          new iam.PolicyStatement({
+            sid: 'AllowExternalServices',
+            effect: iam.Effect.ALLOW,
+            principals: [new iam.AccountPrincipal(cdk.Stack.of(this).account)],
+            actions: [
+              'schemas:DescribeCodeBinding',
+              'schemas:DescribeRegistry',
+              'schemas:DescribeSchema',
+              'schemas:GetCodeBindingSource',
+              'schemas:ListSchemas',
+              'schemas:ListSchemaVersions',
+              'schemas:SearchSchemas',
+            ],
+            resources: [
+              registry.attrRegistryArn,
+              `arn:aws:schemas:${cdk.Stack.of(this).region}:${
+                cdk.Stack.of(this).account
+              }:schema/${registry.attrRegistryName}*`,
+            ],
+          }),
+        ],
+      }),
+    });
   }
 }
