@@ -157,6 +157,15 @@ describe('PropertyApprovalStack', () => {
     });
   });
 
+  test('creates PublicationEvaluationCompleted schema with correct configuration', () => {
+    // Test schema creation
+    template.hasResourceProperties('AWS::EventSchemas::Schema', {
+      RegistryName: 'unicorn.properties-local',
+      Type: 'OpenApi3',
+      SchemaName: 'unicorn.properties-local@PublicationEvaluationCompleted',
+    });
+  });
+
   test('creates required CloudFormation outputs', () => {
     template.hasOutput('WaitForContractApprovalFunctionName', {});
     template.hasOutput('WaitForContractApprovalFunctionArn', {});
@@ -171,6 +180,7 @@ describe('PropertyApprovalStack', () => {
     template.resourceCountIs('AWS::IAM::Policy', 3);
     template.resourceCountIs('AWS::Events::EventBus', 0);
     template.resourceCountIs('AWS::Events::Rule', 1);
+    template.resourceCountIs('AWS::EventSchemas::Schema', 1);
     template.resourceCountIs('AWS::Lambda::Function', 1);
     template.resourceCountIs('AWS::Logs::LogGroup', 2);
     template.resourceCountIs('AWS::StepFunctions::StateMachine', 1);

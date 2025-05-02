@@ -13,7 +13,6 @@ import {
   STAGE,
   UNICORN_NAMESPACES,
 } from '../lib/helper';
-import PublicationApprovalRequestedEventSchema from '../../integration/PublicationApprovalRequested.json';
 
 /**
  * Properties for the WebEventsStack
@@ -212,26 +211,10 @@ export class WebEventsStack extends cdk.Stack {
     });
 
     /**
-     * Schema definition for publication approval requests
-     * Ensures consistent event structure for property publication workflow
-     */
-    const publicationApprovalRequestedSchema = new eventschemas.CfnSchema(
-      this,
-      'PublicationApprovalRequestedEventSchema',
-      {
-        type: 'OpenApi3',
-        registryName: registry.attrRegistryName,
-        description: 'The schema for a request to publish a property',
-        schemaName: `${registry.attrRegistryName}@PublicationApprovalRequested`,
-        content: JSON.stringify(PublicationApprovalRequestedEventSchema),
-      }
-    );
-
-    /**
      * Registry access policy
      * Controls who can access and use the event schemas
      */
-    const registryPolicy = new eventschemas.CfnRegistryPolicy(
+    new eventschemas.CfnRegistryPolicy(
       this,
       'RegistryPolicy',
       {
@@ -264,6 +247,5 @@ export class WebEventsStack extends cdk.Stack {
         }),
       }
     );
-    registryPolicy.node.addDependency(publicationApprovalRequestedSchema);
   }
 }

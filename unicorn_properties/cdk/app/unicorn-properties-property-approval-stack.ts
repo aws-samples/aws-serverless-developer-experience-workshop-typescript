@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
+import * as eventschemas from 'aws-cdk-lib/aws-eventschemas';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
@@ -21,6 +22,7 @@ import {
   STAGE,
   UNICORN_NAMESPACES,
 } from '../lib/helper';
+import PublicationEvaluationCompletedEventSchema from '../../integration/PublicationEvaluationCompleted.json';
 
 /**
  * Properties for the PropertyApprovalStackProps
@@ -330,6 +332,25 @@ export class PropertyApprovalStack extends cdk.Stack {
           maxEventAge: cdk.Duration.minutes(15),
         }),
       ],
+    });
+
+    /**
+     * Publication Evaluation Completed Event Schema
+     *
+     * Defines the contract for property publication workflow events:
+     * - Ensures consistent event structure
+     * - Enables strong typing for consumers
+     * - Facilitates service integration testing
+     *
+     * This schema is used to validate events at runtime and generate
+     * type-safe code bindings for consumers.
+     */
+    new eventschemas.CfnSchema(this, 'PublicationEvaluationCompletedSchema', {
+      type: 'OpenApi3',
+      registryName: `${UNICORN_NAMESPACES.PROPERTIES}-${props.stage}`,
+      description: 'The schema for when a property evaluation is completed',
+      schemaName: `${UNICORN_NAMESPACES.PROPERTIES}-${props.stage}@PublicationEvaluationCompleted`,
+      content: JSON.stringify(PublicationEvaluationCompletedEventSchema),
     });
 
     /**

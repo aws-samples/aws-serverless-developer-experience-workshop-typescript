@@ -116,31 +116,6 @@ describe('EventsStack', () => {
       RegistryName: 'unicorn.properties-local',
       Description: 'Event schemas for Unicorn Properties local',
     });
-
-    // Test schema creation
-    template.hasResourceProperties('AWS::EventSchemas::Schema', {
-      RegistryName: {
-        'Fn::GetAtt': [
-          Match.stringLikeRegexp('EventRegistry.*'),
-          'RegistryName',
-        ],
-      },
-      Type: 'OpenApi3',
-      SchemaName: {
-        'Fn::Join': [
-          '',
-          [
-            {
-              'Fn::GetAtt': [
-                Match.stringLikeRegexp('EventRegistry.*'),
-                'RegistryName',
-              ],
-            },
-            '@PublicationEvaluationCompleted',
-          ],
-        ],
-      },
-    });
   });
 
   test('creates Schema Registry policy with correct permissions', () => {
@@ -204,7 +179,6 @@ describe('EventsStack', () => {
     template.resourceCountIs('AWS::Events::EventBusPolicy', 2);
     template.resourceCountIs('AWS::Events::Rule', 1);
     template.resourceCountIs('AWS::EventSchemas::Registry', 1);
-    template.resourceCountIs('AWS::EventSchemas::Schema', 1);
     template.resourceCountIs('AWS::EventSchemas::RegistryPolicy', 1);
     template.resourceCountIs('AWS::IAM::Policy', 1);
     template.resourceCountIs('AWS::IAM::Role', 1);

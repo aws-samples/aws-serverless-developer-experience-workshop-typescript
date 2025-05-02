@@ -111,31 +111,6 @@ describe('EventsStack', () => {
       RegistryName: 'unicorn.web-local',
       Description: 'Event schemas for Unicorn Web local',
     });
-
-    // Test schema creation
-    template.hasResourceProperties('AWS::EventSchemas::Schema', {
-      RegistryName: {
-        'Fn::GetAtt': [
-          Match.stringLikeRegexp('EventRegistry.*'),
-          'RegistryName',
-        ],
-      },
-      Type: 'OpenApi3',
-      SchemaName: {
-        'Fn::Join': [
-          '',
-          [
-            {
-              'Fn::GetAtt': [
-                Match.stringLikeRegexp('EventRegistry.*'),
-                'RegistryName',
-              ],
-            },
-            '@PublicationApprovalRequested',
-          ],
-        ],
-      },
-    });
   });
 
   test('creates Schema Registry policy with correct permissions', () => {
@@ -199,7 +174,6 @@ describe('EventsStack', () => {
     template.resourceCountIs('AWS::Events::EventBusPolicy', 2);
     template.resourceCountIs('AWS::Events::Rule', 1);
     template.resourceCountIs('AWS::EventSchemas::Registry', 1);
-    template.resourceCountIs('AWS::EventSchemas::Schema', 1);
     template.resourceCountIs('AWS::EventSchemas::RegistryPolicy', 1);
     template.resourceCountIs('AWS::Logs::LogGroup', 1);
     template.resourceCountIs('Custom::CloudwatchLogResourcePolicy', 1);

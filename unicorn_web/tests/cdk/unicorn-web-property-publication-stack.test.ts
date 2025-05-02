@@ -138,6 +138,15 @@ describe('PropertyPublicationStack', () => {
     });
   });
 
+  test('creates PublicationApprovalRequested schema with correct configuration', () => {
+    // Test schema creation
+    template.hasResourceProperties('AWS::EventSchemas::Schema', {
+      RegistryName: 'unicorn.web-local',
+      Type: 'OpenApi3',
+      SchemaName: 'unicorn.web-local@PublicationApprovalRequested',
+    });
+  });
+
   test('creates API Gateway integration', () => {
     template.hasResourceProperties('AWS::ApiGateway::Method', {
       HttpMethod: 'POST',
@@ -165,6 +174,7 @@ describe('PropertyPublicationStack', () => {
     template.resourceCountIs('AWS::ApiGateway::Resource', 1);
     template.resourceCountIs('AWS::ApiGateway::Method', 1);
     template.resourceCountIs('AWS::Events::Rule', 1);
+    template.resourceCountIs('AWS::EventSchemas::Schema', 1);
     template.resourceCountIs('AWS::SQS::Queue', 3);
     template.resourceCountIs('AWS::SQS::QueuePolicy', 3);
     template.resourceCountIs('AWS::IAM::Role', 3);

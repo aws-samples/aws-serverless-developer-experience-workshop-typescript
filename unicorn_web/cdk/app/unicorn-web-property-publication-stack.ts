@@ -6,6 +6,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as events from 'aws-cdk-lib/aws-events';
+import * as eventschemas from 'aws-cdk-lib/aws-eventschemas';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
@@ -20,6 +21,7 @@ import {
   STAGE,
   UNICORN_NAMESPACES,
 } from '../lib/helper';
+import PublicationApprovalRequestedEventSchema from '../../integration/PublicationApprovalRequested.json';
 
 /**
  * Properties for the WebPropertyPublicationStack
@@ -192,17 +194,37 @@ export class WebPropertyPublicationStack extends cdk.Stack {
     approvalRequestQueue.grantSendMessages(apiIntegrationRole);
 
     /* -------------------------------------------------------------------------- */
+    /*                               EVENT SCHEMA                                   */
+    /* -------------------------------------------------------------------------- */
+
+    /**
+     * Define and add the PublicationApprovalRequested event schema to
+     * the Web's services EventBridge Schema Registry.
+     */
+    new eventschemas.CfnSchema(
+      this,
+      'PublicationApprovalRequestedEventSchema',
+      {
+        type: 'OpenApi3',
+        registryName: `${UNICORN_NAMESPACES.WEB}-${props.stage}`,
+        description: 'The schema for a request to publish a property',
+        schemaName: `${UNICORN_NAMESPACES.WEB}-${props.stage}@PublicationApprovalRequested`,
+        content: JSON.stringify(PublicationApprovalRequestedEventSchema),
+      }
+    );
+
+    /* -------------------------------------------------------------------------- */
     /*                            LAMBDA FUNCTIONS                                  */
     /* -------------------------------------------------------------------------- */
 
     /**
      * Dead Letter Queue for failed publication approval event handling
      */
-    const publicationApprovedEventHandlerDLQ = new sqs.Queue(
+    const publicationApprovalsEventHandlerDLQ = new sqs.Queue(
       this,
       'publicationApprovedEventHandlerDLQ',
       {
-        queueName: `publicationApprovadEventHandlerDLQ-${props.stage}`,
+        queueName: `publicationApprovalsEventHandlerDLQ-${props.stage}`,
         retentionPeriod: cdk.Duration.days(14),
         encryption: sqs.QueueEncryption.SQS_MANAGED,
         enforceSSL: true,
@@ -235,7 +257,7 @@ export class WebPropertyPublicationStack extends cdk.Stack {
           removalPolicy: cdk.RemovalPolicy.DESTROY,
           retention: getDefaultLogsRetentionPeriod(props.stage),
         }),
-        deadLetterQueue: publicationApprovedEventHandlerDLQ,
+        deadLetterQueue: publicationApprovalsEventHandlerDLQ,
       }
     );
     // Grant permissions to the approval request function
@@ -277,7 +299,7 @@ export class WebPropertyPublicationStack extends cdk.Stack {
           removalPolicy: cdk.RemovalPolicy.DESTROY,
           retention: getDefaultLogsRetentionPeriod(props.stage),
         }),
-        deadLetterQueue: publicationApprovedEventHandlerDLQ,
+        deadLetterQueue: publicationApprovalsEventHandlerDLQ,
       }
     );
     table.grantWriteData(publicationApprovedFunction);
@@ -296,7 +318,7 @@ export class WebPropertyPublicationStack extends cdk.Stack {
     });
 
     /* -------------------------------------------------------------------------- */
-    /*                           EVENT RULES                                        */
+    /*                                 EVENT RULES                                  */
     /* -------------------------------------------------------------------------- */
 
     /**

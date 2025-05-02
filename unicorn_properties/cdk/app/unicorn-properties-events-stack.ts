@@ -13,7 +13,6 @@ import {
   STAGE,
   UNICORN_NAMESPACES,
 } from '../lib/helper';
-import PublicationEvaluationCompletedEventSchema from '../../integration/PublicationEvaluationCompleted.json';
 
 /**
  * Properties for the PropertiesEventStackProps
@@ -232,33 +231,10 @@ export class PropertiesEventStack extends cdk.Stack {
     });
 
     /**
-     * Publication Evaluation Completed Event Schema
-     *
-     * Defines the contract for property publication workflow events:
-     * - Ensures consistent event structure
-     * - Enables strong typing for consumers
-     * - Facilitates service integration testing
-     *
-     * This schema is used to validate events at runtime and generate
-     * type-safe code bindings for consumers.
-     */
-    const publicationEvaluationCompletedSchema = new eventschemas.CfnSchema(
-      this,
-      'PublicationEvaluationCompletedSchema',
-      {
-        type: 'OpenApi3',
-        registryName: registry.attrRegistryName,
-        description: 'The schema for when a property evaluation is completed',
-        schemaName: `${registry.attrRegistryName}@PublicationEvaluationCompleted`,
-        content: JSON.stringify(PublicationEvaluationCompletedEventSchema),
-      }
-    );
-
-    /**
      * Registry access policy
      * Controls who can access and use the event schemas
      */
-    const registryPolicy = new eventschemas.CfnRegistryPolicy(
+    new eventschemas.CfnRegistryPolicy(
       this,
       'RegistryPolicy',
       {
@@ -291,6 +267,5 @@ export class PropertiesEventStack extends cdk.Stack {
         }),
       }
     );
-    registryPolicy.node.addDependency(publicationEvaluationCompletedSchema);
   }
 }
