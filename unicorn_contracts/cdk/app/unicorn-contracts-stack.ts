@@ -91,7 +91,7 @@ export class UnicornConstractsStack extends cdk.Stack {
     // Catchall rule used for development purposes.
     new events.Rule(this, 'contracts.catchall', {
       ruleName: 'contracts.catchall',
-      description: 'Catch all events published by the Contracts service.',
+      description: `Catch all events published by the ${UNICORN_NAMESPACES.CONTRACTS} service.`,
       eventBus: eventBus,
       eventPattern: {
         account: [this.account],
@@ -564,7 +564,7 @@ export class UnicornConstractsStack extends cdk.Stack {
         type: 'OpenApi3',
         registryName: registry.attrRegistryName,
         description: 'The schema for a request to publish a property',
-        schemaName: `${registry.attrRegistryName}@ContractStatusChanged`,
+        schemaName: `${UNICORN_NAMESPACES.CONTRACTS}@ContractStatusChanged`,
         content: JSON.stringify(ContractStatusChangedEventSchema),
       }
     );

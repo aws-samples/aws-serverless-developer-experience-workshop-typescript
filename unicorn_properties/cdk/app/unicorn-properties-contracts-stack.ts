@@ -200,8 +200,7 @@ export class PropertyContractsStack extends cdk.Stack {
      */
     new events.Rule(this, 'unicorn.properties-ContractStatusChanged', {
       ruleName: 'unicorn.properties-ContractStatusChanged',
-      description:
-        'ContractStatusChanged events published by the Contracts service.',
+      description: `ContractStatusChanged events published by the ${UNICORN_NAMESPACES.CONTRACTS} service.`,
       eventBus: eventBus,
       eventPattern: {
         source: [UNICORN_NAMESPACES.CONTRACTS],

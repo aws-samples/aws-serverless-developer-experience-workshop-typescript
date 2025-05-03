@@ -145,7 +145,7 @@ describe('ContractsStack', () => {
     template.hasResourceProperties('AWS::Events::Rule', {
       Name: 'unicorn.properties-ContractStatusChanged',
       Description:
-        'ContractStatusChanged events published by the Contracts service.',
+        'ContractStatusChanged events published by the unicorn.contracts service.',
       EventPattern: {
         source: [UNICORN_NAMESPACES.CONTRACTS],
         'detail-type': ['ContractStatusChanged'],

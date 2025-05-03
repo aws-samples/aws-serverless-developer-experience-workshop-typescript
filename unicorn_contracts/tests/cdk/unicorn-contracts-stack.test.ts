@@ -189,7 +189,8 @@ describe('Unicorn Contracts Stack', () => {
 
     template.hasResourceProperties('AWS::Events::Rule', {
       Name: 'contracts.catchall',
-      Description: 'Catch all events published by the Contracts service.',
+      Description:
+        'Catch all events published by the unicorn.contracts service.',
       EventPattern: {
         account: [{ Ref: 'AWS::AccountId' }],
         source: [serviceNamespace],

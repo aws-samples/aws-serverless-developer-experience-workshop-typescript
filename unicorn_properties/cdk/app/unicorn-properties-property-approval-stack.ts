@@ -317,8 +317,7 @@ export class PropertyApprovalStack extends cdk.Stack {
      */
     new events.Rule(this, 'unicorn.properties-PublicationApprovalRequested', {
       ruleName: 'unicorn.properties-PublicationApprovalRequested',
-      description:
-        'PublicationApprovalRequested events published by the Web service.',
+      description: `PublicationApprovalRequested events published by the ${UNICORN_NAMESPACES.WEB} service.`,
       eventBus: eventBus,
       eventPattern: {
         source: [UNICORN_NAMESPACES.WEB],
@@ -349,7 +348,7 @@ export class PropertyApprovalStack extends cdk.Stack {
       type: 'OpenApi3',
       registryName: `${UNICORN_NAMESPACES.PROPERTIES}-${props.stage}`,
       description: 'The schema for when a property evaluation is completed',
-      schemaName: `${UNICORN_NAMESPACES.PROPERTIES}-${props.stage}@PublicationEvaluationCompleted`,
+      schemaName: `${UNICORN_NAMESPACES.PROPERTIES}@PublicationEvaluationCompleted`,
       content: JSON.stringify(PublicationEvaluationCompletedEventSchema),
     });
 

@@ -149,7 +149,7 @@ describe('PropertyApprovalStack', () => {
     template.hasResourceProperties('AWS::Events::Rule', {
       Name: 'unicorn.properties-PublicationApprovalRequested',
       Description:
-        'PublicationApprovalRequested events published by the Web service.',
+        'PublicationApprovalRequested events published by the unicorn.web service.',
       EventPattern: {
         source: [UNICORN_NAMESPACES.WEB],
         'detail-type': ['PublicationApprovalRequested'],
@@ -162,7 +162,7 @@ describe('PropertyApprovalStack', () => {
     template.hasResourceProperties('AWS::EventSchemas::Schema', {
       RegistryName: 'unicorn.properties-local',
       Type: 'OpenApi3',
-      SchemaName: 'unicorn.properties-local@PublicationEvaluationCompleted',
+      SchemaName: 'unicorn.properties@PublicationEvaluationCompleted',
     });
   });
 

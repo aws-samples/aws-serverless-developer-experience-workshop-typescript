@@ -131,6 +131,8 @@ describe('PropertyPublicationStack', () => {
   test('creates EventBridge rule', () => {
     template.hasResourceProperties('AWS::Events::Rule', {
       Name: 'unicorn.web-PublicationEvaluationCompleted',
+      Description:
+        'PublicationEvaluationCompleted events published by the unicorn.properties service.',
       EventPattern: {
         source: ['unicorn.properties'],
         'detail-type': ['PublicationEvaluationCompleted'],
@@ -143,7 +145,7 @@ describe('PropertyPublicationStack', () => {
     template.hasResourceProperties('AWS::EventSchemas::Schema', {
       RegistryName: 'unicorn.web-local',
       Type: 'OpenApi3',
-      SchemaName: 'unicorn.web-local@PublicationApprovalRequested',
+      SchemaName: 'unicorn.web@PublicationApprovalRequested',
     });
   });
 
