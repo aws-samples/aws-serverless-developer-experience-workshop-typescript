@@ -8,7 +8,6 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as eventschemas from 'aws-cdk-lib/aws-eventschemas';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as nodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sfn from 'aws-cdk-lib/aws-stepfunctions';
@@ -38,8 +37,8 @@ interface PropertyApprovalStackProps extends cdk.StackProps {
   eventBusNameParameter: string;
   /** Name of SSM Parameter containing the DynamoDB table tracking contract status */
   contractStatusTableNameParameter: string;
-  /** Name of SSM Parameter containing the Lambda function handling property approval synchronization */
-  propertyApprovalSyncFunctionNameParameter: string;
+  /** Name of SSM Parameter containing the IAM execution role for the Lambda function handling property approval synchronization */
+  propertyApprovalSyncFunctionIamRoleArnParameter: string;
 }
 
 /**
@@ -119,13 +118,15 @@ export class PropertyApprovalStack extends cdk.Stack {
       )
     );
 
-    const taskResponseFunction = lambda.Function.fromFunctionName(
+    const approvalSyncFunctionIamRoleArn = StackHelper.lookupSsmParameter(
       this,
-      'PropertiesApprovalSyncFunction',
-      StackHelper.lookupSsmParameter(
-        this,
-        `/uni-prop/${props.stage}/${props.propertyApprovalSyncFunctionNameParameter}`
-      )
+      `/uni-prop/${props.stage}/${props.propertyApprovalSyncFunctionIamRoleArnParameter}`
+    );
+    const taskResponseFunctionRole = iam.Role.fromRoleArn(
+      this,
+      'taskResponseFunctionRole',
+      approvalSyncFunctionIamRoleArn,
+      { defaultPolicyName: 'workflowPermissions' }
     );
 
     /* -------------------------------------------------------------------------- */
@@ -291,7 +292,7 @@ export class PropertyApprovalStack extends cdk.Stack {
       }),
     });
     // Grant necessary permissions for state machine
-    stateMachine.grantTaskResponse(taskResponseFunction);
+    stateMachine.grantTaskResponse(taskResponseFunctionRole);
     table.grantReadData(stateMachine);
     eventBus.grantPutEventsTo(stateMachine);
     waitForContractApprovalFunction.grantInvoke(stateMachine);

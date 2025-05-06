@@ -77,7 +77,7 @@ export async function clearDatabase() {
     region: process.env.AWS_DEFAULT_REGION,
   });
   const tableName = await findOutputValue(
-    'uni-prop-local-web',
+    'uni-prop-local-web-api',
     'UnicornWebTableName'
   );
 
@@ -120,7 +120,7 @@ export async function clearDatabase() {
 
 export const initialiseDatabase = async () => {
   const tableName = await findOutputValue(
-    'uni-prop-local-web',
+    'uni-prop-local-web-api',
     'UnicornWebTableName'
   );
   const client = new DynamoDBClient({

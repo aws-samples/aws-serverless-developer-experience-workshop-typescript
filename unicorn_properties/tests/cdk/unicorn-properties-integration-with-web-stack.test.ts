@@ -75,7 +75,11 @@ describe('PropertiesToWebIntegrationStack', () => {
                 'arn:',
                 { Ref: 'AWS::Partition' },
                 ':events:us-east-1:123456789012:event-bus/',
-                { Ref: 'uniproplocaltestEventBusParameter' },
+                {
+                  Ref: Match.stringLikeRegexp(
+                    'SsmParameterValueuniproplocaltestEventBus'
+                  ),
+                },
               ],
             ],
           },

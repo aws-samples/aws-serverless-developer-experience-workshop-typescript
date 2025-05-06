@@ -187,10 +187,13 @@ export class WebPropertyPublicationStack extends cdk.Stack {
      * IAM role for API Gateway to SQS integration
      * Allows API Gateway to send messages to the approval request queue
      */
-    const apiIntegrationRole = new iam.Role(this, 'WebApiSqsIntegrationRole', {
-      roleName: `WebApiSqsIntegrationRole-${props.stage}`,
-      assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
-    });
+    const apiIntegrationRole = new iam.Role(
+      this,
+      `WebApiSqsIntegrationRole-${props.stage}`,
+      {
+        assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      }
+    );
     approvalRequestQueue.grantSendMessages(apiIntegrationRole);
 
     /* -------------------------------------------------------------------------- */

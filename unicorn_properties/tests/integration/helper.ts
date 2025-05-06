@@ -75,7 +75,7 @@ export async function clearDatabase() {
     region: process.env.AWS_DEFAULT_REGION,
   });
   const tableName = await findOutputValue(
-    'uni-prop-local-properties',
+    'uni-prop-local-properties-contracts',
     'ContractStatusTableName'
   );
 
@@ -145,7 +145,7 @@ export async function initializeDatabase() {
   });
   const tableName = await findOutputValue(
     'uni-prop-local-properties-contracts',
-    'ContractStatusTableNamelocal'
+    'ContractStatusTableName'
   );
 
   const putItemRequest: PutCommandInput = {

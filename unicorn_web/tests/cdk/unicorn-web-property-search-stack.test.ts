@@ -71,7 +71,6 @@ describe('PropertySearchStack', () => {
 
   test('creates IAM role for API Gateway integration', () => {
     template.hasResourceProperties('AWS::IAM::Role', {
-      RoleName: 'WebApiSearchIntegrationRole-local',
       AssumeRolePolicyDocument: {
         Statement: [
           {

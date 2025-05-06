@@ -50,7 +50,6 @@ describe('PropertyPublicationStack', () => {
 
   test('creates IAM role for API Gateway integration', () => {
     template.hasResourceProperties('AWS::IAM::Role', {
-      RoleName: 'WebApiSqsIntegrationRole-local',
       AssumeRolePolicyDocument: {
         Statement: [
           {
@@ -94,7 +93,7 @@ describe('PropertyPublicationStack', () => {
               Ref: 'uniproplocaltestTableNameParameter',
             }),
             EVENT_BUS: expect.objectContaining({
-              Ref: expect.stringContaining('uniproplocaltestEventBusParameter'),
+              Ref: 'uniproplocaltestEventBusParameter',
             }),
             SERVICE_NAMESPACE: serviceNamespace,
           },

@@ -171,9 +171,8 @@ export class WebPropertySearchStack extends cdk.Stack {
 
     const apiIntegrationRole = new iam.Role(
       this,
-      'WebApiSearchIntegrationRole',
+      `WebApiSearchIntegrationRole-${props.stage}`,
       {
-        roleName: `WebApiSearchIntegrationRole-${props.stage}`,
         assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
       }
     );

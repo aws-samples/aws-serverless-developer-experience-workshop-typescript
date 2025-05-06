@@ -18,7 +18,7 @@ describe('Testing approval requests', () => {
     await initialiseDatabase();
     // Find API Endpoint
     apiUrl = await findOutputValue(
-      'uni-prop-local-web',
+      'uni-prop-local-web-api',
       'UnicornWebRestApiUrl'
     );
   }, 10000);

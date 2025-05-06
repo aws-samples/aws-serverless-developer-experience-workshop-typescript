@@ -13,7 +13,7 @@ describe('Testing approved property listing searches', () => {
     await clearDatabase();
     // Create an approved property listing
     const tableName = await findOutputValue(
-      'uni-prop-local-web',
+      'uni-prop-local-web-api',
       'UnicornWebTableName'
     );
     const docClient = DynamoDBDocumentClient.from(
@@ -27,7 +27,7 @@ describe('Testing approved property listing searches', () => {
     );
     // Find API Endpoint
     apiUrl = await findOutputValue(
-      'uni-prop-local-web',
+      'uni-prop-local-web-api',
       'UnicornWebRestApiUrl'
     );
   }, 10000);

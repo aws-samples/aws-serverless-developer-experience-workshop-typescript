@@ -156,7 +156,7 @@ describe('ContractsStack', () => {
   test('creates required CloudFormation outputs', () => {
     template.hasOutput('ContractStatusTableName', {});
     template.hasOutput('ContractEventHandlerFunction', {});
-    template.hasOutput('PropertiesApprovalSyncFunctionName', {});
+    template.hasOutput('PropertiesApprovalSyncFunctionIamRoleArn', {});
   });
 
   test('configures correct resource count', () => {

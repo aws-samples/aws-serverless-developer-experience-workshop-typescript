@@ -59,7 +59,7 @@ export class PropertyContractsStack extends cdk.Stack {
   /** Name of the DynamoDB table tracking contract status */
   public contractStatusTableNameParameter: string;
   /** Name of the Lambda function handling property approval synchronization */
-  public propertyApprovalSyncFunctionNameParameter: string;
+  public propertyApprovalSyncFunctionIamRoleArnParameter: string;
 
   /**
    * Creates a new PropertyContractsStack
@@ -80,7 +80,7 @@ export class PropertyContractsStack extends cdk.Stack {
     super(scope, id, props);
     this.stage = props.stage;
     this.contractStatusTableNameParameter = `ContractStatusTableName`;
-    this.propertyApprovalSyncFunctionNameParameter = `PropertiesApprovalSyncFunctionName`;
+    this.propertyApprovalSyncFunctionIamRoleArnParameter = `PropertiesApprovalSyncFunctionIamRoleArn`;
 
     /**
      * Add standard tags to the CloudFormation stack for resource organization
@@ -277,11 +277,13 @@ export class PropertyContractsStack extends cdk.Stack {
     table.grantStreamRead(propertiesApprovalSyncFunction);
 
     // CloudFormation output for properties approval sync function
-    StackHelper.createOutput(this, {
-      name: this.propertyApprovalSyncFunctionNameParameter,
-      value: propertiesApprovalSyncFunction.functionName,
-      stage: props.stage,
-      createSsmStringParameter: true,
-    });
+    if (propertiesApprovalSyncFunction.role) {
+      StackHelper.createOutput(this, {
+        name: this.propertyApprovalSyncFunctionIamRoleArnParameter,
+        value: propertiesApprovalSyncFunction.role.roleArn,
+        stage: props.stage,
+        createSsmStringParameter: true,
+      });
+    }
   }
 }

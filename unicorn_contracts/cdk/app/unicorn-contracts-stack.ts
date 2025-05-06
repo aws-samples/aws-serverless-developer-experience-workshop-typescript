@@ -149,15 +149,18 @@ export class UnicornConstractsStack extends cdk.Stack {
       },
     ]);
 
-    const pipeRole = new iam.Role(this, 'pipe-role', {
-      roleName: `ContractsTableStreamToEventPipeRole-${props.stage}`,
-      description: 'IAM role for Pipe',
-      assumedBy: new iam.ServicePrincipal('pipes.amazonaws.com').withConditions(
-        {
+    const pipeRole = new iam.Role(
+      this,
+      `ContractsTableStreamToEventPipeRole-${props.stage}`,
+      {
+        description: 'IAM role for Pipe',
+        assumedBy: new iam.ServicePrincipal(
+          'pipes.amazonaws.com'
+        ).withConditions({
           StringEquals: { 'aws:SourceAccount': cdk.Stack.of(this).account },
-        }
-      ),
-    });
+        }),
+      }
+    );
 
     pipeRole.addToPolicy(
       new iam.PolicyStatement({
@@ -316,10 +319,13 @@ export class UnicornConstractsStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    const apiRole = new iam.Role(this, 'UnicornContractsApiIntegrationRole', {
-      roleName: `UnicornContractsApiIntegrationRole-${props.stage}`,
-      assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
-    });
+    const apiRole = new iam.Role(
+      this,
+      `UnicornContractsApiIntegrationRole-${props.stage}`,
+      {
+        assumedBy: new iam.ServicePrincipal('apigateway.amazonaws.com'),
+      }
+    );
     ingestQueue.grantSendMessages(apiRole);
 
     const api = new apigateway.RestApi(this, 'UnicornContractsApi', {

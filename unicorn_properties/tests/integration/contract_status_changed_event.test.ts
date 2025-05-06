@@ -34,7 +34,7 @@ describe('Testing draft contract event handling', () => {
       region: process.env.AWS_DEFAULT_REGION,
     });
     const contractStatusTableName = await findOutputValue(
-      'uni-prop-local-properties',
+      'uni-prop-local-properties-contracts',
       'ContractStatusTableName'
     );
     await sendContractStatusChanged(
@@ -64,7 +64,7 @@ describe('Testing draft contract event handling', () => {
       region: process.env.AWS_DEFAULT_REGION,
     });
     const contractStatusTableName = await findOutputValue(
-      'uni-prop-local-properties',
+      'uni-prop-local-properties-contracts',
       'ContractStatusTableName'
     );
 

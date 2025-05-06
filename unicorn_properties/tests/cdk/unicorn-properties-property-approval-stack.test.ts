@@ -28,7 +28,7 @@ describe('PropertyApprovalStack', () => {
       stage,
       eventBusNameParameter: 'testEventBus',
       contractStatusTableNameParameter: 'TestContractStatusTable',
-      propertyApprovalSyncFunctionNameParameter: 'TestApprovalFunction',
+      propertyApprovalSyncFunctionIamRoleArnParameter: 'TestApprovalFunction',
     });
 
     // Prepare the template for assertions
@@ -60,7 +60,9 @@ describe('PropertyApprovalStack', () => {
         Environment: {
           Variables: {
             DYNAMODB_TABLE: expect.objectContaining({
-              Ref: 'uniproplocalTestContractStatusTableParameter',
+              Ref: expect.stringContaining(
+                'SsmParameterValueuniproplocalTestContractStatusTable'
+              ),
             }),
             SERVICE_NAMESPACE: serviceNamespace,
           },
@@ -177,7 +179,7 @@ describe('PropertyApprovalStack', () => {
   test('configures correct resource count', () => {
     template.resourceCountIs('AWS::DynamoDB::GlobalTable', 0);
     template.resourceCountIs('AWS::IAM::Role', 3);
-    template.resourceCountIs('AWS::IAM::Policy', 3);
+    template.resourceCountIs('AWS::IAM::Policy', 4);
     template.resourceCountIs('AWS::Events::EventBus', 0);
     template.resourceCountIs('AWS::Events::Rule', 1);
     template.resourceCountIs('AWS::EventSchemas::Schema', 1);

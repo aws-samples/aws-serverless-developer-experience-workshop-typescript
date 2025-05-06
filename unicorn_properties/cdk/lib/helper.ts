@@ -141,12 +141,10 @@ export class StackHelper {
     /** Name to be used for ParameterName and construct Id */
     name: string
   ): string {
-    const parameter = ssm.StringParameter.fromStringParameterName(
-      scope,
-      name,
-      name
+    // Create a token that will be resolved at deployment time
+    return cdk.Token.asString(
+      ssm.StringParameter.valueForStringParameter(scope, name)
     );
-    return parameter.stringValue;
   }
 
   /**

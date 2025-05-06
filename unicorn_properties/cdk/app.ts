@@ -57,8 +57,8 @@ const propertyApprovalStack = new PropertyApprovalStack(
     eventBusNameParameter: eventsStack.eventBusNameParameter,
     contractStatusTableNameParameter:
       contractsStack.contractStatusTableNameParameter,
-    propertyApprovalSyncFunctionNameParameter:
-      contractsStack.propertyApprovalSyncFunctionNameParameter,
+    propertyApprovalSyncFunctionIamRoleArnParameter:
+      contractsStack.propertyApprovalSyncFunctionIamRoleArnParameter,
   }
 );
 propertyApprovalStack.addDependency(
