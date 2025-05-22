@@ -37,10 +37,10 @@ describe('Testing draft contract event handling', () => {
       'uni-prop-local-properties-contracts',
       'ContractStatusTableName'
     );
-    await sendContractStatusChanged(
-      "usa/anytown/main-street/111",
-      "f2bedc80-3dc8-4544-9140-9b606d71a6ee",
-      "DRAFT"
+
+    // Act
+    await evb.send(
+      new PutEventsCommand({ Entries: ContractStatusChangedDraftEvent })
     );
     await sleep(10000);
     // Assert

@@ -28,7 +28,7 @@ export async function* getCloudWatchLogsValues(
   propertyId: string
 ): AsyncGenerator<any, void, unknown> {
   const groupName = await findOutputValue(
-    'uni-prop-local-web',
+    'uni-prop-local-web-events',
     'UnicornWebCatchAllLogGroupName'
   );
 

@@ -2,14 +2,14 @@
 	"name": "properties",
 	"version": "1.0.0",
 	"description": "Properties Module for Serverless Developer Experience Reference Architecture - Node",
-	"repository": "https://github.com/awslabs/aws-sam-cli/tree/develop/samcli/local/init/templates/cookiecutter-aws-sam-hello-nodejs",
+	"repository": "https://github.com/aws-samples/aws-serverless-developer-experience-workshop-typescript/tree/cdk",
 	"license": "MIT",
 	"author": "Amazon.com, Inc.",
 	"main": "app.js",
 	"scripts": {
 		"build": "sam build",
 		"compile": "tsc",
-		"deploy": "sam build && sam deploy --no-confirm-changeset",
+		"deploy": "cdk deploy uni-prop-local-properties --require-approval never",
 		"lint": "eslint --ext .ts --quiet --fix",
 		"test": "jest --runInBand",
 		"unit": "jest --config=jest.config.test.unit.ts"
@@ -22,7 +22,11 @@
 		"@aws-sdk/client-dynamodb": "^3.812.0",
 		"@aws-sdk/client-sfn": "^3.812.0",
 		"@aws-sdk/util-dynamodb": "^3.812.0",
-		"aws-lambda": "^1.0.7"
+		"aws-cdk": "^2.1016.1",
+		"aws-cdk-lib": "^2.197.0",
+		"aws-lambda": "^1.0.7",
+		"cdk-nag": "^2.35.104",
+		"constructs": "^10.4.2"
 	},
 	"devDependencies": {
 		"@aws-sdk/client-cloudformation": "^3.812.0",
