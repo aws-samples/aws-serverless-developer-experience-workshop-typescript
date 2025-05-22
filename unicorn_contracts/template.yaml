@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: MIT-0
 AWSTemplateFormatVersion: "2010-09-09"
 Transform:
-  - AWS::LanguageExtensions
   - AWS::Serverless-2016-10-31
 Description: >
   Unicorn Contracts Service. Manage contract information for property listings.
@@ -39,7 +38,7 @@ Mappings:
       Value: "AWS Serverless Developer Experience"
 
 Conditions:
-  IsProd: !Equals [!Ref Stage, Prod]
+  IsProd: !Equals [!Ref Stage, prod]
 
 Globals:
   Api:
@@ -90,6 +89,7 @@ Resources:
   ContractEventHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeUri: src/contracts_service/
       Handler: contractEventHandler.lambdaHandler
       Policies:
         - DynamoDBWritePolicy:
@@ -112,7 +112,7 @@ Resources:
         Target: "es2020"
         Sourcemap: true
         EntryPoints: 
-          - src/contracts_service/contractEventHandler.ts
+          - contractEventHandler.ts
 
   ContractEventHandlerFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -140,15 +140,16 @@ Resources:
           ThrottlingRateLimit: 100
       AccessLogSetting:
         DestinationArn: !GetAtt UnicornContractsApiLogGroup.Arn
-        Format: !ToJsonString
-          requestId: $context.requestId
-          integration-error: $context.integration.error
-          integration-status: $context.integration.status
-          integration-latency: $context.integration.latency
-          integration-requestId: $context.integration.requestId
-          integration-integrationStatus: $context.integration.integrationStatus
-          response-latency: $context.responseLatency
-          status: $context.status
+        Format: !Join
+          - ""
+          - - '{"requestId":"$context.requestId",'
+            - '"integration-error":"$context.integration.error",'
+            - '"integration-status":"$context.integration.status",'
+            - '"integration-latency":"$context.integration.latency",'
+            - '"integration-requestId":"$context.integration.requestId",'
+            - '"integration-integrationStatus":"$context.integration.integrationStatus",'
+            - '"response-latency":"$context.responseLatency",'
+            - '"status":"$context.status"}'
       DefinitionBody: !Transform
         Name: "AWS::Include"
         Parameters:

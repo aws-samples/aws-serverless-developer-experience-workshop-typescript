@@ -6,7 +6,7 @@ import prettierConfig from 'eslint-config-prettier'
 
 export default tseslint.config(
   {
-    ignores: ["**/node_modules", "**/.aws-sam", "**/cdk.out", "**/.github", "**/jest.config.js", "**/.prettierrc.js"],
+    ignores: ["**/node_modules", "**/.aws-sam", "**/template.yaml", "**/cdk.out", "**/.github", "**/jest.config.js", "**/.prettierrc.js"],
   },
   eslint.configs.recommended,
   tseslint.configs.stylistic,

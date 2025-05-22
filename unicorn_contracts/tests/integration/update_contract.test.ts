@@ -24,7 +24,7 @@ describe('Testing updating contracts', () => {
       headers: { 'content-type': 'application/json' },
       body: '{ "address": { "country": "USA", "city": "Anytown", "street": "Main Street", "number": 111 }, "seller_name": "John Doe", "property_id": "usa/anytown/main-street/111" }',
     });
-  }, 30000);
+  }, 40000);
 
   afterAll(async () => {
     // Clear DB

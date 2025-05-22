@@ -40,9 +40,7 @@ Mappings:
       Value: AWS Serverless Developer Experience
 
 Conditions:
-  IsProd: !Equals
-    - !Ref Stage
-    - Prod
+  IsProd: !Equals [!Ref Stage, prod]
 
 Globals:
   Function:
@@ -103,6 +101,7 @@ Resources:
   ContractStatusChangedHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeUri:  src/properties_service
       Handler: contractStatusChangedEventHandler.lambdaHandler
       Policies:
         - DynamoDBWritePolicy:
@@ -138,7 +137,7 @@ Resources:
         Target: es2020
         Sourcemap: true
         EntryPoints:
-          - src/properties_service/contractStatusChangedEventHandler.ts
+          - contractStatusChangedEventHandler.ts
 
   # Log group for the ContractStatusChangedHandlerFunction
   ContractStatusChangedHandlerFunctionLogGroup:
@@ -156,6 +155,7 @@ Resources:
   PropertiesApprovalSyncFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeUri: src/properties_service
       Handler: propertiesApprovalSyncFunction.lambdaHandler
       Policies:
         - DynamoDBReadPolicy:
@@ -199,7 +199,7 @@ Resources:
         Target: es2020
         Sourcemap: true
         EntryPoints:
-          - src/properties_service/propertiesApprovalSyncFunction.ts
+          - propertiesApprovalSyncFunction.ts
 
   # Log group for the PropertiesApprovalSyncFunction
   PropertiesApprovalSyncFunctionLogGroup:
@@ -217,6 +217,7 @@ Resources:
   WaitForContractApprovalFunction:
     Type: AWS::Serverless::Function
     Properties:
+      CodeUri: src/properties_service
       Handler: waitForContractApprovalFunction.lambdaHandler
       Policies:
         - DynamoDBCrudPolicy:
@@ -229,7 +230,7 @@ Resources:
         Target: es2020
         Sourcemap: true
         EntryPoints:
-          - src/properties_service/waitForContractApprovalFunction.ts
+          - waitForContractApprovalFunction.ts
 
   # Log group for the WaitForContractApprovalFunction
   WaitForContractApprovalFunctionLogGroup:
