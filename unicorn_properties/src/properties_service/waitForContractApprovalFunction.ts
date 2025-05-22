@@ -1,9 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import { Context } from "aws-lambda";
+import { Context } from 'aws-lambda';
 import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
-import { MetricUnit } from "@aws-lambda-powertools/metrics";
-import { logger, metrics, tracer } from "./powertools";
+import { logger, metrics, tracer } from './powertools';
 import {
   DynamoDBClient,
   GetItemCommand,
@@ -11,30 +10,28 @@ import {
   UpdateItemCommand,
   UpdateItemCommandInput,
   UpdateItemCommandOutput,
-} from "@aws-sdk/client-dynamodb";
-import { unmarshall } from "@aws-sdk/util-dynamodb";
-import {
-  SFNClient
-} from "@aws-sdk/client-sfn";
+} from '@aws-sdk/client-dynamodb';
+import { unmarshall } from '@aws-sdk/util-dynamodb';
+// import { SFNClient } from '@aws-sdk/client-sfn';
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
-const DDB_TABLE = process.env.CONTRACT_STATUS_TABLE ?? "ContractStatusTable";
+const DDB_TABLE = process.env.DYNAMODB_TABLE ?? 'ContractStatusTable';
 
 // Empty configuration for SFN
-const sfnClient = new SFNClient({});
+// const sfnClient = new SFNClient({});
 
-export type StepFunctionsResponse = {
+export interface StepFunctionsResponse {
   statusCode: number;
   body: string;
-};
+}
 
-export type ContractStatus = {
+export interface ContractStatus {
   contract_id: string;
   property_id: string;
   contract_status?: string;
   sfn_wait_approved_task_token?: string;
-};
+}
 
 export interface ContractStatusError extends Error {
   property_id: string;
@@ -54,6 +51,7 @@ class ContractStatusCheckerFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: any,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     context: Context
   ): Promise<StepFunctionsResponse> {
     logger.info(`Step Function event triggered ${JSON.stringify(event)}`);
@@ -77,9 +75,9 @@ class ContractStatusCheckerFunction implements LambdaInterface {
       logger.info(`Updating task token for property: ${propertyId}`);
       // Create a placeholder status to update with the task token.
       const status: ContractStatus = {
-        contract_id: "",
+        contract_id: '',
         property_id: propertyId,
-        contract_status: "Unknown",
+        contract_status: 'Unknown',
         sfn_wait_approved_task_token: taskToken,
       };
       await this.updateTaskToken(status);
@@ -109,7 +107,7 @@ class ContractStatusCheckerFunction implements LambdaInterface {
     const getItemCommandInput: GetItemCommandInput = {
       Key: { property_id: { S: propertyId } },
       ProjectionExpression:
-        "contract_id, property_id, contract_status, sfn_wait_approved_task_token",
+        'contract_id, property_id, contract_status, sfn_wait_approved_task_token',
       TableName: DDB_TABLE,
     };
 
@@ -131,9 +129,9 @@ class ContractStatusCheckerFunction implements LambdaInterface {
     const ddbUpdateCommandInput: UpdateItemCommandInput = {
       TableName: DDB_TABLE,
       Key: { property_id: { S: status.property_id } },
-      UpdateExpression: "set sfn_wait_approved_task_token = :t",
+      UpdateExpression: 'set sfn_wait_approved_task_token = :t',
       ExpressionAttributeValues: {
-        ":t": { S: status.sfn_wait_approved_task_token ?? "" },
+        ':t': { S: status.sfn_wait_approved_task_token ?? '' },
       },
     };
     const ddbUpdateCommand = new UpdateItemCommand(ddbUpdateCommandInput);
@@ -144,9 +142,9 @@ class ContractStatusCheckerFunction implements LambdaInterface {
     if (ddbUpdateCommandOutput.$metadata.httpStatusCode != 200) {
       const error: ContractStatusError = {
         property_id: status.property_id,
-        name: "ContractStatusDBUpdateError",
+        name: 'ContractStatusDBUpdateError',
         message:
-          "Response error code: " +
+          'Response error code: ' +
           ddbUpdateCommandOutput.$metadata.httpStatusCode,
         object: ddbUpdateCommandOutput.$metadata,
       };

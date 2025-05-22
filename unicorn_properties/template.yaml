@@ -44,7 +44,7 @@ Conditions:
 
 Globals:
   Function: 
-    Runtime: nodejs18.x
+    Runtime: nodejs22.x
     MemorySize: 128
     Timeout: 15
     Tracing: Active
@@ -52,7 +52,7 @@ Globals:
       - x86_64
     Environment:
       Variables:
-        CONTRACT_STATUS_TABLE: !Ref ContractStatusTable
+        DYNAMODB_TABLE: !Ref ContractStatusTable
         EVENT_BUS: !Ref UnicornPropertiesEventBus
         SERVICE_NAMESPACE: "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
         POWERTOOLS_LOGGER_CASE: PascalCase
@@ -190,55 +190,6 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${PropertiesApprovalSyncFunction}"
       RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
-  # Part of the ApprovalStateMachine, checks if a given Property has an existing Contract in ContractStatusTable
-  ContractExistsCheckerFunction:
-      Type: AWS::Serverless::Function
-      Properties:
-        Handler: contractExistsCheckerFunction.lambdaHandler
-        Policies:
-          - DynamoDBCrudPolicy:
-              TableName: !Ref ContractStatusTable
-      Metadata: # Manage esbuild properties
-        BuildMethod: esbuild
-        BuildProperties:
-          Minify: false
-          Target: "es2020"
-          Sourcemap: true
-          EntryPoints: 
-            - src/properties_service/contractExistsCheckerFunction.ts
-
-  # Log group for the ContractExistsCheckerFunction
-  ContractExistsCheckerFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${ContractExistsCheckerFunction}"
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
-
-  # Part of the ApprovalStateMachine, validates if all outputs of content checking steps are OK
-  ContentIntegrityValidatorFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: contentIntegrityValidatorFunction.lambdaHandler
-    Metadata: # Manage esbuild properties
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: "es2020"
-        Sourcemap: true
-        EntryPoints: 
-          - src/properties_service/contentIntegrityValidatorFunction.ts
-
-  # Log group for the ContentIntegrityValidatorFunction
-  ContentIntegrityValidatorFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${ContentIntegrityValidatorFunction}"
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
-
   # Part of the ApprovalStateMachine, pauses the workflow execution and stores token in ContractStatusTable until contract is approved
   WaitForContractApprovalFunction:
     Type: AWS::Serverless::Function
@@ -277,12 +228,10 @@ Resources:
         - AWSXRayDaemonWriteAccess
         - ComprehendBasicAccessPolicy: {}
         - RekognitionDetectOnlyPolicy: {}
+        - DynamoDBReadPolicy:
+            TableName: !Ref ContractStatusTable
         - LambdaInvokePolicy:
             FunctionName: !Ref WaitForContractApprovalFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref ContentIntegrityValidatorFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref ContractExistsCheckerFunction
         - S3ReadPolicy:
             BucketName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/ImagesBucket}}"
         - EventBridgePutEventsPolicy:
@@ -324,9 +273,8 @@ Resources:
               Type: SQS
               Destination: !GetAtt PropertiesServiceDLQ.Arn
       DefinitionSubstitutions:
-        ContractExistsChecker: !GetAtt ContractExistsCheckerFunction.Arn
-        WaitForContractApproval: !GetAtt WaitForContractApprovalFunction.Arn
-        ContentIntegrityValidator: !GetAtt ContentIntegrityValidatorFunction.Arn
+        WaitForContractApprovalArn: !GetAtt WaitForContractApprovalFunction.Arn
+        TableName: !Ref ContractStatusTable
         ImageUploadBucketName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/ImagesBucket}}"
         EventBusName: !GetAtt UnicornPropertiesEventBus.Name
         ServiceName: "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
@@ -532,16 +480,6 @@ Outputs:
     Value: !Ref PropertiesApprovalSyncFunction
   PropertiesApprovalSyncFunctionArn:
     Value: !GetAtt PropertiesApprovalSyncFunction.Arn
-
-  ContractExistsCheckerFunctionName:
-    Value: !Ref ContractExistsCheckerFunction
-  ContractExistsCheckerFunctionArn:
-    Value: !GetAtt ContractExistsCheckerFunction.Arn
-
-  ContentIntegrityValidatorFunctionName:
-    Value: !Ref ContentIntegrityValidatorFunction
-  ContentIntegrityValidatorFunctionArn:
-    Value: !GetAtt ContentIntegrityValidatorFunction.Arn
 
   WaitForContractApprovalFunctionName:
     Value: !Ref WaitForContractApprovalFunction

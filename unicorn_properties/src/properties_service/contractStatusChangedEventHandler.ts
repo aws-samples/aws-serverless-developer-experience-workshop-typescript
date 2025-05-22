@@ -1,21 +1,21 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import { EventBridgeEvent, Context } from "aws-lambda";
+import { EventBridgeEvent, Context } from 'aws-lambda';
+import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
+import { MetricUnit } from '@aws-lambda-powertools/metrics';
+import { logger, metrics, tracer } from './powertools';
 import {
   DynamoDBClient,
   UpdateItemCommand,
   UpdateItemCommandInput,
   UpdateItemCommandOutput,
-} from "@aws-sdk/client-dynamodb";
-import { ContractStatusChanged } from "../schema/unicorn_contracts/contractstatuschanged/ContractStatusChanged";
-import { Marshaller } from "../schema/unicorn_contracts/contractstatuschanged/marshaller/Marshaller";
-import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
-import { MetricUnit } from "@aws-lambda-powertools/metrics";
-import { logger, metrics, tracer } from "./powertools";
+} from '@aws-sdk/client-dynamodb';
+import { ContractStatusChanged } from '../schema/unicorn_contracts/contractstatuschanged/ContractStatusChanged';
+import { Marshaller } from '../schema/unicorn_contracts/contractstatuschanged/marshaller/Marshaller';
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
-const DDB_TABLE = process.env.CONTRACT_STATUS_TABLE ?? "ContractStatusTable";
+const DDB_TABLE = process.env.DYNAMODB_TABLE ?? 'ContractStatusTable';
 
 export interface ContractStatusError extends Error {
   contract_id: string;
@@ -35,6 +35,7 @@ class ContractStatusChangedFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: EventBridgeEvent<string, ContractStatusChanged>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     context: Context
   ): Promise<void> {
     logger.info(`Contract status changed: ${JSON.stringify(event.detail)}`);
@@ -42,18 +43,18 @@ class ContractStatusChangedFunction implements LambdaInterface {
       // Construct the entry to insert into database.
       const statusEntry: ContractStatusChanged = Marshaller.unmarshal(
         event.detail,
-        "ContractStatusChanged"
+        'ContractStatusChanged'
       );
-      tracer.putAnnotation("ContractStatus", statusEntry.contractStatus);
+      tracer.putAnnotation('ContractStatus', statusEntry.contractStatus);
       logger.info(`Unmarshalled entry: ${JSON.stringify(statusEntry)}`);
 
-      // Build the Command objects
+      // Call saveContractStatus with the entry
       await this.saveContractStatus(statusEntry);
     } catch (error: any) {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
     }
-    metrics.addMetric("ContractStatusChanged", MetricUnit.Count, 1);
+    metrics.addMetric('ContractStatusChanged', MetricUnit.Count, 1);
   }
 
   /**
@@ -69,11 +70,11 @@ class ContractStatusChangedFunction implements LambdaInterface {
       TableName: DDB_TABLE,
       Key: { property_id: { S: statusEntry.propertyId } },
       UpdateExpression:
-        "set contract_id = :c, contract_status = :t, contract_last_modified_on = :m",
+        'set contract_id = :c, contract_status = :t, contract_last_modified_on = :m',
       ExpressionAttributeValues: {
-        ":c": { S: statusEntry.contractId as string },
-        ":t": { S: statusEntry.contractStatus as string },
-        ":m": { S: statusEntry.contractLastModifiedOn },
+        ':c': { S: statusEntry.contractId as string },
+        ':t': { S: statusEntry.contractStatus as string },
+        ':m': { S: statusEntry.contractLastModifiedOn },
       },
     };
     logger.info(`Constructed command ${JSON.stringify(ddbUpdateCommandInput)}`);
@@ -88,9 +89,9 @@ class ContractStatusChangedFunction implements LambdaInterface {
     if (ddbUpdateCommandOutput.$metadata.httpStatusCode != 200) {
       const error: ContractStatusError = {
         contract_id: statusEntry.contractId,
-        name: "ContractStatusDBUpdateError",
+        name: 'ContractStatusDBUpdateError',
         message:
-          "Response error code: " +
+          'Response error code: ' +
           ddbUpdateCommandOutput.$metadata.httpStatusCode,
         object: ddbUpdateCommandOutput.$metadata,
       };

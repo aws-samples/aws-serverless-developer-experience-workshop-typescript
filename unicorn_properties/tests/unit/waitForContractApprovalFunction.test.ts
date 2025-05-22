@@ -1,52 +1,52 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import { Context } from "aws-lambda";
-import { randomUUID } from "crypto";
-import { lambdaHandler } from "../../src/properties_service/waitForContractApprovalFunction";
-import { mockClient } from "aws-sdk-client-mock";
+import { Context } from 'aws-lambda';
+import { randomUUID } from 'crypto';
+import { lambdaHandler } from '../../src/properties_service/waitForContractApprovalFunction';
+import { mockClient } from 'aws-sdk-client-mock';
 import {
   DynamoDBClient,
   GetItemCommandInput,
   UpdateItemCommandInput,
-} from "@aws-sdk/client-dynamodb";
+} from '@aws-sdk/client-dynamodb';
 
-describe("Unit tests for contract status checking", function () {
+describe('Unit tests for contract status checking', function () {
   const ddbMock = mockClient(DynamoDBClient);
 
   const baselineStepFunctionEvent = {
     Input: {
-      property_id: "PROPERTY/australia#sydney/low#23",
-      country: "Australia",
-      city: "Sydney",
-      street: "Low",
-      propertyNumber: "23",
-      description: "First property",
-      contract_id: "contract1",
+      property_id: 'PROPERTY/australia#sydney/low#23',
+      country: 'Australia',
+      city: 'Sydney',
+      street: 'Low',
+      propertyNumber: '23',
+      description: 'First property',
+      contract_id: 'contract1',
       listPrice: 23422222,
-      currency: "AUD",
-      images: "s3://filepath",
-      propertyStatus: "NEW",
+      currency: 'AUD',
+      images: 's3://filepath',
+      propertyStatus: 'NEW',
     },
-    TaskToken: "tasktoken1",
+    TaskToken: 'tasktoken1',
   };
 
   beforeEach(() => {
     ddbMock.reset();
   });
 
-  test("verifies approved check", async () => {
+  test('verifies approved check', async () => {
     function verifyGet(input: any) {
       const cmd = (input as GetItemCommandInput) ?? {};
-      const key = cmd["Key"] ?? {};
-      expect(key["property_id"].S).toEqual("PROPERTY/australia#sydney/low#23");
+      const key = cmd['Key'] ?? {};
+      expect(key['property_id'].S).toEqual('PROPERTY/australia#sydney/low#23');
       return {
         $metadata: {
           httpStatusCode: 200,
         },
         Item: {
-          contract_id: { S: "contract1" },
-          property_id: { S: "PROPERTY/australia#sydney/low#23" },
-          contract_status: { S: "APPROVED" },
+          contract_id: { S: 'contract1' },
+          property_id: { S: 'PROPERTY/australia#sydney/low#23' },
+          contract_status: { S: 'APPROVED' },
         },
       };
     }
@@ -56,10 +56,10 @@ describe("Unit tests for contract status checking", function () {
         const cmd = input as UpdateItemCommandInput;
         const key = cmd.Key ?? {};
         const expressionAttributeValues = cmd.ExpressionAttributeValues ?? {};
-        expect(key["property_id"].S).toEqual(
-          "PROPERTY/australia#sydney/low#23",
+        expect(key['property_id'].S).toEqual(
+          'PROPERTY/australia#sydney/low#23'
         );
-        expect(expressionAttributeValues[":t"].S).toEqual("tasktoken1");
+        expect(expressionAttributeValues[':t'].S).toEqual('tasktoken1');
         return {
           $metadata: {
             httpStatusCode: 200,
@@ -79,38 +79,38 @@ describe("Unit tests for contract status checking", function () {
 
     const response = await lambdaHandler(baselineStepFunctionEvent, context);
     const expectedBody = JSON.stringify({
-      property_id: "PROPERTY/australia#sydney/low#23",
-      country: "Australia",
-      city: "Sydney",
-      street: "Low",
-      propertyNumber: "23",
-      description: "First property",
-      contract_id: "contract1",
+      property_id: 'PROPERTY/australia#sydney/low#23',
+      country: 'Australia',
+      city: 'Sydney',
+      street: 'Low',
+      propertyNumber: '23',
+      description: 'First property',
+      contract_id: 'contract1',
       listPrice: 23422222,
-      currency: "AUD",
-      images: "s3://filepath",
-      propertyStatus: "NEW",
+      currency: 'AUD',
+      images: 's3://filepath',
+      propertyStatus: 'NEW',
     });
     expect(response.body).toEqual(expectedBody);
     expect(response.statusCode).toEqual(200);
   });
 
-  test("verifies unapproved check", async () => {
+  test('verifies unapproved check', async () => {
     function verifyGet(input: any) {
       try {
         const cmd = (input as GetItemCommandInput) ?? {};
-        const key = cmd["Key"] ?? {};
-        expect(key["property_id"].S).toEqual(
-          "PROPERTY/australia#sydney/low#23",
+        const key = cmd['Key'] ?? {};
+        expect(key['property_id'].S).toEqual(
+          'PROPERTY/australia#sydney/low#23'
         );
         return {
           $metadata: {
             httpStatusCode: 200,
           },
           Item: {
-            contract_id: { S: "contract1" },
-            property_id: { S: "PROPERTY/australia#sydney/low#23" },
-            contract_status: { S: "DRAFT" },
+            contract_id: { S: 'contract1' },
+            property_id: { S: 'PROPERTY/australia#sydney/low#23' },
+            contract_status: { S: 'DRAFT' },
           },
         };
       } catch (error: any) {
@@ -123,10 +123,10 @@ describe("Unit tests for contract status checking", function () {
         const cmd = input as UpdateItemCommandInput;
         const key = cmd.Key ?? {};
         const expressionAttributeValues = cmd.ExpressionAttributeValues ?? {};
-        expect(key["property_id"].S).toEqual(
-          "PROPERTY/australia#sydney/low#23",
+        expect(key['property_id'].S).toEqual(
+          'PROPERTY/australia#sydney/low#23'
         );
-        expect(expressionAttributeValues[":t"].S).toEqual("tasktoken1");
+        expect(expressionAttributeValues[':t'].S).toEqual('tasktoken1');
         return {
           $metadata: {
             httpStatusCode: 200,
@@ -145,29 +145,29 @@ describe("Unit tests for contract status checking", function () {
 
     const response = await lambdaHandler(baselineStepFunctionEvent, context);
     const expectedBody = JSON.stringify({
-      property_id: "PROPERTY/australia#sydney/low#23",
-      country: "Australia",
-      city: "Sydney",
-      street: "Low",
-      propertyNumber: "23",
-      description: "First property",
-      contract_id: "contract1",
+      property_id: 'PROPERTY/australia#sydney/low#23',
+      country: 'Australia',
+      city: 'Sydney',
+      street: 'Low',
+      propertyNumber: '23',
+      description: 'First property',
+      contract_id: 'contract1',
       listPrice: 23422222,
-      currency: "AUD",
-      images: "s3://filepath",
-      propertyStatus: "NEW",
+      currency: 'AUD',
+      images: 's3://filepath',
+      propertyStatus: 'NEW',
     });
     expect(response.body).toEqual(expectedBody);
     expect(response.statusCode).toEqual(200);
   });
 
-  test("verifies no contract check", async () => {
+  test('verifies no contract check', async () => {
     function verifyGet(input: any) {
       try {
         const cmd = (input as GetItemCommandInput) ?? {};
-        const key = cmd["Key"] ?? {};
-        expect(key["property_id"].S).toEqual(
-          "PROPERTY/australia#sydney/low#23",
+        const key = cmd['Key'] ?? {};
+        expect(key['property_id'].S).toEqual(
+          'PROPERTY/australia#sydney/low#23'
         );
         return {
           $metadata: {
@@ -184,10 +184,10 @@ describe("Unit tests for contract status checking", function () {
         const cmd = input as UpdateItemCommandInput;
         const key = cmd.Key ?? {};
         const expressionAttributeValues = cmd.ExpressionAttributeValues ?? {};
-        expect(key["property_id"].S).toEqual(
-          "PROPERTY/australia#sydney/low#23",
+        expect(key['property_id'].S).toEqual(
+          'PROPERTY/australia#sydney/low#23'
         );
-        expect(expressionAttributeValues[":t"].S).toEqual("tasktoken1");
+        expect(expressionAttributeValues[':t'].S).toEqual('tasktoken1');
         return {
           $metadata: {
             httpStatusCode: 200,
@@ -206,17 +206,17 @@ describe("Unit tests for contract status checking", function () {
 
     const response = await lambdaHandler(baselineStepFunctionEvent, context);
     const expectedBody = JSON.stringify({
-      property_id: "PROPERTY/australia#sydney/low#23",
-      country: "Australia",
-      city: "Sydney",
-      street: "Low",
-      propertyNumber: "23",
-      description: "First property",
-      contract_id: "contract1",
+      property_id: 'PROPERTY/australia#sydney/low#23',
+      country: 'Australia',
+      city: 'Sydney',
+      street: 'Low',
+      propertyNumber: '23',
+      description: 'First property',
+      contract_id: 'contract1',
       listPrice: 23422222,
-      currency: "AUD",
-      images: "s3://filepath",
-      propertyStatus: "NEW",
+      currency: 'AUD',
+      images: 's3://filepath',
+      propertyStatus: 'NEW',
     });
     expect(response.body).toEqual(expectedBody);
     expect(response.statusCode).toEqual(200);
