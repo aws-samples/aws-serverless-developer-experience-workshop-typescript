@@ -1,69 +1,71 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
 export class AWSEvent<T> {
-  "detail": T;
-  "detail_type": string;
-  "resources": Array<string>;
-  "id": string;
-  "source": string;
-  "time": Date;
-  "region": string;
-  "version": string;
-  "account": string;
+  'detail': T;
+  'detail_type': string;
+  'resources': string[];
+  'id': string;
+  'source': string;
+  'time': Date;
+  'region': string;
+  'version': string;
+  'account': string;
 
   static discriminator: string | undefined = undefined;
 
-  static detail: string = "detail";
+  static detail = 'detail';
 
-  static genericType: string = "T";
+  static genericType = 'T';
 
-  static attributeTypeMap: Array<{
+  static attributeTypeMap: {
     name: string;
     baseName: string;
     type: string;
-  }> = [
+  }[] = [
     {
       name: AWSEvent.detail,
       baseName: AWSEvent.detail,
       type: AWSEvent.genericType,
     },
     {
-      name: "detail_type",
-      baseName: "detail-type",
-      type: "string",
+      name: 'detail_type',
+      baseName: 'detail-type',
+      type: 'string',
     },
     {
-      name: "resources",
-      baseName: "resources",
-      type: "Array<string>",
+      name: 'resources',
+      baseName: 'resources',
+      type: 'Array<string>',
     },
     {
-      name: "id",
-      baseName: "id",
-      type: "string",
+      name: 'id',
+      baseName: 'id',
+      type: 'string',
     },
     {
-      name: "source",
-      baseName: "source",
-      type: "string",
+      name: 'source',
+      baseName: 'source',
+      type: 'string',
     },
     {
-      name: "time",
-      baseName: "time",
-      type: "Date",
+      name: 'time',
+      baseName: 'time',
+      type: 'Date',
     },
     {
-      name: "region",
-      baseName: "region",
-      type: "string",
+      name: 'region',
+      baseName: 'region',
+      type: 'string',
     },
     {
-      name: "version",
-      baseName: "version",
-      type: "string",
+      name: 'version',
+      baseName: 'version',
+      type: 'string',
     },
     {
-      name: "account",
-      baseName: "account",
-      type: "string",
+      name: 'account',
+      baseName: 'account',
+      type: 'string',
     },
   ];
 
@@ -72,7 +74,7 @@ export class AWSEvent<T> {
   }
 
   public static updateAttributeTypeMapDetail(type: string) {
-    var index = AWSEvent.attributeTypeMap.indexOf({
+    const index = AWSEvent.attributeTypeMap.indexOf({
       name: AWSEvent.detail,
       baseName: AWSEvent.detail,
       type: AWSEvent.genericType,

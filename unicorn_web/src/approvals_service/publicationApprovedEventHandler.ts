@@ -1,16 +1,16 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import { EventBridgeEvent, Context } from "aws-lambda";
+import { EventBridgeEvent, Context } from 'aws-lambda';
 import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
-import { MetricUnit } from "@aws-lambda-powertools/metrics";
-import { logger, metrics, tracer } from "./powertools";
+import { MetricUnit } from '@aws-lambda-powertools/metrics';
+import { logger, metrics, tracer } from './powertools';
 import {
   DynamoDBClient,
   UpdateItemCommand,
   UpdateItemCommandInput,
-} from "@aws-sdk/client-dynamodb";
-import { PublicationEvaluationCompleted } from "../schema/unicorn_properties/publicationevaluationcompleted/PublicationEvaluationCompleted";
-import { Marshaller } from "../schema/unicorn_properties/publicationevaluationcompleted/marshaller/Marshaller";
+} from '@aws-sdk/client-dynamodb';
+import { PublicationEvaluationCompleted } from '../schema/unicorn_properties/publicationevaluationcompleted/PublicationEvaluationCompleted';
+import { Marshaller } from '../schema/unicorn_properties/publicationevaluationcompleted/marshaller/Marshaller';
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
@@ -28,12 +28,13 @@ class PublicationApprovedFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: EventBridgeEvent<string, PublicationEvaluationCompleted>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     context: Context
   ): Promise<void> {
     logger.info(`Property status changed: ${JSON.stringify(event.detail)}`);
     // Construct the entry to insert into database.
     const propertyEvaluation: PublicationEvaluationCompleted =
-      Marshaller.unmarshal(event.detail, "PublicationEvaluationCompleted");
+      Marshaller.unmarshal(event.detail, 'PublicationEvaluationCompleted');
     logger.info(`Unmarshalled entry: ${JSON.stringify(propertyEvaluation)}`);
 
     try {
@@ -42,7 +43,7 @@ class PublicationApprovedFunction implements LambdaInterface {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
     }
-    metrics.addMetric("ContractUpdated", MetricUnit.Count, 1);
+    metrics.addMetric('ContractUpdated', MetricUnit.Count, 1);
   }
 
   /**
@@ -57,7 +58,7 @@ class PublicationApprovedFunction implements LambdaInterface {
   private async publicationApproved(
     propertyEvaluation: PublicationEvaluationCompleted
   ) {
-    tracer.putAnnotation("propertyId", propertyEvaluation.propertyId);
+    tracer.putAnnotation('propertyId', propertyEvaluation.propertyId);
     logger.info(
       `Updating status: ${propertyEvaluation.evaluationResult} for ${propertyEvaluation.propertyId}`
     );
@@ -66,14 +67,14 @@ class PublicationApprovedFunction implements LambdaInterface {
     const updateItemCommandInput: UpdateItemCommandInput = {
       Key: { PK: { S: PK }, SK: { S: SK } },
       ExpressionAttributeNames: {
-        "#s": "status",
+        '#s': 'status',
       },
       ExpressionAttributeValues: {
-        ":t": {
+        ':t': {
           S: propertyEvaluation.evaluationResult,
         },
       },
-      UpdateExpression: "SET #s = :t",
+      UpdateExpression: 'SET #s = :t',
       TableName: DDB_TABLE,
     };
 
@@ -90,7 +91,7 @@ class PublicationApprovedFunction implements LambdaInterface {
 
   private getDynamoDBKeys(property_id: string) {
     // Form the PK and SK from the property id.
-    const components: string[] = property_id.split("/");
+    const components: string[] = property_id.split('/');
     if (components.length < 4) {
       throw new Error(`Invalid propertyId ${property_id}`);
     }
@@ -99,13 +100,13 @@ class PublicationApprovedFunction implements LambdaInterface {
     const street = components[2];
     const number = components[3];
 
-    const pkDetails = `${country}#${city}`.replace(" ", "-").toLowerCase();
+    const pkDetails = `${country}#${city}`.replace(' ', '-').toLowerCase();
     const PK = `PROPERTY#${pkDetails}`;
-    const SK = `${street}#${number}`.replace(" ", "-").toLowerCase();
+    const SK = `${street}#${number}`.replace(' ', '-').toLowerCase();
 
     return { PK, SK };
   }
 }
 
-export const myFunction = new PublicationApprovedFunction();
+const myFunction = new PublicationApprovedFunction();
 export const lambdaHandler = myFunction.handler.bind(myFunction);

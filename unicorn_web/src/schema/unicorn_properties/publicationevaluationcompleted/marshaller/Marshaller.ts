@@ -1,20 +1,22 @@
-import { AWSEvent } from "../AWSEvent";
-import { PublicationEvaluationCompleted } from "../PublicationEvaluationCompleted";
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
+import { AWSEvent } from '../AWSEvent';
+import { PublicationEvaluationCompleted } from '../PublicationEvaluationCompleted';
 
-let primitives = [
-  "string",
-  "boolean",
-  "double",
-  "integer",
-  "long",
-  "float",
-  "number",
-  "any",
+const primitives = [
+  'string',
+  'boolean',
+  'double',
+  'integer',
+  'long',
+  'float',
+  'number',
+  'any',
 ];
 
-let enumsMap: { [index: string]: any } = {};
+const enumsMap: Record<string, any> = {};
 
-let typeMap: { [index: string]: any } = {
+const typeMap: Record<string, any> = {
   AWSEvent: AWSEvent,
   PublicationEvaluationCompleted: PublicationEvaluationCompleted,
 };
@@ -25,17 +27,17 @@ export class Marshaller {
       return data;
     } else if (primitives.indexOf(type.toLowerCase()) !== -1) {
       return data;
-    } else if (type.lastIndexOf("Array<", 0) === 0) {
+    } else if (type.lastIndexOf('Array<', 0) === 0) {
       // string.startsWith pre es6
-      let subType: string = type.replace("Array<", ""); // Array<Type> => Type>
+      let subType: string = type.replace('Array<', ''); // Array<Type> => Type>
       subType = subType.substring(0, subType.length - 1); // Type> => Type
-      let transformedData: any[] = [];
-      for (let index in data) {
-        let date = data[index];
+      const transformedData: any[] = [];
+      for (const index in data) {
+        const date = data[index];
         transformedData.push(Marshaller.marshall(date, subType));
       }
       return transformedData;
-    } else if (type === "Date") {
+    } else if (type === 'Date') {
       return data.toString();
     } else {
       if (enumsMap[type]) {
@@ -47,13 +49,13 @@ export class Marshaller {
       }
 
       // get the map for the correct type.
-      let attributeTypes = typeMap[type].getAttributeTypeMap();
-      let instance: { [index: string]: any } = {};
-      for (let index in attributeTypes) {
-        let attributeType = attributeTypes[index];
+      const attributeTypes = typeMap[type].getAttributeTypeMap();
+      const instance: Record<string, any> = {};
+      for (const index in attributeTypes) {
+        const attributeType = attributeTypes[index];
         instance[attributeType.baseName] = Marshaller.marshall(
           data[attributeType.name],
-          attributeType.type,
+          attributeType.type
         );
       }
       return instance;
@@ -61,8 +63,8 @@ export class Marshaller {
   }
 
   public static unmarshalEvent(data: any, detailType: any) {
-    typeMap["AWSEvent"].updateAttributeTypeMapDetail(detailType.name);
-    return this.unmarshal(data, "AWSEvent");
+    typeMap['AWSEvent'].updateAttributeTypeMapDetail(detailType.name);
+    return this.unmarshal(data, 'AWSEvent');
   }
 
   public static unmarshal(data: any, type: string) {
@@ -72,17 +74,17 @@ export class Marshaller {
       return data;
     } else if (primitives.indexOf(type.toLowerCase()) !== -1) {
       return data;
-    } else if (type.lastIndexOf("Array<", 0) === 0) {
+    } else if (type.lastIndexOf('Array<', 0) === 0) {
       // string.startsWith pre es6
-      let subType: string = type.replace("Array<", ""); // Array<Type> => Type>
+      let subType: string = type.replace('Array<', ''); // Array<Type> => Type>
       subType = subType.substring(0, subType.length - 1); // Type> => Type
-      let transformedData: any[] = [];
-      for (let index in data) {
-        let date = data[index];
+      const transformedData: any[] = [];
+      for (const index in data) {
+        const date = data[index];
         transformedData.push(Marshaller.unmarshal(date, subType));
       }
       return transformedData;
-    } else if (type === "Date") {
+    } else if (type === 'Date') {
       return new Date(data);
     } else {
       if (enumsMap[type]) {
@@ -94,13 +96,13 @@ export class Marshaller {
         // dont know the type
         return data;
       }
-      let instance = new typeMap[type]();
-      let attributeTypes = typeMap[type].getAttributeTypeMap();
-      for (let index in attributeTypes) {
-        let attributeType = attributeTypes[index];
+      const instance = new typeMap[type]();
+      const attributeTypes = typeMap[type].getAttributeTypeMap();
+      for (const index in attributeTypes) {
+        const attributeType = attributeTypes[index];
         instance[attributeType.name] = Marshaller.unmarshal(
           data[attributeType.baseName],
-          attributeType.type,
+          attributeType.type
         );
       }
       return instance;
@@ -112,7 +114,7 @@ export class Marshaller {
       return expectedType;
     } else if (primitives.indexOf(expectedType.toLowerCase()) !== -1) {
       return expectedType;
-    } else if (expectedType === "Date") {
+    } else if (expectedType === 'Date') {
       return expectedType;
     } else {
       if (enumsMap[expectedType]) {
@@ -124,7 +126,7 @@ export class Marshaller {
       }
 
       // Check the discriminator
-      let discriminatorProperty = typeMap[expectedType].discriminator;
+      const discriminatorProperty = typeMap[expectedType].discriminator;
       if (discriminatorProperty == null) {
         return expectedType; // the type does not have a discriminator. use it.
       } else {

@@ -1,26 +1,21 @@
-import {
-  EventBridgeClient,
-  PutEventsCommand,
-} from "@aws-sdk/client-eventbridge";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
+import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import {
   CloudFormationClient,
   DescribeStacksCommand,
   DescribeStacksCommandOutput,
-} from "@aws-sdk/client-cloudformation";
+} from '@aws-sdk/client-cloudformation';
 import {
   BatchWriteCommand,
   ScanCommand,
-  BatchWriteCommandInput,
-} from "@aws-sdk/lib-dynamodb";
+  PutCommandInput,
+} from '@aws-sdk/lib-dynamodb';
 import {
   CloudWatchLogs,
   DescribeLogStreamsCommand,
   GetLogEventsCommand,
-} from "@aws-sdk/client-cloudwatch-logs";
-
-const evb = new EventBridgeClient({});
-const propertiesBus = "UnicornPropertiesBus-local"; // Replace with your actual event bus name
+} from '@aws-sdk/client-cloudwatch-logs';
 
 export const sleep = async (ms: number) =>
   new Promise((resolve) => {
@@ -31,7 +26,8 @@ export async function* getCloudWatchLogsValues(
   propertyId: string
 ): AsyncGenerator<any, void, unknown> {
   const groupName = await findOutputValue(
-    "UnicornPropertiesCatchAllLogGroupName"
+    'uni-prop-local-properties',
+    'UnicornPropertiesCatchAllLogGroupName'
   );
 
   // Initialize the CloudWatch Logs client
@@ -41,14 +37,14 @@ export async function* getCloudWatchLogsValues(
   const streamResponse = await cwl.send(
     new DescribeLogStreamsCommand({
       logGroupName: groupName,
-      orderBy: "LastEventTime",
+      orderBy: 'LastEventTime',
       descending: true,
       limit: 3,
     })
   );
 
   const latestLogStreamNames = (streamResponse.logStreams || []).map(
-    (s) => s.logStreamName || ""
+    (s) => s.logStreamName || ''
   );
 
   // Fetch log events from that stream
@@ -66,7 +62,7 @@ export async function* getCloudWatchLogsValues(
   // Filter log events that match the required `propertyId`
   for (const response of responses) {
     for (const event of response.events || []) {
-      const ev = JSON.parse(event.message || "{}");
+      const ev = JSON.parse(event.message || '{}');
       if (ev.detail?.property_id === propertyId) {
         yield ev;
       }
@@ -74,124 +70,93 @@ export async function* getCloudWatchLogsValues(
   }
 }
 
-export async function sendContractStatusChanged(
-  propertyId: string,
-  contractId: string,
-  contractStatus: string
-) {
-  try {
-    await evb.send(
-      new PutEventsCommand({
-        Entries: [
-          {
-            Source: "unicorn.contracts",
-            DetailType: "ContractStatusChanged",
-            EventBusName: propertiesBus,
-            Detail: JSON.stringify({
-              contract_last_modified_on: new Date().toLocaleString(),
-              property_id: propertyId,
-              contract_id: contractId,
-              contract_status: contractStatus,
-            }),
-          },
-        ],
-      })
-    );
-
-    await sleep(2000); // Sleep for 2 seconds
-  } catch (error) {
-    console.error("Error sending event:", error);
-  }
-}
-
-export async function sendPublicationApprovalRequested(
-  propertyId: string,
-  contractId: string,
-  contractStatus: string
-) {
-  try {
-    await evb.send(
-      new PutEventsCommand({
-        Entries: [
-          {
-            Source: "unicorn.web",
-            DetailType: "PublicationApprovalRequested",
-            EventBusName: propertiesBus,
-            Detail: JSON.stringify({
-              contract_last_modified_on: new Date().toLocaleString(),
-              property_id: propertyId,
-              contract_id: contractId,
-              contract_status: contractStatus,
-            }),
-          },
-        ],
-      })
-    );
-
-    await sleep(2000); // Sleep for 2 seconds
-  } catch (error) {
-    console.error("Error sending event:", error);
-  }
-}
-
 export async function clearDatabase() {
-  const client = new DynamoDBClient({ region: process.env.AWS_DEFAULT_REGION });
-  const tableName = await findOutputValue("ContractStatusTableName");
+  const client = new DynamoDBClient({
+    region: process.env.AWS_DEFAULT_REGION,
+  });
+  const tableName = await findOutputValue(
+    'uni-prop-local-properties',
+    'ContractStatusTableName'
+  );
 
   const scanCommand = new ScanCommand({ TableName: tableName });
+  let itemsToDelete;
   try {
     const scanResponse = await client.send(scanCommand);
-    const itemsToDelete = scanResponse.Items;
-
-    if (!itemsToDelete || itemsToDelete.length === 0) {
-      console.log("No items to delete.");
-      return;
-    }
-
-    // Create an array of DeleteRequest objects for batch delete
-    const deleteRequests: BatchWriteCommandInput = {
-      RequestItems: {
-        [tableName]: itemsToDelete.map((item: any) => ({
-          DeleteRequest: {
-            Key: {
-              property_id: item.property_id,
-            },
-          },
-        })),
-      },
-    };
-
-    const batchWriteCommand = new BatchWriteCommand(deleteRequests);
-
-    // Execute the batch write command to delete all items
-    try {
-      const batchWriteResponse = await client.send(batchWriteCommand);
-    } catch (error) {
-      console.error("Error batch deleting items:", error);
-    }
+    itemsToDelete = scanResponse.Items;
   } catch (error) {
-    console.error("Error scanning table:", error);
+    console.error('Error scanning table:', error);
+  }
+
+  if (!itemsToDelete || itemsToDelete.length === 0) {
+    console.log('No items to delete.');
+    return;
+  }
+
+  // Create an array of DeleteRequest objects for batch delete
+  const batchWriteCommand = new BatchWriteCommand({
+    RequestItems: {
+      [tableName]: itemsToDelete.map((item: any) => ({
+        DeleteRequest: {
+          Key: {
+            property_id: item.property_id,
+          },
+        },
+      })),
+    },
+  });
+
+  // Execute the batch write command to delete all items
+  try {
+    await client.send(batchWriteCommand);
+  } catch (error) {
+    console.error('Error batch deleting items:', error);
   }
 }
 
-export const findOutputValue = async (outputKey: string) => {
+export async function initializeDatabase() {
+  const client = new DynamoDBClient({
+    region: process.env.AWS_DEFAULT_REGION,
+  });
+  const tableName = await findOutputValue(
+    'uni-prop-local-properties',
+    'ContractStatusTableName'
+  );
+
+  const putItemRequest: PutCommandInput = {
+    TableName: tableName,
+    Item: {
+      contract_last_modified_on: { S: '10/08/2022 19:56:30' },
+      contract_id: { S: '9183453b-d284-4466-a2d9-f00b1d569ad7' },
+      property_id: { S: 'usa/anytown/main-street/444' },
+      contract_status: { S: 'DRAFT' },
+    },
+  };
+  const putItemCommand = new PutItemCommand(putItemRequest);
+  // Execute the batch write command to delete all items
+  try {
+    await client.send(putItemCommand);
+  } catch (error) {
+    console.error('Error initialising database:', error);
+  }
+}
+
+export const findOutputValue = async (StackName: string, outputKey: string) => {
   const cloudformation = new CloudFormationClient({
     region: process.env.AWS_DEFAULT_REGION,
   });
   const stackResources: DescribeStacksCommandOutput = await cloudformation.send(
-    new DescribeStacksCommand({ StackName: "uni-prop-local-properties" })
+    new DescribeStacksCommand({ StackName })
   );
   if (stackResources.Stacks === undefined || stackResources.Stacks?.length < 1)
-    throw new Error(
-      "Could not find stack resources named: uni-prop-local-properties "
-    );
+    throw new Error(`Could not find stack resources named: ${StackName}`);
 
   if (
     stackResources.Stacks[0].Outputs === undefined ||
     stackResources.Stacks[0].Outputs?.length < 1
   ) {
     throw new Error(
-      "Could not find stack outputs for stack named: uni-prop-local-properties"
+      `Could not find stack outputs for stack named: ${StackName}`
     );
   }
 

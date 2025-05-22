@@ -1,72 +1,85 @@
-import { DynamoDBClient, GetItemCommand } from "@aws-sdk/client-dynamodb";
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
+import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import {
   sleep,
   findOutputValue,
-  sendContractStatusChanged,
   clearDatabase,
-} from "./helper";
+  initializeDatabase,
+} from './helper';
+import {
+  EventBridgeClient,
+  PutEventsCommand,
+} from '@aws-sdk/client-eventbridge';
 
-describe("Testing draft contract event handling", () => {
+import ContractStatusChangedDraftEvent from '../events/eventbridge/contract_status_changed_event_contract_1_draft.json';
+import ContractApprovedEvent from '../events/eventbridge/contract_status_changed_event_contract_2_approved.json';
+
+describe('Testing draft contract event handling', () => {
   beforeAll(async () => {
-    // Clear DB
     await clearDatabase();
-  });
+    await initializeDatabase();
+  }, 30000);
 
   afterAll(async () => {
-    // Clear DB
     await clearDatabase();
-  });
+  }, 30000);
 
-  it("Should create a draft contract", async () => {
-    const ddb = new DynamoDBClient({});
+  it('Should create a draft contract', async () => {
+    // Arrange
+    const ddb = new DynamoDBClient({
+      region: process.env.AWS_DEFAULT_REGION,
+    });
+    const evb = new EventBridgeClient({
+      region: process.env.AWS_DEFAULT_REGION,
+    });
     const contractStatusTableName = await findOutputValue(
-      "ContractStatusTableName"
-    );
-    await sendContractStatusChanged(
-      "usa/anytown/main-street/111",
-      "f2bedc80-3dc8-4544-9140-9b606d71a6ee",
-      "DRAFT"
+      'uni-prop-local-properties',
+      'ContractStatusTableName'
     );
 
+    // Act
+    await evb.send(
+      new PutEventsCommand({ Entries: ContractStatusChangedDraftEvent })
+    );
+    await sleep(10000);
+    // Assert
+    const getItemCommand = new GetItemCommand({
+      TableName: contractStatusTableName,
+      Key: { property_id: { S: 'usa/anytown/main-street/111' } },
+    });
+    const ddbResp = await ddb.send(getItemCommand);
+    expect(ddbResp?.Item).toBeTruthy();
+    if (!ddbResp?.Item) throw Error('Contract not found');
+    expect(ddbResp.Item.contract_status?.S).toBe('DRAFT');
+    expect(ddbResp.Item.sfn_wait_approved_task_token).toBe(undefined);
+  }, 30000);
+
+  it('Should update an existing contract status to APPROVED', async () => {
+    // Arrange
+    const ddb = new DynamoDBClient({
+      region: process.env.AWS_DEFAULT_REGION,
+    });
+    const evb = new EventBridgeClient({
+      region: process.env.AWS_DEFAULT_REGION,
+    });
+    const contractStatusTableName = await findOutputValue(
+      'uni-prop-local-properties',
+      'ContractStatusTableName'
+    );
+
+    // Act
+    await evb.send(new PutEventsCommand({ Entries: ContractApprovedEvent }));
     await sleep(5000);
 
-    const ddbResp = await ddb.send(
-      new GetItemCommand({
-        TableName: contractStatusTableName,
-        Key: {
-          property_id: { S: "usa/anytown/main-street/111" },
-        },
-      })
-    );
-
-    expect(ddbResp.Item).toBeTruthy();
-    if (!ddbResp.Item) throw Error("Contract not found");
-    expect(ddbResp.Item.contract_status?.S).toBe("DRAFT");
-  }, 20000);
-
-  it("Should update an existing contract status to APPROVED", async () => {
-    const ddb = new DynamoDBClient({});
-    const contractStatusTableName = await findOutputValue(
-      "ContractStatusTableName"
-    );
-    await sendContractStatusChanged(
-      "usa/anytown/main-street/111",
-      "f2bedc80-3dc8-4544-9140-9b606d71a6ee",
-      "APPROVED"
-    );
-
-    await sleep(2000); // Sleep for 2 seconds
-
-    const ddbResp = await ddb.send(
-      new GetItemCommand({
-        TableName: contractStatusTableName,
-        Key: {
-          property_id: { S: "usa/anytown/main-street/111" },
-        },
-      })
-    );
-
-    if (!ddbResp.Item) throw new Error("Contract not found");
-    expect(ddbResp.Item.contract_status?.S).toBe("APPROVED");
-  }, 20000);
+    // Assert
+    const getItemCommand = new GetItemCommand({
+      TableName: contractStatusTableName,
+      Key: { property_id: { S: 'usa/anytown/main-street/222' } },
+    });
+    const ddbResp = await ddb.send(getItemCommand);
+    expect(ddbResp?.Item).toBeTruthy();
+    if (!ddbResp.Item) throw new Error('Contract not found');
+    expect(ddbResp.Item.contract_status?.S).toBe('APPROVED');
+  }, 30000);
 });

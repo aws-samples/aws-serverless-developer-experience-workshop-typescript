@@ -5,25 +5,24 @@ import {
   DynamoDBStreamEvent,
   AttributeValue,
   DynamoDBBatchResponse,
-} from "aws-lambda";
+} from 'aws-lambda';
 import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
-import { MetricUnit } from "@aws-lambda-powertools/metrics";
-import { logger, metrics, tracer } from "./powertools";
+import { logger, metrics, tracer } from './powertools';
 import {
   SFNClient,
   SendTaskSuccessCommand,
   SendTaskSuccessCommandInput,
-} from "@aws-sdk/client-sfn";
+} from '@aws-sdk/client-sfn';
 
 // Empty configuration for SFN
 const sfnClient = new SFNClient({});
 
-export type ContractStatus = {
+export interface ContractStatus {
   contract_id?: string;
   contract_status?: string;
   property_id: string;
   sfn_wait_approved_task_token?: string;
-};
+}
 
 class PropertiesApprovalSyncFunction implements LambdaInterface {
   /**
@@ -37,6 +36,7 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: DynamoDBStreamEvent,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     context: Context
   ): Promise<DynamoDBBatchResponse> {
     logger.info(
@@ -59,12 +59,15 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
           continue;
         }
 
-        const mergedImage: ContractStatus = { ...oldImage, ...newImage };
+        const mergedImage: ContractStatus = {
+          ...oldImage,
+          ...newImage,
+        };
 
         // Check if there's any work to be done.
         if (newImage.sfn_wait_approved_task_token !== undefined) {
           // We should be checking for Approval state.
-          if (newImage.contract_status === "APPROVED") {
+          if (newImage.contract_status === 'APPROVED') {
             // Let's send an update! Use the token from the merged image though.
             logger.info(
               `Sending CONTRACT APPROVED task success to token ${mergedImage.sfn_wait_approved_task_token}`
@@ -108,19 +111,19 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
    * @returns
    */
   private unmarshallContractStatus(
-    input: { [key: string]: AttributeValue } | undefined
+    input: Record<string, AttributeValue> | undefined
   ): ContractStatus | undefined {
     if (input === undefined) {
       return undefined;
     }
 
-    const result: ContractStatus = { property_id: "" };
-    result.contract_id = input["contract_id"].S;
-    result.property_id = input["property_id"].S ?? "";
-    result.contract_status = input["contract_status"].S;
-    if (input["sfn_wait_approved_task_token"] !== undefined) {
+    const result: ContractStatus = { property_id: '' };
+    result.contract_id = input['contract_id'].S;
+    result.property_id = input['property_id'].S ?? '';
+    result.contract_status = input['contract_status'].S;
+    if (input['sfn_wait_approved_task_token'] !== undefined) {
       result.sfn_wait_approved_task_token =
-        input["sfn_wait_approved_task_token"].S;
+        input['sfn_wait_approved_task_token'].S;
     }
 
     return result;
