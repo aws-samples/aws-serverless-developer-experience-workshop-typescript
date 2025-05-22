@@ -485,7 +485,7 @@ Outputs:
   BaseUrl:
     Description: Web service API endpoint
     Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
-  ApiUrl:
+  UnicornWebRestApiUrl:
     Description: Web service API endpoint
     Value: !Sub "https://${UnicornWebApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/${Stage}/"
 
@@ -509,7 +509,7 @@ Outputs:
     Value: !GetAtt UnicornWebIngestQueue.QueueUrl
 
   #### DYNAMODB OUTPUTS
-  WebTableName:
+  UnicornWebTableName:
     Description: Name of the DynamoDB Table for Unicorn Web
     Value: !Ref WebTable
 

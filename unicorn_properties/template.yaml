@@ -1,10 +1,10 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 Transform:
   - AWS::LanguageExtensions
   - AWS::Serverless-2016-10-31
-Description: >
+Description: |
   Unicorn Properties Service. Validate the content, images and contract of property listings.
 
 Metadata:
@@ -37,13 +37,15 @@ Mappings:
       Days: 14
   Constants:
     ProjectName:
-      Value: "AWS Serverless Developer Experience"
+      Value: AWS Serverless Developer Experience
 
 Conditions:
-  IsProd: !Equals [!Ref Stage, Prod]
+  IsProd: !Equals
+    - !Ref Stage
+    - Prod
 
 Globals:
-  Function: 
+  Function:
     Runtime: nodejs22.x
     MemorySize: 128
     Timeout: 15
@@ -54,19 +56,30 @@ Globals:
       Variables:
         DYNAMODB_TABLE: !Ref ContractStatusTable
         EVENT_BUS: !Ref UnicornPropertiesEventBus
-        SERVICE_NAMESPACE: "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
+        SERVICE_NAMESPACE: '{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}'
         POWERTOOLS_LOGGER_CASE: PascalCase
-        POWERTOOLS_SERVICE_NAME: "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
-        POWERTOOLS_TRACE_DISABLED: "false" # Explicitly disables tracing, default
-        POWERTOOLS_LOGGER_LOG_EVENT: !If [IsProd, "false", "true"] # Logs incoming event, default
-        POWERTOOLS_LOGGER_SAMPLE_RATE: !If [IsProd, "0.1", "0"] # Debug log sampling percentage, default
-        POWERTOOLS_METRICS_NAMESPACE: "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
+        POWERTOOLS_SERVICE_NAME: '{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}'
+        POWERTOOLS_TRACE_DISABLED: 'false' # Explicitly disables tracing, default
+        POWERTOOLS_LOGGER_LOG_EVENT: !If
+          - IsProd
+          - 'false'
+          - 'true'
+          # Logs incoming event, default
+        POWERTOOLS_LOGGER_SAMPLE_RATE: !If
+          - IsProd
+          - '0.1'
+          - '0'
+          # Debug log sampling percentage, default
+        POWERTOOLS_METRICS_NAMESPACE: '{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}'
         POWERTOOLS_LOG_LEVEL: INFO # Log level for Logger (INFO, DEBUG, etc.), default
         LOG_LEVEL: INFO # Log level for Logger
     Tags:
       stage: !Ref Stage
-      project: !FindInMap [Constants, ProjectName, Value]
-      namespace: "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
+      project: !FindInMap
+        - Constants
+        - ProjectName
+        - Value
+      namespace: '{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}'
 
 Resources:
   #### SSM PARAMETERS
@@ -104,7 +117,7 @@ Resources:
             EventBusName: !GetAtt UnicornPropertiesEventBus.Name
             Pattern:
               source:
-                - "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
+                - '{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}'
               detail-type:
                 - ContractStatusChanged
             RetryPolicy:
@@ -117,13 +130,14 @@ Resources:
           OnFailure:
             Type: SQS
             Destination: !GetAtt PropertiesServiceDLQ.Arn
-    Metadata: # Manage esbuild properties
+    Metadata:
+      # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
         Minify: false
-        Target: "es2020"
+        Target: es2020
         Sourcemap: true
-        EntryPoints: 
+        EntryPoints:
           - src/properties_service/contractStatusChangedEventHandler.ts
 
   # Log group for the ContractStatusChangedHandlerFunction
@@ -132,9 +146,11 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${ContractStatusChangedHandlerFunction}"
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
-
+      LogGroupName: !Sub /aws/lambda/${ContractStatusChangedHandlerFunction}
+      RetentionInDays: !FindInMap
+        - LogsRetentionPeriodMap
+        - !Ref Stage
+        - Days
 
   # Listens to Contract status changes from ContractStatusTable to un-pause StepFunctions
   PropertiesApprovalSyncFunction:
@@ -146,8 +162,11 @@ Resources:
             TableName: !Ref ContractStatusTable
         - DynamoDBStreamReadPolicy:
             TableName: !Ref ContractStatusTable
-            StreamName:
-              !Select [3, !Split ["/", !GetAtt ContractStatusTable.StreamArn]]
+            StreamName: !Select
+              - 3
+              - !Split
+                - /
+                - !GetAtt ContractStatusTable.StreamArn
         - SQSSendMessagePolicy:
             QueueName: !GetAtt PropertiesServiceDLQ.QueueName
         - Statement:
@@ -172,13 +191,14 @@ Resources:
           OnFailure:
             Type: SQS
             Destination: !GetAtt PropertiesServiceDLQ.Arn
-    Metadata: # Manage esbuild properties
+    Metadata:
+      # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
         Minify: false
-        Target: "es2020"
+        Target: es2020
         Sourcemap: true
-        EntryPoints: 
+        EntryPoints:
           - src/properties_service/propertiesApprovalSyncFunction.ts
 
   # Log group for the PropertiesApprovalSyncFunction
@@ -187,8 +207,11 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${PropertiesApprovalSyncFunction}"
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+      LogGroupName: !Sub /aws/lambda/${PropertiesApprovalSyncFunction}
+      RetentionInDays: !FindInMap
+        - LogsRetentionPeriodMap
+        - !Ref Stage
+        - Days
 
   # Part of the ApprovalStateMachine, pauses the workflow execution and stores token in ContractStatusTable until contract is approved
   WaitForContractApprovalFunction:
@@ -198,13 +221,14 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ContractStatusTable
-    Metadata: # Manage esbuild properties
+    Metadata:
+      # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
         Minify: false
-        Target: "es2020"
+        Target: es2020
         Sourcemap: true
-        EntryPoints: 
+        EntryPoints:
           - src/properties_service/waitForContractApprovalFunction.ts
 
   # Log group for the WaitForContractApprovalFunction
@@ -213,15 +237,17 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
-      LogGroupName: !Sub "/aws/lambda/${WaitForContractApprovalFunction}"
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+      LogGroupName: !Sub /aws/lambda/${WaitForContractApprovalFunction}
+      RetentionInDays: !FindInMap
+        - LogsRetentionPeriodMap
+        - !Ref Stage
+        - Days
 
   #### STATE MACHINE
   ApprovalStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
-      Name: !Sub "${AWS::StackName}-ApprovalStateMachine"
-      DefinitionUri: src/state_machine/property_approval.asl.yaml
+      Name: !Sub ${AWS::StackName}-ApprovalStateMachine
       Tracing:
         Enabled: true
       Policies:
@@ -233,7 +259,7 @@ Resources:
         - LambdaInvokePolicy:
             FunctionName: !Ref WaitForContractApprovalFunction
         - S3ReadPolicy:
-            BucketName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/ImagesBucket}}"
+            BucketName: !Sub '{{resolve:ssm:/uni-prop/${Stage}/ImagesBucket}}'
         - EventBridgePutEventsPolicy:
             EventBusName: !GetAtt UnicornPropertiesEventBus.Name
         - Statement:
@@ -248,7 +274,7 @@ Resources:
                 - logs:DescribeResourcePolicies
                 - logs:DescribeLogGroups
                 - cloudwatch:PutMetricData
-              Resource: "*"
+              Resource: '*'
       Logging:
         Destinations:
           - CloudWatchLogsLogGroup:
@@ -263,7 +289,7 @@ Resources:
             EventBusName: !GetAtt UnicornPropertiesEventBus.Name
             Pattern:
               source:
-                - "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}"
+                - '{{resolve:ssm:/uni-prop/UnicornWebNamespace}}'
               detail-type:
                 - PublicationApprovalRequested
             RetryPolicy:
@@ -275,9 +301,10 @@ Resources:
       DefinitionSubstitutions:
         WaitForContractApprovalArn: !GetAtt WaitForContractApprovalFunction.Arn
         TableName: !Ref ContractStatusTable
-        ImageUploadBucketName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/ImagesBucket}}"
+        ImageUploadBucketName: !Sub '{{resolve:ssm:/uni-prop/${Stage}/ImagesBucket}}'
         EventBusName: !GetAtt UnicornPropertiesEventBus.Name
-        ServiceName: "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
+        ServiceName: '{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}'
+      DefinitionUri: src/state_machine/property_approval.asl.yaml
 
   # Store ApprovalStateMachineLogGroup workflow execution logs
   ApprovalStateMachineLogGroup:
@@ -285,8 +312,11 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
-      LogGroupName: !Sub "/aws/states/${AWS::StackName}-ApprovalStateMachine"
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+      LogGroupName: !Sub /aws/states/${AWS::StackName}-ApprovalStateMachine
+      RetentionInDays: !FindInMap
+        - LogsRetentionPeriodMap
+        - !Ref Stage
+        - Days
 
   #### DEAD LETTER QUEUES
   # Store EventBridge events that failed to be DELIVERED to ContractStatusChangedHandlerFunction
@@ -299,9 +329,12 @@ Resources:
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
       Tags:
         - Key: project
-          Value: !FindInMap [Constants, ProjectName, Value]
+          Value: !FindInMap
+            - Constants
+            - ProjectName
+            - Value
         - Key: namespace
-          Value: "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
+          Value: '{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}'
         - Key: stage
           Value: !Ref Stage
 
@@ -315,9 +348,12 @@ Resources:
       MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
       Tags:
         - Key: project
-          Value: !FindInMap [Constants, ProjectName, Value]
+          Value: !FindInMap
+            - Constants
+            - ProjectName
+            - Value
         - Key: namespace
-          Value: "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
+          Value: '{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}'
         - Key: stage
           Value: !Ref Stage
 
@@ -338,9 +374,12 @@ Resources:
       BillingMode: PAY_PER_REQUEST
       Tags:
         - Key: project
-          Value: !FindInMap [Constants, ProjectName, Value]
+          Value: !FindInMap
+            - Constants
+            - ProjectName
+            - Value
         - Key: namespace
-          Value: "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
+          Value: '{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}'
         - Key: stage
           Value: !Ref Stage
 
@@ -361,13 +400,13 @@ Resources:
         Effect: Allow
         Principal:
           AWS:
-            - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
         Action: events:PutEvents
         Resource: !GetAtt UnicornPropertiesEventBus.Arn
         Condition:
           StringEquals:
             events:source:
-              - "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
+              - '{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}'
 
   # Catchall rule used for development purposes. Logs all events matching any of the services to CloudWatch Logs
   UnicornPropertiesCatchAllRule:
@@ -380,9 +419,9 @@ Resources:
         account:
           - !Ref AWS::AccountId
         source:
-          - "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
-          - "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
-          - "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}"
+          - '{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}'
+          - '{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}'
+          - '{{resolve:ssm:/uni-prop/UnicornWebNamespace}}'
       State: ENABLED #You may want to disable this rule in production
       Targets:
         - Arn: !GetAtt UnicornPropertiesCatchAllLogGroup.Arn
@@ -395,10 +434,13 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       LogGroupName: !Sub
-        - "/aws/events/${Stage}/${NS}-catchall"
+        - /aws/events/${Stage}/${NS}-catchall
         - Stage: !Ref Stage
-          NS: "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
-      RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
+          NS: '{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}'
+      RetentionInDays: !FindInMap
+        - LogsRetentionPeriodMap
+        - !Ref Stage
+        - Days
 
   # Permissions to allow EventBridge to send logs to CloudWatch
   EventBridgeCloudWatchLogGroupPolicy:
@@ -436,7 +478,7 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
-      Location: "integration/event-schemas.yaml"
+      Location: integration/event-schemas.yaml
       Parameters:
         Stage: !Ref Stage
 
@@ -448,7 +490,7 @@ Resources:
     DependsOn:
       - UnicornPropertiesEventBusNameParam
     Properties:
-      Location: "integration/subscriber-policies.yaml"
+      Location: integration/subscriber-policies.yaml
       Parameters:
         Stage: !Ref Stage
 
@@ -460,7 +502,7 @@ Resources:
     DependsOn:
       - UnicornPropertiesEventBusArnParam
     Properties:
-      Location: "integration/subscriptions.yaml"
+      Location: integration/subscriptions.yaml
       Parameters:
         Stage: !Ref Stage
 
