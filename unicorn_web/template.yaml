@@ -448,8 +448,6 @@ Resources:
     Type: AWS::Serverless::Application
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
     Properties:
       Location: "integration/event-schemas.yaml"
       Parameters:
@@ -458,8 +456,6 @@ Resources:
   # CloudFormation Stack with the Cross-service EventBus policy for Web Service
   SubscriberPoliciesStack:
     Type: AWS::Serverless::Application
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     DependsOn:
