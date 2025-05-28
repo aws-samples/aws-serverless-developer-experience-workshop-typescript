@@ -140,16 +140,8 @@ Resources:
           ThrottlingRateLimit: 100
       AccessLogSetting:
         DestinationArn: !GetAtt UnicornContractsApiLogGroup.Arn
-        Format: !Join
-          - ""
-          - - '{"requestId":"$context.requestId",'
-            - '"integration-error":"$context.integration.error",'
-            - '"integration-status":"$context.integration.status",'
-            - '"integration-latency":"$context.integration.latency",'
-            - '"integration-requestId":"$context.integration.requestId",'
-            - '"integration-integrationStatus":"$context.integration.integrationStatus",'
-            - '"response-latency":"$context.responseLatency",'
-            - '"status":"$context.status"}'
+        Format: >
+          {"requestId": $context.requestId, "integration-error": $context.integration.error, "integration-status": $context.integration.status, "integration-latency": $context.integration.latency, "integration-requestId": $context.integration.requestId, "integration-integrationStatus": $context.integration.integrationStatus, "response-latency": $context.responseLatency, "status": $context.status}
       DefinitionBody: !Transform
         Name: "AWS::Include"
         Parameters:
