@@ -13,10 +13,11 @@ Metadata:
       ignore_checks:
         - ES4000 # Rule disabled because the CatchAll Rule doesn't need a DLQ
         - ES6000 # Rule disabled because SQS DLQs don't need a RedrivePolicy
-        - E0001 # Rule disabled because cfn-lint cannot parse SAM Policy templates without arguments (ComprehendBasicAccessPolicy, RekognitionDetectOnlyPolicy)
+        - E0001  # Rule disabled because cfn-lint cannot parse SAM Policy templates without arguments (ComprehendBasicAccessPolicy, RekognitionDetectOnlyPolicy)
         - WS2001 # Rule disabled because check does not support !ToJsonString transform
         - ES1001 # Rule disabled because our Lambda functions don't need DestinationConfig.OnFailure
-        - W3002 # Rule disabled as nested templates are being packaged
+        - W3002  # Rule disabled as nested templates are being packaged
+        - E3030  # Rule disabled due to using cfn-lint-serverless rules v0.3
 
 Parameters:
   Stage:
@@ -249,6 +250,7 @@ Resources:
     Type: AWS::Serverless::StateMachine
     Properties:
       Name: !Sub ${AWS::StackName}-ApprovalStateMachine
+      DefinitionUri: src/state_machine/property_approval.asl.yaml
       Tracing:
         Enabled: true
       Policies:
@@ -305,7 +307,6 @@ Resources:
         ImageUploadBucketName: !Sub '{{resolve:ssm:/uni-prop/${Stage}/ImagesBucket}}'
         EventBusName: !GetAtt UnicornPropertiesEventBus.Name
         ServiceName: '{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}'
-      DefinitionUri: src/state_machine/property_approval.asl.yaml
 
   # Store ApprovalStateMachineLogGroup workflow execution logs
   ApprovalStateMachineLogGroup:
