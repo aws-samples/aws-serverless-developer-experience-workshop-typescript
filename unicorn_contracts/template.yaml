@@ -48,7 +48,7 @@ Globals:
     TracingEnabled: true
   Function:
     Runtime: nodejs22.x
-    MemorySize: 128
+    MemorySize: 512
     Timeout: 15 
     Tracing: Active
     Architectures:

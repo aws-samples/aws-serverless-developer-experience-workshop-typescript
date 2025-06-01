@@ -47,8 +47,8 @@ Globals:
     OpenApiVersion: 3.0.1
   Function:
     Runtime: nodejs22.x
-    MemorySize: 128
-    Timeout: 15
+    MemorySize: 512
+    Timeout: 10
     Tracing: Active
     Architectures:
       - x86_64
@@ -159,7 +159,7 @@ Resources:
       CodeUri: src/approvals_service
       Handler: publicationApprovedEventHandler.lambdaHandler
       Policies:
-        - DynamoDBWritePolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref WebTable
       EventInvokeConfig:
         DestinationConfig:
