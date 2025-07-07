@@ -115,7 +115,7 @@ importers:
         specifier: ^8.32.1
         version: 8.32.1(eslint@9.27.0)(typescript@5.8.3)
 
-  unicorn_properties:
+  unicorn_approvals:
     dependencies:
       '@aws-lambda-powertools/commons':
         specifier: ^2.20.0

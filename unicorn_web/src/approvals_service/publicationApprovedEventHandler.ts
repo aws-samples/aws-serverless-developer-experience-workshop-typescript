@@ -9,8 +9,8 @@ import {
   UpdateItemCommand,
   UpdateItemCommandInput,
 } from '@aws-sdk/client-dynamodb';
-import { PublicationEvaluationCompleted } from '../schema/unicorn_properties/publicationevaluationcompleted/PublicationEvaluationCompleted';
-import { Marshaller } from '../schema/unicorn_properties/publicationevaluationcompleted/marshaller/Marshaller';
+import { PublicationEvaluationCompleted } from '../schema/unicorn_approvals/publicationevaluationcompleted/PublicationEvaluationCompleted';
+import { Marshaller } from '../schema/unicorn_approvals/publicationevaluationcompleted/marshaller/Marshaller';
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
