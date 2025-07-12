@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 import { Context } from 'aws-lambda';
 import { randomUUID } from 'crypto';
-import { lambdaHandler } from '../../src/properties_service/waitForContractApprovalFunction';
+import { lambdaHandler } from '../../src/approvals_service/waitForContractApprovalFunction';
 import { mockClient } from 'aws-sdk-client-mock';
 import {
   DynamoDBClient,

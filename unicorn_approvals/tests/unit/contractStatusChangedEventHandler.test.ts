@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT-0
 import { Context, EventBridgeEvent } from 'aws-lambda';
 import { randomUUID } from 'crypto';
-import { lambdaHandler } from '../../src/properties_service/contractStatusChangedEventHandler';
+import { lambdaHandler } from '../../src/approvals_service/contractStatusChangedEventHandler';
 import { mockClient } from 'aws-sdk-client-mock';
 import {
   DynamoDBClient,
