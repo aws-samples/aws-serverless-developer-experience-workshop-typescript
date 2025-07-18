@@ -1,8 +1,8 @@
 [![Build & Test Workflow](https://github.com/aws-samples/aws-serverless-developer-experience-workshop-typescript/actions/workflows/build_test.yml/badge.svg)](https://github.com/aws-samples/aws-serverless-developer-experience-workshop-typescript/actions/workflows/build_test.yml)
 
-<img src="./docs/workshop_logo.png" alt="AWS Serverless Developer Experience Workshop Reference Architecture" width="80%" />
-
 # AWS Serverless Developer Experience workshop reference architecture (Typescript)
+
+<img src="./docs/workshop_logo.png" alt="AWS Serverless Developer Experience Workshop Reference Architecture" width="80%" />
 
 This repository contains the Typescript reference architecture for the AWS Serverless Developer Experience workshop.
 
