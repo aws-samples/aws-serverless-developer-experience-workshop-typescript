@@ -118,7 +118,7 @@ Resources:
   RequestApprovalFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/approvals_service
+      CodeUri: src/publication_manager_service
       Handler: requestApprovalFunction.lambdaHandler
       Policies:
         - EventBridgePutEventsPolicy:
@@ -156,7 +156,7 @@ Resources:
   PublicationApprovedEventHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/approvals_service
+      CodeUri: src/publication_manager_service
       Handler: publicationApprovedEventHandler.lambdaHandler
       Policies:
         - DynamoDBCrudPolicy:
