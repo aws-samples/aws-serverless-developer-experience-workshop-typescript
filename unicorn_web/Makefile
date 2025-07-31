@@ -3,7 +3,7 @@ stackName		:= $(shell yq -oy '.default.global.parameters.stack_name' samconfig.t
 
 
 #### Build/Deploy Tasks
-ci: deps clean build deploy
+ci: deps build deploy
 deps:
 	pnpm i
 
