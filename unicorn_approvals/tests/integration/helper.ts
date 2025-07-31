@@ -4,7 +4,6 @@ import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import {
   CloudFormationClient,
   DescribeStacksCommand,
-  DescribeStacksCommandOutput,
 } from '@aws-sdk/client-cloudformation';
 import {
   BatchWriteCommand,
@@ -25,18 +24,19 @@ export const sleep = async (ms: number) =>
 export async function* getCloudWatchLogsValues(
   propertyId: string
 ): AsyncGenerator<any, void, unknown> {
-  const groupName = await findOutputValue(
-    'uni-prop-local-properties',
-    'UnicornPropertiesCatchAllLogGroupName'
+  const groupArn = await findOutputValue(
+    'uni-prop-local-approvals',
+    'UnicornApprovalsCatchAllLogGroupArn'
   );
 
   // Initialize the CloudWatch Logs client
-  const cwl = new CloudWatchLogs({ region: process.env.AWS_DEFAULT_REGION });
+  const region = process.env.AWS_DEFAULT_REGION || process.env.AWS_REGION || 'ap-southeast-2';
+  const cwl = new CloudWatchLogs({ region });
 
   // Get the CW LogStream with the latest log messages
   const streamResponse = await cwl.send(
     new DescribeLogStreamsCommand({
-      logGroupName: groupName,
+      logGroupIdentifier: groupArn,
       orderBy: 'LastEventTime',
       descending: true,
       limit: 3,
@@ -52,7 +52,7 @@ export async function* getCloudWatchLogsValues(
     latestLogStreamNames.map(async (name) => {
       return await cwl.send(
         new GetLogEventsCommand({
-          logGroupName: groupName,
+          logGroupIdentifier: groupArn,
           logStreamName: name,
         })
       );
@@ -141,29 +141,21 @@ export async function initializeDatabase() {
   }
 }
 
-export const findOutputValue = async (StackName: string, outputKey: string) => {
-  const cloudformation = new CloudFormationClient({
-    region: process.env.AWS_DEFAULT_REGION,
-  });
-  const stackResources: DescribeStacksCommandOutput = await cloudformation.send(
+export const findOutputValue = async (StackName: string, outputKey: string): Promise<string> => {
+  const region = process.env.AWS_DEFAULT_REGION || process.env.AWS_REGION || 'ap-southeast-2';
+  const cloudformation = new CloudFormationClient({ region });
+  
+  const stackResources = await cloudformation.send(
     new DescribeStacksCommand({ StackName })
   );
-  if (stackResources.Stacks === undefined || stackResources.Stacks?.length < 1)
-    throw new Error(`Could not find stack resources named: ${StackName}`);
-
-  if (
-    stackResources.Stacks[0].Outputs === undefined ||
-    stackResources.Stacks[0].Outputs?.length < 1
-  ) {
-    throw new Error(
-      `Could not find stack outputs for stack named: ${StackName}`
-    );
-  }
-
-  const outputValue = stackResources.Stacks[0].Outputs.find(
+  
+  const output = stackResources.Stacks?.[0]?.Outputs?.find(
     (output) => output.OutputKey === outputKey
-  )?.OutputValue;
-  if (outputValue === undefined)
-    throw new Error(`Could not find stack output named: ${outputKey}`);
-  return outputValue;
+  );
+  
+  if (!output?.OutputValue) {
+    throw new Error(`Could not find output ${outputKey} in stack ${StackName}`);
+  }
+  
+  return output.OutputValue;
 };

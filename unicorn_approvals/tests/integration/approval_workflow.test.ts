@@ -57,7 +57,7 @@ describe('Tests that failed workflow', () => {
     // Assert
     const listExecutionsCommand = new ListExecutionsCommand({
       stateMachineArn: await findOutputValue(
-        'uni-prop-local-properties-approval',
+        'uni-prop-local-approvals',
         'ApprovalStateMachineArn'
       ),
       statusFilter: 'FAILED',
@@ -101,7 +101,7 @@ describe('Tests that failed workflow', () => {
     // Assert
     const listExecutionsCommand = new ListExecutionsCommand({
       stateMachineArn: await findOutputValue(
-        'uni-prop-local-properties-approval',
+        'uni-prop-local-approvals',
         'ApprovalStateMachineArn'
       ),
       statusFilter: 'SUCCEEDED',
@@ -144,7 +144,7 @@ describe('Tests that failed workflow', () => {
     // Assert
     const listExecutionsCommand = new ListExecutionsCommand({
       stateMachineArn: await findOutputValue(
-        'uni-prop-local-properties-approval',
+        'uni-prop-local-approvals',
         'ApprovalStateMachineArn'
       ),
       statusFilter: 'SUCCEEDED',
