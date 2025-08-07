@@ -4,7 +4,7 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform:
   - AWS::Serverless-2016-10-31
 Description: >
-  Unicorn Properties Service. Validate the content, images and contract of property listings.
+  Unicorn Approvals Service. Validate the content, images and contract of property listings.
 
 Metadata:
   cfn-lint:
@@ -16,7 +16,6 @@ Metadata:
         - WS2001 # Rule disabled because check does not support !ToJsonString transform
         - ES1001 # Rule disabled because our Lambda functions don't need DestinationConfig.OnFailure
         - W3002  # Rule disabled as nested templates are being packaged
-        - E3030  # Rule disabled due to using cfn-lint-serverless rules v0.3
 
 Parameters:
   Stage:
@@ -116,12 +115,12 @@ Resources:
               MaximumRetryAttempts: 5
               MaximumEventAgeInSeconds: 900
             DeadLetterConfig:
-              Arn: !GetAtt PropertiesEventBusRuleDLQ.Arn
+              Arn: !GetAtt ApprovalsEventBusRuleDLQ.Arn
       EventInvokeConfig:
         DestinationConfig:
           OnFailure:
             Type: SQS
-            Destination: !GetAtt PropertiesServiceDLQ.Arn
+            Destination: !GetAtt ApprovalsServiceDLQ.Arn
     Metadata:
       # Manage esbuild properties
       BuildMethod: esbuild
@@ -155,7 +154,7 @@ Resources:
             StreamName:
               !Select [3, !Split ["/", !GetAtt ContractStatusTable.StreamArn]]
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt PropertiesServiceDLQ.QueueName
+            QueueName: !GetAtt ApprovalsServiceDLQ.QueueName
         - Statement:
             - Effect: Allow
               Action:
@@ -172,12 +171,12 @@ Resources:
             MaximumRetryAttempts: 3
             DestinationConfig:
               OnFailure:
-                Destination: !GetAtt PropertiesServiceDLQ.Arn
+                Destination: !GetAtt ApprovalsServiceDLQ.Arn
       EventInvokeConfig:
         DestinationConfig:
           OnFailure:
             Type: SQS
-            Destination: !GetAtt PropertiesServiceDLQ.Arn
+            Destination: !GetAtt ApprovalsServiceDLQ.Arn
     Metadata:
       # Manage esbuild properties
       BuildMethod: esbuild
@@ -282,7 +281,7 @@ Resources:
               MaximumEventAgeInSeconds: 900
             DeadLetterConfig:
               Type: SQS
-              Destination: !GetAtt PropertiesServiceDLQ.Arn
+              Destination: !GetAtt ApprovalsServiceDLQ.Arn
       DefinitionSubstitutions:
         WaitForContractApprovalArn: !GetAtt WaitForContractApprovalFunction.Arn
         TableName: !Ref ContractStatusTable
@@ -301,7 +300,7 @@ Resources:
 
   #### DEAD LETTER QUEUES
   # Store EventBridge events that failed to be DELIVERED to ContractStatusChangedHandlerFunction
-  PropertiesEventBusRuleDLQ:
+  ApprovalsEventBusRuleDLQ:
     Type: AWS::SQS::Queue
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
@@ -316,8 +315,8 @@ Resources:
         - Key: stage
           Value: !Ref Stage
 
-  # Store failed INVOCATIONS to each Lambda function in Unicorn Properties Service
-  PropertiesServiceDLQ:
+  # Store failed INVOCATIONS to each Lambda function in Unicorn Approvals Service
+  ApprovalsServiceDLQ:
     Type: AWS::SQS::Queue
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
@@ -356,22 +355,22 @@ Resources:
           Value: !Ref Stage
 
   #### EVENT BUS
-  # Event bus for Unicorn Properties Service, used to publish and consume events
+  # Event bus for Unicorn Approvals Service, used to publish and consume events
   UnicornApprovalsEventBus:
     Type: AWS::Events::EventBus
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      Name: !Sub UnicornPropertiesBus-${Stage}
+      Name: !Sub UnicornApprovalsBus-${Stage}
 
   # Event bus policy to restrict who can publish events (should only be services from UnicornApprovalsNamespace)
-  UnicornPropertiesEventsBusPublishPolicy:
+  UnicornApprovalsEventsBusPublishPolicy:
     Type: AWS::Events::EventBusPolicy
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
       EventBusName: !Ref UnicornApprovalsEventBus
-      StatementId: !Sub OnlyPropertiesServiceCanPublishToEventBus-${Stage}
+      StatementId: !Sub OnlyApprovalsServiceCanPublishToEventBus-${Stage}
       Statement:
         Effect: Allow
         Principal:
@@ -385,12 +384,12 @@ Resources:
               - "{{resolve:ssm:/uni-prop/UnicornApprovalsNamespace}}"
 
   # Catchall rule used for development purposes. Logs all events matching any of the services to CloudWatch Logs
-  UnicornPropertiesCatchAllRule:
+  UnicornApprovalsCatchAllRule:
     Type: AWS::Events::Rule
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      Name: properties.catchall
+      Name: approvals.catchall
       Description: Catchall rule used for development purposes.
       EventBusName: !Ref UnicornApprovalsEventBus
       EventPattern:
@@ -402,11 +401,11 @@ Resources:
           - "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}"
       State: ENABLED #You may want to disable this rule in production
       Targets:
-        - Arn: !GetAtt UnicornPropertiesCatchAllLogGroup.Arn
-          Id: !Sub UnicornPropertiesCatchAllLogGroupTarget-${Stage}
+        - Arn: !GetAtt UnicornApprovalsCatchAllLogGroup.Arn
+          Id: !Sub UnicornApprovalsCatchAllLogGroupTarget-${Stage}
 
   # CloudWatch log group used to catch all events
-  UnicornPropertiesCatchAllLogGroup:
+  UnicornApprovalsCatchAllLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
@@ -440,14 +439,14 @@ Resources:
                 "logs:PutLogEvents"
               ],
               "Resource": [
-                "${UnicornPropertiesCatchAllLogGroup.Arn}"
+                "${UnicornApprovalsCatchAllLogGroup.Arn}"
               ]
             }
           ]
         }
 
   #### CLOUDFORMATION NESTED STACKS
-  # CloudFormation Stack with the Properties Service Event Registry and Schemas
+  # CloudFormation Stack with the Approvals Service Event Registry and Schemas
   EventSchemasStack:
     Type: AWS::Serverless::Application
     UpdateReplacePolicy: Delete
@@ -457,7 +456,7 @@ Resources:
       Parameters:
         Stage: !Ref Stage
 
-  # CloudFormation Stack with the Cross-service EventBus policy for Properties Service
+  # CloudFormation Stack with the Cross-service EventBus policy for Approvals Service
   SubscriberPoliciesStack:
     Type: AWS::Serverless::Application
     UpdateReplacePolicy: Delete
@@ -469,7 +468,7 @@ Resources:
       Parameters:
         Stage: !Ref Stage
 
-  # CloudFormation Stack with the Cross-service EventBus Rules for Properties Service
+  # CloudFormation Stack with the Cross-service EventBus Rules for Approvals Service
   SubscriptionsStack:
     Type: AWS::Serverless::Application
     UpdateReplacePolicy: Delete
@@ -510,13 +509,13 @@ Outputs:
     Value: !Ref ApprovalStateMachine
 
   #### EVENT BRIDGE OUTPUTS
-  UnicornPropertiesEventBusName:
+  UnicornApprovalsEventBusName:
     Value: !GetAtt UnicornApprovalsEventBus.Name
 
   #### CLOUDWATCH LOGS OUTPUTS
   UnicornApprovalsCatchAllLogGroupArn:
     Description: Log all events on the service's EventBridge Bus
-    Value: !GetAtt UnicornPropertiesCatchAllLogGroup.Arn
+    Value: !GetAtt UnicornApprovalsCatchAllLogGroup.Arn
 
   ApprovalStateMachineLogGroupName:
     Value: !Ref ApprovalStateMachineLogGroup
