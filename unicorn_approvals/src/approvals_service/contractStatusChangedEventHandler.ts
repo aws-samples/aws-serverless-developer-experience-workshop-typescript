@@ -15,7 +15,7 @@ import { Marshaller } from '../schema/unicorn_contracts/contractstatuschanged/ma
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
-const DDB_TABLE = process.env.DYNAMODB_TABLE ?? 'ContractStatusTable';
+const DDB_TABLE = process.env.CONTRACT_STATUS_TABLE ?? 'ContractStatusTable';
 
 export interface ContractStatusError extends Error {
   contract_id: string;

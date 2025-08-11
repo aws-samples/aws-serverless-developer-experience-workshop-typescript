@@ -16,7 +16,7 @@ import { unmarshall } from '@aws-sdk/util-dynamodb';
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
-const DDB_TABLE = process.env.DYNAMODB_TABLE ?? 'ContractStatusTable';
+const DDB_TABLE = process.env.CONTRACT_STATUS_TABLE ?? 'ContractStatusTable';
 
 // Empty configuration for SFN
 // const sfnClient = new SFNClient({});
