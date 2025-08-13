@@ -28,7 +28,7 @@
     "aws-lambda": "^1.0.7"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.149",
+    "@types/aws-lambda": "^8.10.152",
     "@types/cfn-response": "^1.0.8",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.21",
