@@ -16,7 +16,7 @@ import { Marshaller } from '../schema/unicorn_approvals/publicationevaluationcom
 const ddbClient = new DynamoDBClient({});
 const DDB_TABLE = process.env.DYNAMODB_TABLE;
 
-class PublicationApprovedFunction implements LambdaInterface {
+class PublicationEvaluationEventHandler implements LambdaInterface {
   /**
    * Handle the contract status changed event from the EventBridge instance.
    * @param {EventBridgeEvent} event - EventBridge Event Input Format
@@ -108,5 +108,5 @@ class PublicationApprovedFunction implements LambdaInterface {
   }
 }
 
-const myFunction = new PublicationApprovedFunction();
+const myFunction = new PublicationEvaluationEventHandler();
 export const lambdaHandler = myFunction.handler.bind(myFunction);
