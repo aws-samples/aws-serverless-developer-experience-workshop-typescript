@@ -1,9 +1,9 @@
 #### Global Variables
-stackName		:= $(shell yq -oy '.default.global.parameters.stack_name' samconfig.yaml)
+stackName		:= $(shell yq -oy '.default.global.parameters.stack_name' samconfig.toml)
 
 
 #### Build/Deploy Tasks
-ci: deps clean build deploy
+ci: deps build deploy
 deps:
 	pnpm i
 

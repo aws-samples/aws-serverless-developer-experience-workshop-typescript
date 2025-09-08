@@ -14,7 +14,7 @@ describe('Testing approved property listing searches', () => {
     // Create an approved property listing
     const tableName = await findOutputValue(
       'uni-prop-local-web',
-      'UnicornWebTableName'
+      'PropertiesTableName'
     );
     const docClient = DynamoDBDocumentClient.from(
       new DynamoDBClient({ region: process.env.AWS_DEFAULT_REGION })
