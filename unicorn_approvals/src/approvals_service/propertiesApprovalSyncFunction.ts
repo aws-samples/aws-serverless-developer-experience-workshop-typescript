@@ -143,5 +143,10 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
   }
 }
 
-export const myFunction = new PropertiesApprovalSyncFunction();
-export const lambdaHandler = myFunction.handler.bind(myFunction);
+const myFunction = new PropertiesApprovalSyncFunction();
+export const lambdaHandler = async (
+  event: DynamoDBStreamEvent,
+  context: Context
+): Promise<DynamoDBBatchResponse> => {
+  return myFunction.handler(event, context);
+};

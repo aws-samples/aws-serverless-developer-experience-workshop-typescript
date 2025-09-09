@@ -109,4 +109,9 @@ class PublicationEvaluationEventHandler implements LambdaInterface {
 }
 
 const myFunction = new PublicationEvaluationEventHandler();
-export const lambdaHandler = myFunction.handler.bind(myFunction);
+export const lambdaHandler = async (
+  event: EventBridgeEvent<string, PublicationEvaluationCompleted>,
+  context: Context
+): Promise<void> => {
+  return myFunction.handler(event, context);
+};

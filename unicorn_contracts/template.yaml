@@ -62,6 +62,7 @@ Globals:
         POWERTOOLS_METRICS_NAMESPACE: "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
         POWERTOOLS_LOG_LEVEL: INFO # Log level for Logger (INFO, DEBUG, etc.), default
         LOG_LEVEL: INFO # Log level for Logger
+        NODE_OPTIONS: !If [IsProd, "", "--enable-source-maps"] # Disable source maps for Node.js in prod
     Tags:
       stage: !Ref Stage
       project: !FindInMap [Constants, ProjectName, Value]
@@ -108,9 +109,9 @@ Resources:
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
-        Minify: false
+        Minify: !If [IsProd, true, false] # Minify in prod
         Target: "es2020"
-        Sourcemap: true
+        Sourcemap: !If [IsProd, false, true] # Enable sourcemaps for debugging in non-prod stages
         EntryPoints: 
           - contractEventHandler.ts
 

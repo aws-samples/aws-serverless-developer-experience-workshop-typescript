@@ -153,5 +153,10 @@ class ContractStatusCheckerFunction implements LambdaInterface {
   }
 }
 
-export const myFunction = new ContractStatusCheckerFunction();
-export const lambdaHandler = myFunction.handler.bind(myFunction);
+const myFunction = new ContractStatusCheckerFunction();
+export const lambdaHandler = async (
+  event: any,
+  context: Context
+): Promise<StepFunctionsResponse> => {
+  return myFunction.handler(event, context);
+};

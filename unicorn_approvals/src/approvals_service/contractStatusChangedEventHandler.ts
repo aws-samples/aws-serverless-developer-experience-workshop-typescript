@@ -100,5 +100,10 @@ class ContractStatusChangedFunction implements LambdaInterface {
   }
 }
 
-export const myFunction = new ContractStatusChangedFunction();
-export const lambdaHandler = myFunction.handler.bind(myFunction);
+const myFunction = new ContractStatusChangedFunction();
+export const lambdaHandler = async (
+  event: EventBridgeEvent<string, ContractStatusChanged>,
+  context: Context
+): Promise<void> => {
+  return myFunction.handler(event, context);
+};

@@ -26,10 +26,7 @@ describe('Testing approved property listing searches', () => {
       })
     );
     // Find API Endpoint
-    apiUrl = await findOutputValue(
-      'uni-prop-local-web',
-      'UnicornWebRestApiUrl'
-    );
+    apiUrl = await findOutputValue('uni-prop-local-web', 'UnicornWebApiUrl');
   }, 10000);
 
   afterAll(async () => {

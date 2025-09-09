@@ -30,7 +30,10 @@ export async function* getCloudWatchLogsValues(
   );
 
   // Initialize the CloudWatch Logs client
-  const region = process.env.AWS_DEFAULT_REGION || process.env.AWS_REGION || 'ap-southeast-2';
+  const region =
+    process.env.AWS_DEFAULT_REGION ||
+    process.env.AWS_REGION ||
+    'ap-southeast-2';
   const cwl = new CloudWatchLogs({ region });
 
   // Get the CW LogStream with the latest log messages
@@ -75,7 +78,7 @@ export async function clearDatabase() {
     region: process.env.AWS_DEFAULT_REGION,
   });
   const tableName = await findOutputValue(
-    'uni-prop-local-properties',
+    'uni-prop-local-approvals',
     'ContractStatusTableName'
   );
 
@@ -119,7 +122,7 @@ export async function initializeDatabase() {
     region: process.env.AWS_DEFAULT_REGION,
   });
   const tableName = await findOutputValue(
-    'uni-prop-local-properties',
+    'uni-prop-local-approvals',
     'ContractStatusTableName'
   );
 
@@ -141,21 +144,27 @@ export async function initializeDatabase() {
   }
 }
 
-export const findOutputValue = async (StackName: string, outputKey: string): Promise<string> => {
-  const region = process.env.AWS_DEFAULT_REGION || process.env.AWS_REGION || 'ap-southeast-2';
+export const findOutputValue = async (
+  StackName: string,
+  outputKey: string
+): Promise<string> => {
+  const region =
+    process.env.AWS_DEFAULT_REGION ||
+    process.env.AWS_REGION ||
+    'ap-southeast-2';
   const cloudformation = new CloudFormationClient({ region });
-  
+
   const stackResources = await cloudformation.send(
     new DescribeStacksCommand({ StackName })
   );
-  
+
   const output = stackResources.Stacks?.[0]?.Outputs?.find(
     (output) => output.OutputKey === outputKey
   );
-  
+
   if (!output?.OutputValue) {
     throw new Error(`Could not find output ${outputKey} in stack ${StackName}`);
   }
-  
+
   return output.OutputValue;
 };
