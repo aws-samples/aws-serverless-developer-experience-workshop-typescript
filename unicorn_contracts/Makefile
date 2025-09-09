@@ -1,9 +1,9 @@
 #### Global Variables
-stackName		:= $(shell yq -oy '.default.global.parameters.stack_name' samconfig.yaml)
+stackName		:= $(shell yq -oy '.default.global.parameters.stack_name' samconfig.toml)
 
 
 #### Build/Deploy Tasks
-ci: deps clean build deploy
+ci: deps build deploy
 deps:
 	pnpm i
 
@@ -26,7 +26,7 @@ ddbPropertyId 	= $(call get_ddb_key,create_contract_valid_payload_1)
 test: unit-test integration-test
 
 unit-test:
-
+	pnpm test -- tests/unit
 integration-test: 
 	pnpm test -- tests/integration/
 

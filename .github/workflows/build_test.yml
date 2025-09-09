@@ -6,7 +6,7 @@ on:
       - '.github/workflows/*'
       - 'unicorn_shared/**'
       - 'unicorn_contracts/**'
-      - 'unicorn_properties/**'
+      - 'unicorn_approvals/**'
       - 'unicorn_web/**'
 env:
   AWS_REGION : "ap-southeast-2"
@@ -43,7 +43,7 @@ jobs:
     strategy:
       #max-parallel: 1
       matrix:
-        folder: [unicorn_contracts, unicorn_web, unicorn_properties]
+        folder: [unicorn_contracts, unicorn_web, unicorn_approvals]
 
     steps:
     - uses: actions/checkout@v4

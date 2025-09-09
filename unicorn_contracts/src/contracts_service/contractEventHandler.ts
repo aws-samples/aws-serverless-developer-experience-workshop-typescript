@@ -229,5 +229,10 @@ class ContractEventHandlerFunction implements LambdaInterface {
   }
 }
 
-export const myFunction = new ContractEventHandlerFunction();
-export const lambdaHandler = myFunction.handler.bind(myFunction);
+const myFunction = new ContractEventHandlerFunction();
+export const lambdaHandler = async (
+  event: SQSEvent,
+  context: Context
+): Promise<void> => {
+  return myFunction.handler(event, context);
+};

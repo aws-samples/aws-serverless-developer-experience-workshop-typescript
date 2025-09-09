@@ -258,5 +258,10 @@ class PropertySearchFunction implements LambdaInterface {
   }
 }
 
-export const myFunction = new PropertySearchFunction();
-export const lambdaHandler = myFunction.handler.bind(myFunction);
+const myFunction = new PropertySearchFunction();
+export const lambdaHandler = async (
+  event: APIGatewayProxyEvent,
+  context: Context
+): Promise<APIGatewayProxyResult> => {
+  return myFunction.handler(event, context);
+};

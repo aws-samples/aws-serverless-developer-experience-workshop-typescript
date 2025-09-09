@@ -15,8 +15,6 @@ Metadata:
         - WS2001 # Rule disabled because check does not support !ToJsonString transform
         - ES1001 # Rule disabled because our Lambda functions don't need DestinationConfig.OnFailure
         - W3002  # Rule disabled as nested templates are being packaged
-        - E3030  # Rule disabled due to using cfn-lint-serverless rules v0.3
-        - E3002  # Rule disabled due to using cfn-lint-serverless rules v0.3
 
 Parameters:
   Stage:
@@ -45,11 +43,10 @@ Conditions:
 Globals:
   Api:
     OpenApiVersion: 3.0.1
-    TracingEnabled: true
   Function:
     Runtime: nodejs22.x
     MemorySize: 512
-    Timeout: 15 
+    Timeout: 15
     Tracing: Active
     Architectures:
       - x86_64
@@ -65,6 +62,7 @@ Globals:
         POWERTOOLS_METRICS_NAMESPACE: "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
         POWERTOOLS_LOG_LEVEL: INFO # Log level for Logger (INFO, DEBUG, etc.), default
         LOG_LEVEL: INFO # Log level for Logger
+        NODE_OPTIONS: !If [IsProd, "", "--enable-source-maps"] # Disable source maps for Node.js in prod
     Tags:
       stage: !Ref Stage
       project: !FindInMap [Constants, ProjectName, Value]
@@ -111,9 +109,9 @@ Resources:
     Metadata: # Manage esbuild properties
       BuildMethod: esbuild
       BuildProperties:
-        Minify: false
+        Minify: !If [IsProd, true, false] # Minify in prod
         Target: "es2020"
-        Sourcemap: true
+        Sourcemap: !If [IsProd, false, true] # Enable sourcemaps for debugging in non-prod stages
         EntryPoints: 
           - contractEventHandler.ts
 
@@ -302,7 +300,7 @@ Resources:
           - !Ref AWS::AccountId
         source:
           - "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
-          - "{{resolve:ssm:/uni-prop/UnicornPropertiesNamespace}}"
+          - "{{resolve:ssm:/uni-prop/UnicornApprovalsNamespace}}"
           - "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}"
       State: ENABLED #You may want to disable this rule in production
       Targets:
