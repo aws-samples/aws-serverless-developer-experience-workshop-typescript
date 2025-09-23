@@ -15,10 +15,8 @@ help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-15s %s\n", $$1, $$2}'
 
 build: ## Build the application
-	@echo "Building .NET application..."
-	@dotnet restore ContractsService/ContractsService.csproj
-	@dotnet restore ContractsService.Test/ContractsService.Tests.csproj
-	@dotnet build ContractsService/ContractsService.csproj
+	@echo "Building TypeScript application..."
+	@npm install
 	@sam build --template-file iac/contracts-service.yaml
 
 deploy-domain: ## Deploy domain resources (EventBridge, Schema Registry)
@@ -61,7 +59,7 @@ deploy: deploy-domain deploy-schema deploy-service ## Deploy all infrastructure 
 
 test: ## Run tests
 	@echo "Running tests..."
-	@dotnet test ContractsService.Test/ContractsService.Tests.csproj
+	@npm test
 
 lint: ## Lint CloudFormation templates
 	@echo "Linting CloudFormation templates..."
@@ -72,7 +70,8 @@ lint: ## Lint CloudFormation templates
 clean: ## Clean build artifacts
 	@echo "Cleaning build artifacts..."
 	@rm -rf .aws-sam/
-	@dotnet clean
+	@rm -rf node_modules/
+	@rm -rf dist/
 
 delete: ## Delete all stacks
 	@echo "Deleting stacks in reverse order..."
