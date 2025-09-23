@@ -82,7 +82,7 @@ Resources:
   ContractEventHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/contracts_service/
+      CodeUri: ../src/contracts_service/
       Handler: contractEventHandler.lambdaHandler
       Policies:
         - DynamoDBWritePolicy:
