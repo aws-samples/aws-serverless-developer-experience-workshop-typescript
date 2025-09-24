@@ -81,6 +81,20 @@ deploy-web-subscriptions: ## Deploy web event subscriptions
 		--no-confirm-changeset \
 		--no-fail-on-empty-changeset
 
+delete-contracts-subscriptions: ## Deploy contracts event subscriptions
+	@echo "Deleting contracts subscriptions..."
+	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-approvals-contracts-subscriptions --region $(REGION) || true
+	@echo "Waiting for subscription stack to be deleted..."
+	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-approvals-contracts-subscriptions --region $(REGION) || true
+	@echo "Done"
+
+delete-web-subscriptions: ## Deploy web event subscriptions
+	@echo "Deleting web subscriptions..."
+	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-approvals-web-subscriptions --region $(REGION) || true
+	@echo "Waiting for subscription stack to be deleted..."
+	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-approvals-web-subscriptions --region $(REGION) || true
+	@echo "Done"
+
 deploy: deploy-domain deploy-service deploy-schema deploy-contracts-subscriptions ## Deploy all infrastructure and application
 
 test: ## Run tests
