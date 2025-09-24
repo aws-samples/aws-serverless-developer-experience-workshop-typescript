@@ -230,7 +230,7 @@ Resources:
     UpdateReplacePolicy: Delete
     Properties:
       Name: !Sub "${AWS::StackName}-ApprovalStateMachine"
-      DefinitionUri: src/state_machine/property_approval.asl.yaml
+      DefinitionUri: ./state-machine/property_approval.asl.yaml
       Tracing:
         Enabled: true
       Policies:
