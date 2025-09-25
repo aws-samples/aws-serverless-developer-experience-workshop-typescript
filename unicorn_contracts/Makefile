@@ -17,12 +17,12 @@ help: ## Show available commands
 build: ## Build the application
 	@echo "Building TypeScript application..."
 	@npm install
-	@sam build --template-file iac/contracts-service.yaml
+	@sam build --template-file infrastructure/contracts-service.yaml
 
 deploy-domain: ## Deploy domain resources (EventBridge, Schema Registry)
 	@echo "Deploying domain resources..."
 	@sam deploy \
-		--template-file iac/domain.yaml \
+		--template-file infrastructure/domain.yaml \
 		--stack-name $(STACK_PREFIX)-contracts-domain \
 		--parameter-overrides Stage=$(STAGE) \
 		--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
@@ -34,7 +34,7 @@ deploy-domain: ## Deploy domain resources (EventBridge, Schema Registry)
 deploy-schema: ## Deploy event schema
 	@echo "Deploying event schema..."
 	@sam deploy \
-		--template-file iac/schema-registry/ContractStatusChanged-schema.yaml \
+		--template-file infrastructure/schema-registry/ContractStatusChanged-schema.yaml \
 		--stack-name $(STACK_PREFIX)-contracts-schema-ContractStatusChanged \
 		--parameter-overrides Stage=$(STAGE) \
 		--capabilities CAPABILITY_IAM \
@@ -46,7 +46,7 @@ deploy-schema: ## Deploy event schema
 deploy-service: build ## Deploy service resources (Lambda, API Gateway, DynamoDB)
 	@echo "Deploying service resources..."
 	@sam deploy \
-		--template-file iac/contracts-service.yaml \
+		--template-file infrastructure/contracts-service.yaml \
 		--stack-name $(STACK_PREFIX)-contracts-contracts-service \
 		--parameter-overrides Stage=$(STAGE) \
 		--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
@@ -63,9 +63,9 @@ test: ## Run tests
 
 lint: ## Lint CloudFormation templates
 	@echo "Linting CloudFormation templates..."
-	@cfn-lint iac/contracts-service.yaml -a cfn_lint_serverless.rules
-	@cfn-lint iac/domain.yaml
-	@cfn-lint iac/schema-registry/ContractStatusChanged-schema.yaml
+	@cfn-lint infrastructure/contracts-service.yaml -a cfn_lint_serverless.rules
+	@cfn-lint infrastructure/domain.yaml
+	@cfn-lint infrastructure/schema-registry/ContractStatusChanged-schema.yaml
 
 clean: ## Clean build artifacts
 	@echo "Cleaning build artifacts..."
