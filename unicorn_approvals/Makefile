@@ -63,7 +63,6 @@ deploy-contracts-subscriptions: ## Deploy contracts event subscriptions
 		--template-file infrastructure/subscriptions/unicorn-contracts-subscriptions.yaml \
 		--stack-name $(STACK_PREFIX)-approvals-contracts-subscriptions \
 		--parameter-overrides Stage=$(STAGE) \
-		--capabilities CAPABILITY_IAM \
 		--region $(REGION) \
 		--resolve-s3 \
 		--no-confirm-changeset \
@@ -75,7 +74,6 @@ deploy-web-subscriptions: ## Deploy web event subscriptions
 		--template-file infrastructure/subscriptions/unicorn-web-subscriptions.yaml \
 		--stack-name $(STACK_PREFIX)-approvals-web-subscriptions \
 		--parameter-overrides Stage=$(STAGE) \
-		--capabilities CAPABILITY_IAM \
 		--region $(REGION) \
 		--resolve-s3 \
 		--no-confirm-changeset \
