@@ -48,7 +48,7 @@ describe('Unit tests for contract creation', function () {
       version: '0',
       time: 'nulltime',
       region: 'ap-southeast-2',
-      source: 'unicorn.approvals',
+      source: 'unicorn-approvals',
       resources: [''],
       detail: {
         contract_id: 'contract1',

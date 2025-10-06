@@ -169,7 +169,7 @@ Resources:
         ApprovalEvent:
           Type: EventBridgeRule
           Properties:
-            RuleName: unicorn.web-PublicationEvaluationCompleted
+            RuleName: unicorn-web-PublicationEvaluationCompleted
             EventBusName: !Ref UnicornWebEventBus
             Pattern:
               source:
