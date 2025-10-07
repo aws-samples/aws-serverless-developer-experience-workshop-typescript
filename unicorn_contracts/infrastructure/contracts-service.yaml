@@ -107,6 +107,7 @@ Resources:
         EntryPoints: 
           - contractEventHandler.ts
 
+  # CloudWatch log group for contract event handler with environment-specific retention
   ContractEventHandlerFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     DeletionPolicy: Delete
@@ -423,10 +424,10 @@ Resources:
     DeletionPolicy: Delete
     Properties:
       AttributeDefinitions:
-        - AttributeName: PropertyId
+        - AttributeName: property_id
           AttributeType: S
       KeySchema:
-        - AttributeName: PropertyId
+        - AttributeName: property_id
           KeyType: HASH
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES

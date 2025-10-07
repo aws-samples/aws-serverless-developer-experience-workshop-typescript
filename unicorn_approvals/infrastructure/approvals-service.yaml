@@ -122,7 +122,7 @@ Resources:
         EntryPoints:
           - contractStatusChangedEventHandler.ts
 
-  # Log group for the ContractStatusChangedHandlerFunction
+  # CloudWatch log group for contract status handler with configurable retention based on environment
   ContractStatusChangedHandlerFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -179,7 +179,7 @@ Resources:
         EntryPoints:
           - propertiesApprovalSyncFunction.ts
 
-  # Log group for the PropertiesApprovalSyncFunction
+  # CloudWatch log group for the sync function that handles Step Functions resume operations
   PropertiesApprovalSyncFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -208,7 +208,7 @@ Resources:
         EntryPoints:
           - waitForContractApprovalFunction.ts
 
-  # Log group for the WaitForContractApprovalFunction
+  # CloudWatch log group for the contract approval wait function
   WaitForContractApprovalFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete

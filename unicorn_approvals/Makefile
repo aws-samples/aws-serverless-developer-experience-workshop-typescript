@@ -49,7 +49,6 @@ deploy-schema: ## Deploy event schema
 		--template-file infrastructure/schema-registry/PublicationEvaluationCompleted-schema.yaml \
 		--stack-name $(STACK_PREFIX)-approvals-schema-PublicationEvaluationCompleted \
 		--parameter-overrides Stage=$(STAGE) \
-		--capabilities CAPABILITY_IAM \
 		--region $(REGION) \
 		--resolve-s3 \
 		--no-confirm-changeset \
