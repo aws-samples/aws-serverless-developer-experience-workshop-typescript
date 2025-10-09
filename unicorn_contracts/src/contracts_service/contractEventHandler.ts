@@ -71,8 +71,8 @@ class ContractEventHandlerFunction implements LambdaInterface {
           }
           break;
         default:
-          tracer.addErrorAsMetadata(Error('Request not supported'));
-          logger.error('Error request not supported');
+          tracer.addErrorAsMetadata(Error(`Unsupported HTTP method: ${httpMethod}`));
+          logger.error(`Unsupported HTTP method: ${httpMethod}`);
       }
     }
   }
