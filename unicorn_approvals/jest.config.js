@@ -1,7 +1,11 @@
 module.exports = {
   preset: "ts-jest",
   transform: {
-    "^.+\\.ts?$": "ts-jest",
+    "^.+\\.ts?$": ["ts-jest", {
+      tsconfig: {
+        skipLibCheck: true
+      }
+    }],
   },
   moduleFileExtensions: ["js", "ts"],
   collectCoverageFrom: ["**/src/**/*.ts", "!**/node_modules/**"],
