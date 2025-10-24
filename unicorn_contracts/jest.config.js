@@ -1,7 +1,11 @@
 module.exports = {
   preset: "ts-jest",
   transform: {
-    "^.+\\.ts?$": "ts-jest",
+    "^.+\\.ts?$": ["ts-jest", {
+      tsconfig: {
+        skipLibCheck: true
+      }
+    }],
   },
   moduleFileExtensions: ["js", "ts"],
   collectCoverageFrom: ["**/src/**/*.ts", "!**/node_modules/**"],
@@ -9,5 +13,5 @@ module.exports = {
   testPathIgnorePatterns: ["/node_modules/"],
   testEnvironment: "node",
   testSequencer: "./tests/alphabetical-sequencer.js",
-  coverageProvider: "v8",
+  coverageProvider: "v8"
 };
