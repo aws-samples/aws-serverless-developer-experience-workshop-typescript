@@ -17,7 +17,7 @@ help: ## Show available commands
 build: ## Build the application
 	@echo "Building TypeScript application..."
 	@npm install
-	@sam build --template-file infrastructure/web-service.yaml
+	@sam build --template-file infrastructure/web-service/template.yaml
 
 deploy-domain: ## Deploy domain resources (EventBridge, Schema Registry)
 	@echo "Deploying domain resources..."
@@ -56,7 +56,7 @@ deploy-subscriptions: ## Deploy event subscriptions
 deploy-service: build ## Deploy web service
 	@echo "Deploying web service..."
 	@sam deploy \
-		--template-file infrastructure/web-service.yaml \
+		--template-file infrastructure/web-service/template.yaml \
 		--stack-name $(STACK_PREFIX)-web-service \
 		--parameter-overrides Stage=$(STAGE) \
 		--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \

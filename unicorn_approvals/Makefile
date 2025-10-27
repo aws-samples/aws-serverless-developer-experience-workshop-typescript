@@ -17,7 +17,7 @@ help: ## Show available commands
 build: ## Build the application
 	@echo "Building TypeScript application..."
 	@npm install
-	@sam build --template-file infrastructure/approvals-service.yaml
+	@sam build --template-file infrastructure/approvals-service/template.yaml
 
 deploy-domain: ## Deploy domain resources (EventBridge, Schema Registry)
 	@echo "Deploying domain resources..."
@@ -34,7 +34,7 @@ deploy-domain: ## Deploy domain resources (EventBridge, Schema Registry)
 deploy-service: build ## Deploy service resources (Lambda, Step Functions, DynamoDB)
 	@echo "Deploying service resources..."
 	@sam deploy \
-		--template-file infrastructure/approvals-service.yaml \
+		--template-file infrastructure/approvals-service/template.yaml \
 		--stack-name $(STACK_PREFIX)-approvals-service \
 		--parameter-overrides Stage=$(STAGE) \
 		--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
