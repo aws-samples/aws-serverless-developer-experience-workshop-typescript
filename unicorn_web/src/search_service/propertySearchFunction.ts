@@ -4,10 +4,9 @@ import {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
   Context,
-} from "aws-lambda";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
-import { logger, metrics, tracer } from "./powertools";
+} from 'aws-lambda';
+import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
+import { logger, metrics, tracer } from './powertools';
 import {
   DynamoDBClient,
   GetItemCommand,
@@ -15,17 +14,17 @@ import {
   QueryCommandInput,
   QueryCommand,
   QueryCommandOutput,
-} from "@aws-sdk/client-dynamodb";
-import { unmarshall } from "@aws-sdk/util-dynamodb";
+} from '@aws-sdk/client-dynamodb';
+import { unmarshall } from '@aws-sdk/util-dynamodb';
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
 const DDB_TABLE = process.env.DYNAMODB_TABLE;
 
 const PROJECTION_PROPERTIES =
-  "country, city, street, contract, #num, description, listprice, currency, #status";
+  'country, city, street, contract, #num, description, listprice, currency, #status';
 
-type PropertyDBType = {
+interface PropertyDBType {
   country: string;
   city: string;
   street: string;
@@ -35,7 +34,7 @@ type PropertyDBType = {
   listprice?: number;
   currency: string;
   status: string;
-};
+}
 
 class PropertySearchFunction implements LambdaInterface {
   /**
@@ -52,18 +51,19 @@ class PropertySearchFunction implements LambdaInterface {
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
     event: APIGatewayProxyEvent,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     context: Context
   ): Promise<APIGatewayProxyResult> {
     // Inspect request path.
     logger.info(`Handling request for ${event.resource}`);
-    if (event.resource == "/search/{country}/{city}") {
-      return await this.listPropertiesByCity(event, context);
-    } else if (event.resource == "/search/{country}/{city}/{street}") {
-      return await this.listPropertiesByStreet(event, context);
+    if (event.resource == '/search/{country}/{city}') {
+      return await this.listPropertiesByCity(event);
+    } else if (event.resource == '/search/{country}/{city}/{street}') {
+      return await this.listPropertiesByStreet(event);
     } else if (
-      event.resource == "/properties/{country}/{city}/{street}/{number}"
+      event.resource == '/properties/{country}/{city}/{street}/{number}'
     ) {
-      return await this.propertyDetails(event, context);
+      return await this.propertyDetails(event);
     } else {
       return {
         statusCode: 400,
@@ -83,8 +83,7 @@ class PropertySearchFunction implements LambdaInterface {
    */
   @tracer.captureMethod()
   private async listPropertiesByCity(
-    event: APIGatewayProxyEvent,
-    context: Context
+    event: APIGatewayProxyEvent
   ): Promise<APIGatewayProxyResult> {
     const country = event.pathParameters?.country;
     const city = event.pathParameters?.city;
@@ -97,12 +96,12 @@ class PropertySearchFunction implements LambdaInterface {
     const queryCommandInput: QueryCommandInput = {
       KeyConditionExpression: `PK = :pk`,
       ExpressionAttributeValues: {
-        ":pk": { S: PK },
-        ":s": { S: "APPROVED" },
+        ':pk': { S: PK },
+        ':s': { S: 'APPROVED' },
       },
       ProjectionExpression: PROJECTION_PROPERTIES,
-      ExpressionAttributeNames: { "#num": "number", "#status": "status" },
-      FilterExpression: "#status = :s",
+      ExpressionAttributeNames: { '#num': 'number', '#status': 'status' },
+      FilterExpression: '#status = :s',
       TableName: DDB_TABLE,
     };
 
@@ -128,10 +127,10 @@ class PropertySearchFunction implements LambdaInterface {
    * @param data The output data from the DynamoDB query
    */
   private consolidateResults(data: QueryCommandOutput): any[] {
-    let results: PropertyDBType[] = [];
-    for (var item of data.Items as any[]) {
+    const results: PropertyDBType[] = [];
+    for (const item of data.Items as any[]) {
       const obj: PropertyDBType = unmarshall(item) as PropertyDBType;
-      if (obj.status == "APPROVED") {
+      if (obj.status == 'APPROVED') {
         results.push(obj);
       } else {
         logger.warn(`Property ${JSON.stringify(obj)} is NOT APPROVED`);
@@ -149,8 +148,7 @@ class PropertySearchFunction implements LambdaInterface {
    */
   @tracer.captureMethod()
   private async listPropertiesByStreet(
-    event: APIGatewayProxyEvent,
-    context: Context
+    event: APIGatewayProxyEvent
   ): Promise<APIGatewayProxyResult> {
     const country = event.pathParameters?.country;
     const city = event.pathParameters?.city;
@@ -165,13 +163,13 @@ class PropertySearchFunction implements LambdaInterface {
     const queryCommandInput: QueryCommandInput = {
       KeyConditionExpression: `PK = :pk and begins_with(SK, :sk)`,
       ExpressionAttributeValues: {
-        ":pk": { S: PK },
-        ":sk": { S: SK },
-        ":s": { S: "APPROVED" },
+        ':pk': { S: PK },
+        ':sk': { S: SK },
+        ':s': { S: 'APPROVED' },
       },
       ProjectionExpression: PROJECTION_PROPERTIES,
-      ExpressionAttributeNames: { "#num": "number", "#status": "status" },
-      FilterExpression: "#status = :s",
+      ExpressionAttributeNames: { '#num': 'number', '#status': 'status' },
+      FilterExpression: '#status = :s',
       TableName: DDB_TABLE,
     };
 
@@ -201,8 +199,7 @@ class PropertySearchFunction implements LambdaInterface {
    */
   @tracer.captureMethod()
   private async propertyDetails(
-    event: APIGatewayProxyEvent,
-    context: Context
+    event: APIGatewayProxyEvent
   ): Promise<APIGatewayProxyResult> {
     const country = event.pathParameters?.country;
     const city = event.pathParameters?.city;
@@ -227,7 +224,7 @@ class PropertySearchFunction implements LambdaInterface {
         SK: { S: SK },
       },
       ProjectionExpression: PROJECTION_PROPERTIES,
-      ExpressionAttributeNames: { "#num": "number", "#status": "status" },
+      ExpressionAttributeNames: { '#num': 'number', '#status': 'status' },
       TableName: DDB_TABLE,
     };
 
@@ -261,5 +258,10 @@ class PropertySearchFunction implements LambdaInterface {
   }
 }
 
-export const myFunction = new PropertySearchFunction();
-export const lambdaHandler = myFunction.handler.bind(myFunction);
+const myFunction = new PropertySearchFunction();
+export const lambdaHandler = async (
+  event: APIGatewayProxyEvent,
+  context: Context
+): Promise<APIGatewayProxyResult> => {
+  return myFunction.handler(event, context);
+};

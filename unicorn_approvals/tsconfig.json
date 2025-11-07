@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+      "target": "es2020",
+      "strict": true,
+      "types": ["node", "jest"],
+      "baseUrl": "./",
+      "paths": {
+        "src/*": ["src/*"],
+        "tests/*": ["tests/*"]
+      },
+      "resolveJsonModule": true,
+      "preserveConstEnums": true,
+      "noEmit": true,
+      "sourceMap": false,
+      "module":"commonjs",
+      "moduleResolution":"node",
+      "esModuleInterop": true, 
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,  
+      "experimentalDecorators": true,
+      "isolatedModules": true
+    },
+    "exclude": ["node_modules"]
+  }

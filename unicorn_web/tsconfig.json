@@ -12,13 +12,13 @@
       "preserveConstEnums": true,
       "noEmit": true,
       "sourceMap": false,
-      "module":"es2015",
+      "module":"commonjs",
       "moduleResolution":"node",
       "esModuleInterop": true, 
       "skipLibCheck": true,
       "forceConsistentCasingInFileNames": true,
-      "experimentalDecorators": true  
+      "experimentalDecorators": true,
+      "isolatedModules": true
     },
-    "typeAcquisition": { "include": ["jest"] },
     "exclude": ["node_modules"]
   }

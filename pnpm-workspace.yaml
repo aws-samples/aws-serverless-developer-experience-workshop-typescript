@@ -1,0 +1,5 @@
+packages:
+  - unicorn_shared
+  - unicorn_contracts
+  - unicorn_approvals
+  - unicorn_web

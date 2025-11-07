@@ -1,21 +1,23 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: MIT-0
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   CloudFormationClient,
   DescribeStacksCommand,
   DescribeStacksCommandOutput,
-} from "@aws-sdk/client-cloudformation";
+} from '@aws-sdk/client-cloudformation';
 import {
   BatchWriteCommand,
   DynamoDBDocumentClient,
   ScanCommand,
   BatchWriteCommandInput,
-} from "@aws-sdk/lib-dynamodb";
+} from '@aws-sdk/lib-dynamodb';
 import {
   CloudWatchLogs,
   DescribeLogStreamsCommand,
   GetLogEventsCommand,
-} from "@aws-sdk/client-cloudwatch-logs";
-import PropertyData from "../../data/property_data.json";
+} from '@aws-sdk/client-cloudwatch-logs';
+import PropertyData from '../../data/property_data.json';
 
 export const sleep = async (ms: number) =>
   new Promise((resolve) => {
@@ -23,9 +25,12 @@ export const sleep = async (ms: number) =>
   });
 
 export async function* getCloudWatchLogsValues(
-  propertyId: string,
+  propertyId: string
 ): AsyncGenerator<any, void, unknown> {
-  const groupName = await findOutputValue("UnicornWebCatchAllLogGroupName");
+  const groupName = await findOutputValue(
+    'uni-prop-local-web',
+    'UnicornWebCatchAllLogGroupName'
+  );
 
   // Initialize the CloudWatch Logs client
   const cwl = new CloudWatchLogs({ region: process.env.AWS_DEFAULT_REGION });
@@ -34,14 +39,14 @@ export async function* getCloudWatchLogsValues(
   const streamResponse = await cwl.send(
     new DescribeLogStreamsCommand({
       logGroupName: groupName,
-      orderBy: "LastEventTime",
+      orderBy: 'LastEventTime',
       descending: true,
       limit: 3,
-    }),
+    })
   );
 
   const latestLogStreamNames = (streamResponse.logStreams || []).map(
-    (s) => s.logStreamName || "",
+    (s) => s.logStreamName || ''
   );
 
   // Fetch log events from that stream
@@ -51,15 +56,15 @@ export async function* getCloudWatchLogsValues(
         new GetLogEventsCommand({
           logGroupName: groupName,
           logStreamName: name,
-        }),
+        })
       );
-    }),
+    })
   );
 
   // Filter log events that match the required `propertyId`
   for (const response of responses) {
     for (const event of response.events || []) {
-      const ev = JSON.parse(event.message || "{}");
+      const ev = JSON.parse(event.message || '{}');
       if (ev.detail?.property_id === propertyId) {
         yield ev;
       }
@@ -68,8 +73,13 @@ export async function* getCloudWatchLogsValues(
 }
 
 export async function clearDatabase() {
-  const client = new DynamoDBClient({ region: process.env.AWS_DEFAULT_REGION });
-  const tableName = await findOutputValue("WebTableName");
+  const client = new DynamoDBClient({
+    region: process.env.AWS_DEFAULT_REGION,
+  });
+  const tableName = await findOutputValue(
+    'uni-prop-local-web',
+    'PropertiesTableName'
+  );
 
   const scanCommand = new ScanCommand({ TableName: tableName });
   try {
@@ -77,7 +87,7 @@ export async function clearDatabase() {
     const itemsToDelete = scanResponse.Items;
 
     if (!itemsToDelete || itemsToDelete.length === 0) {
-      console.log("No items to delete.");
+      console.log('No items to delete.');
       return;
     }
 
@@ -99,18 +109,23 @@ export async function clearDatabase() {
 
     // Execute the batch write command to delete all items
     try {
-      const batchWriteResponse = await client.send(batchWriteCommand);
+      await client.send(batchWriteCommand);
     } catch (error) {
-      console.error("Error batch deleting items:", error);
+      console.error('Error batch deleting items:', error);
     }
   } catch (error) {
-    console.error("Error scanning table:", error);
+    console.error('Error scanning table:', error);
   }
 }
 
 export const initialiseDatabase = async () => {
-  const tableName = await findOutputValue("WebTableName");
-  const client = new DynamoDBClient({ region: process.env.AWS_DEFAULT_REGION });
+  const tableName = await findOutputValue(
+    'uni-prop-local-web',
+    'PropertiesTableName'
+  );
+  const client = new DynamoDBClient({
+    region: process.env.AWS_DEFAULT_REGION,
+  });
   const docClient = DynamoDBDocumentClient.from(client);
   const command = new BatchWriteCommand({
     RequestItems: {
@@ -122,29 +137,27 @@ export const initialiseDatabase = async () => {
   return await docClient.send(command);
 };
 
-export const findOutputValue = async (outputKey: string) => {
+export const findOutputValue = async (StackName: string, outputKey: string) => {
   const cloudformation = new CloudFormationClient({
     region: process.env.AWS_DEFAULT_REGION,
   });
   const stackResources: DescribeStacksCommandOutput = await cloudformation.send(
-    new DescribeStacksCommand({ StackName: "uni-prop-local-web" }),
+    new DescribeStacksCommand({ StackName })
   );
   if (stackResources.Stacks === undefined || stackResources.Stacks?.length < 1)
-    throw new Error(
-      "Could not find stack resources named: uni-prop-local-web ",
-    );
+    throw new Error(`Could not find stack resources named: ${StackName}`);
 
   if (
     stackResources.Stacks[0].Outputs === undefined ||
     stackResources.Stacks[0].Outputs?.length < 1
   ) {
     throw new Error(
-      "Could not find stack outputs for stack named: uni-prop-local-web",
+      `Could not find stack outputs for stack named: ${StackName}`
     );
   }
 
-  const outputValue = stackResources.Stacks[0].Outputs.find(
-    (output) => output.OutputKey === outputKey,
+  const outputValue = stackResources.Stacks[0].Outputs.find((output) =>
+    output.OutputKey?.includes(outputKey)
   )?.OutputValue;
   if (outputValue === undefined)
     throw new Error(`Could not find stack output named: ${outputKey}`);

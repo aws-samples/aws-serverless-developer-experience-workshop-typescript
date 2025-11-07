@@ -1,8 +1,8 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
-import { Context, SQSEvent, SQSRecord } from "aws-lambda";
-import { marshall } from "@aws-sdk/util-dynamodb";
-import { ContractDBType, ContractStatusEnum, ContractError } from "./Contract";
+import { Context, SQSEvent, SQSRecord } from 'aws-lambda';
+import { marshall } from '@aws-sdk/util-dynamodb';
+import { ContractDBType, ContractStatusEnum } from './Contract';
 import {
   DynamoDBClient,
   UpdateItemCommand,
@@ -12,11 +12,12 @@ import {
   PutItemCommandOutput,
   PutItemCommand,
   ReturnValue,
-} from "@aws-sdk/client-dynamodb";
-import { randomUUID } from "crypto";
-import type { LambdaInterface } from "@aws-lambda-powertools/commons";
-import { MetricUnits } from "@aws-lambda-powertools/metrics";
-import { logger, metrics, tracer } from "./powertools";
+  ConditionalCheckFailedException,
+} from '@aws-sdk/client-dynamodb';
+import { randomUUID } from 'crypto';
+import type { LambdaInterface } from '@aws-lambda-powertools/commons/types';
+import { MetricUnit } from '@aws-lambda-powertools/metrics';
+import { logger, metrics, tracer } from './powertools';
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
@@ -39,37 +40,39 @@ class ContractEventHandlerFunction implements LambdaInterface {
     throwOnEmptyMetrics: false,
   })
   @logger.injectLambdaContext({ logEvent: true })
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async handler(event: SQSEvent, context: Context): Promise<void> {
     // Parse SQS records
     for (const sqsRecord of event.Records) {
       const contract = this.parseRecord(sqsRecord);
-      tracer.putMetadata("Contract", contract);
-      switch (sqsRecord.messageAttributes.HttpMethod.stringValue) {
-        case "POST":
-          logger.info("Creating a contract", { contract });
+      tracer.putMetadata('Contract', contract);
+      const httpMethod = sqsRecord.messageAttributes.HttpMethod.stringValue
+      switch (httpMethod) {
+        case 'POST':
+          logger.info('Creating a contract', { contract });
           try {
             // Save the entry.
             await this.createContract(contract);
           } catch (error) {
             tracer.addErrorAsMetadata(error as Error);
-            logger.error("Error during DDB PUT", error as Error);
+            logger.error('Error during DDB PUT', error as Error);
             throw error;
           }
           break;
-        case "PUT":
-          logger.info("Updating a contract", { contract });
+        case 'PUT':
+          logger.info('Updating a contract', { contract });
           try {
             // Update the entry.
             await this.updateContract(contract);
           } catch (error) {
             tracer.addErrorAsMetadata(error as Error);
-            logger.error("Error during DDB UPDATE", error as Error);
+            logger.error('Error during DDB UPDATE', error as Error);
             throw error;
           }
           break;
         default:
-          tracer.addErrorAsMetadata(Error("Request not supported"));
-          logger.error("Error request not supported");
+          tracer.addErrorAsMetadata(Error(`Unsupported HTTP method: ${httpMethod}`));
+          logger.error(`Unsupported HTTP method: ${httpMethod}`);
       }
     }
   }
@@ -87,58 +90,57 @@ class ContractEventHandlerFunction implements LambdaInterface {
   @tracer.captureMethod()
   private async createContract(contract: ContractDBType): Promise<void> {
     // Construct the DDB Table record
-    logger.info("Constructing DB Entry from contract", { contract });
     const createDate = new Date();
     const contractId = randomUUID();
     const dbEntry: ContractDBType = {
-      property_id: contract["property_id"],
+      property_id: contract['property_id'],
       contract_created: createDate.toISOString(),
       contract_last_modified_on: createDate.toISOString(),
       contract_id: contractId,
-      address: contract["address"],
-      seller_name: contract["seller_name"],
+      address: contract['address'],
+      seller_name: contract['seller_name'],
       contract_status: ContractStatusEnum.DRAFT,
     };
 
     // Insert record into DDB
-    logger.info("Record to insert", { dbEntry });
+    logger.debug('Record to insert', { dbEntry });
     // Build the Command objects
     const ddbPutCommandInput: PutItemCommandInput = {
       TableName: DDB_TABLE,
       Item: marshall(dbEntry, { removeUndefinedValues: true }),
       ConditionExpression:
-        "attribute_not_exists(property_id) OR attribute_exists(contract_status) AND contract_status IN (:CANCELLED, :CLOSED, :EXPIRED)",
+        'attribute_not_exists(property_id) OR attribute_exists(contract_status) AND contract_status IN (:CANCELLED, :CLOSED, :EXPIRED)',
       ExpressionAttributeValues: {
-        ":CANCELLED": { S: ContractStatusEnum.CANCELLED },
-        ":CLOSED": { S: ContractStatusEnum.CLOSED },
-        ":EXPIRED": { S: ContractStatusEnum.EXPIRED },
+        ':CANCELLED': { S: ContractStatusEnum.CANCELLED },
+        ':CLOSED': { S: ContractStatusEnum.CLOSED },
+        ':EXPIRED': { S: ContractStatusEnum.EXPIRED },
       },
     };
     const ddbPutCommand = new PutItemCommand(ddbPutCommandInput);
 
     // Send the command
-    const ddbPutCommandOutput: PutItemCommandOutput = await ddbClient.send(
-      ddbPutCommand
-    );
-    if (ddbPutCommandOutput.$metadata.httpStatusCode != 200) {
-      const error: ContractError = {
-        propertyId: dbEntry.property_id,
-        name: "ContractDBSaveError",
-        message:
-          "Response error code: " +
-          ddbPutCommandOutput.$metadata.httpStatusCode,
-        object: ddbPutCommandOutput.$metadata,
-      };
-      throw error;
+    try {
+      const ddbPutCommandOutput: PutItemCommandOutput =
+        await ddbClient.send(ddbPutCommand);
+      tracer.putAnnotation('ContractStatus', dbEntry.contract_status);
+
+      logger.debug('Inserted record for contract', {
+        contractId,
+        metadata: ddbPutCommandOutput.$metadata,
+      });
+      metrics.addMetric('ContractCreated', MetricUnit.Count, 1);
+    } catch (e) {
+      if (e instanceof ConditionalCheckFailedException) {
+        logger.info('Contract already exists', { dbEntry });
+      } else {
+        logger.error({
+          message: 'Error during DDB PUT',
+          error: e,
+          dbEntry,
+          ddbPutCommandInput,
+        });
+      }
     }
-
-    tracer.putAnnotation("ContractStatus", dbEntry.contract_status);
-
-    logger.info("Inserted record for contract", {
-      contractId,
-      metadata: ddbPutCommandOutput.$metadata,
-    });
-    metrics.addMetric("ContractCreated", MetricUnits.Count, 1);
   }
 
   /**
@@ -159,18 +161,17 @@ class ContractEventHandlerFunction implements LambdaInterface {
       contract_status: ContractStatusEnum.APPROVED,
       contract_last_modified_on: modifiedDate.toISOString(),
     };
-
-    logger.info("Record to update", { dbEntry });
+    logger.debug('Record to update', { dbEntry });
     const ddbUpdateCommandInput: UpdateItemCommandInput = {
       TableName: DDB_TABLE,
       Key: { property_id: { S: dbEntry.property_id } },
-      UpdateExpression: "set contract_status = :t, modified_date = :m",
+      UpdateExpression: 'set contract_status = :t, modified_date = :m',
       ConditionExpression:
-        "attribute_exists(property_id) AND contract_status = :DRAFT",
+        'attribute_exists(property_id) AND contract_status = :DRAFT',
       ExpressionAttributeValues: {
-        ":t": { S: dbEntry.contract_status as string },
-        ":m": { S: dbEntry.contract_last_modified_on as string },
-        ":DRAFT": { S: ContractStatusEnum.DRAFT },
+        ':t': { S: dbEntry.contract_status as string },
+        ':m': { S: dbEntry.contract_last_modified_on as string },
+        ':DRAFT': { S: ContractStatusEnum.DRAFT },
       },
       ReturnValues: ReturnValue.ALL_NEW,
     };
@@ -178,30 +179,33 @@ class ContractEventHandlerFunction implements LambdaInterface {
     const ddbUpdateCommand = new UpdateItemCommand(ddbUpdateCommandInput);
 
     // Send the command
-    const ddbUpdateCommandOutput: UpdateItemCommandOutput =
-      await ddbClient.send(ddbUpdateCommand);
-    if (ddbUpdateCommandOutput.$metadata.httpStatusCode != 200) {
-      const error: ContractError = {
-        propertyId: dbEntry.property_id,
-        name: "ContractDBUpdateError",
-        message:
-          "Response error code: " +
-          ddbUpdateCommandOutput.$metadata.httpStatusCode,
-        object: ddbUpdateCommandOutput.$metadata,
-      };
-      throw error;
+    try {
+      const ddbUpdateCommandOutput: UpdateItemCommandOutput =
+        await ddbClient.send(ddbUpdateCommand);
+      tracer.putAnnotation(
+        'ContractStatus',
+        ddbUpdateCommandOutput?.Attributes?.contract_id?.S ?? 'undefined'
+      );
+      logger.debug('Updated record for contract', {
+        contractId: ddbUpdateCommandOutput?.Attributes?.contract_id?.S,
+        metdata: ddbUpdateCommandOutput.$metadata,
+      });
+      metrics.addMetric('ContractUpdated', MetricUnit.Count, 1);
+    } catch (e) {
+      if (e instanceof ConditionalCheckFailedException) {
+        logger.info(
+          'Contract does not exist or is not in DRAFT contract_status.',
+          { dbEntry }
+        );
+      } else {
+        logger.error({
+          message: 'Error during DDB UPDATE',
+          error: e,
+          dbEntry,
+          ddbUpdateCommandInput,
+        });
+      }
     }
-
-    tracer.putAnnotation(
-      "ContractStatus",
-      ddbUpdateCommandOutput?.Attributes?.contract_id?.S ?? "undefined"
-    );
-
-    logger.info("Updated record for contract", {
-      contractId: ddbUpdateCommandOutput?.Attributes?.contract_id?.S,
-      metdata: ddbUpdateCommandOutput.$metadata,
-    });
-    metrics.addMetric("ContractUpdated", MetricUnits.Count, 1);
   }
 
   /**
@@ -218,13 +222,18 @@ class ContractEventHandlerFunction implements LambdaInterface {
       contract = JSON.parse(record.body);
     } catch (error) {
       tracer.addErrorAsMetadata(error as Error);
-      logger.error("Error parsing SQS Record", error as Error);
-      throw new Error("Error parsing SQS Record");
+      logger.error('Error parsing SQS Record', error as Error);
+      throw new Error('Error parsing SQS Record');
     }
-    logger.info("Returning contract", { contract });
+    logger.debug('Returning contract', { contract });
     return contract;
   }
 }
 
-export const myFunction = new ContractEventHandlerFunction();
-export const lambdaHandler = myFunction.handler.bind(myFunction);
+const myFunction = new ContractEventHandlerFunction();
+export const lambdaHandler = async (
+  event: SQSEvent,
+  context: Context
+): Promise<void> => {
+  return myFunction.handler(event, context);
+};

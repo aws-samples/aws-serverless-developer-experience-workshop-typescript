@@ -1,0 +1,123 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT-0
+Comment: The property approval workflow ensures that its images and content is
+  safe to publish and that there is an approved contract in place before the
+  listing is made available to the public through the Unicorn Properties
+  website.
+QueryLanguage: JSONata
+StartAt: LookupContract
+States:
+  LookupContract:
+    Type: Task
+    Resource: arn:aws:states:::dynamodb:getItem
+    Arguments:
+      TableName: ${TableName}
+      Key:
+        property_id:
+          S: "{% $states.input.detail.property_id %}"
+      ProjectionExpression: contract_id, property_id, contract_status
+    Next: VerifyContractExists
+    Catch:
+      - ErrorEquals:
+          - States.ALL
+        Next: NotFound
+  VerifyContractExists:
+    Type: Choice
+    Choices:
+      - Comment: Contract Exists
+        Condition: "{% $exists($states.input.Item) %}"
+        Next: Parallel
+    Default: NotFound
+    Comment: No Contract Found
+  Parallel:
+    Type: Parallel
+    Next: IsContentSafe
+    Branches:
+      - StartAt: CheckDescriptionSentiment
+        States:
+          CheckDescriptionSentiment:
+            Type: Task
+            Resource: arn:aws:states:::aws-sdk:comprehend:detectSentiment
+            Arguments:
+              LanguageCode: en
+              Text: "{% $states.context.Execution.Input.detail.description %}"
+            End: true
+      - StartAt: Map
+        States:
+          Map:
+            Type: Map
+            Items: "{% $states.context.Execution.Input.detail.images %}"
+            ItemProcessor:
+              ProcessorConfig:
+                Mode: INLINE
+              StartAt: CheckForUnsafeContentInImages
+              States:
+                CheckForUnsafeContentInImages:
+                  Type: Task
+                  Resource: arn:aws:states:::aws-sdk:rekognition:detectModerationLabels
+                  Arguments:
+                    Image:
+                      S3Object:
+                        Bucket: ${ImageUploadBucketName}
+                        Name: "{% $states.input %}"
+                  End: true
+            End: true
+  IsContentSafe:
+    Type: Choice
+    Choices:
+      - Comment: ContentModerationPassed
+        Condition: "{% $states.input[0].Sentiment = 'POSITIVE' and
+          $not($exists($states.input[1].ModerationLabels.*)) %}"
+        Next: WaitForContractApproval
+    Default: PublishPropertyPublicationRejected
+  WaitForContractApproval:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke.waitForTaskToken
+    Comment: ContractStatusChecker
+    Arguments:
+      FunctionName: ${WaitForContractApprovalArn}
+      Payload:
+        Input: "{% $states.context.Execution.Input.detail %}"
+        TaskToken: "{% $states.context.Task.Token %}"
+    Retry:
+      - ErrorEquals:
+          - Lambda.ServiceException
+          - Lambda.AWSLambdaException
+          - Lambda.SdkClientException
+          - Lambda.TooManyRequestsException
+        IntervalSeconds: 1
+        MaxAttempts: 3
+        BackoffRate: 2
+        JitterStrategy: FULL
+    Output: "{% $states.context.Execution.Input %}"
+    Next: PublishPropertyPublicationApproved
+  PublishPropertyPublicationApproved:
+    Type: Task
+    Resource: arn:aws:states:::events:putEvents
+    Arguments:
+      Entries:
+        - EventBusName: ${EventBusName}
+          Source: ${ServiceName}
+          Detail:
+            property_id: "{% $states.context.Execution.Input.detail.property_id %}"
+            evaluation_result: APPROVED
+          DetailType: PublicationEvaluationCompleted
+    Next: Approved
+  PublishPropertyPublicationRejected:
+    Type: Task
+    Resource: arn:aws:states:::events:putEvents
+    Arguments:
+      Entries:
+        - EventBusName: ${EventBusName}
+          Source: ${ServiceName}
+          Detail:
+            property_id: "{% $states.context.Execution.Input.detail.property_id %}"
+            evaluation_result: DECLINED
+          DetailType: PublicationEvaluationCompleted
+    Next: Declined
+  Declined:
+    Type: Succeed
+  Approved:
+    Type: Succeed
+  NotFound:
+    Type: Fail

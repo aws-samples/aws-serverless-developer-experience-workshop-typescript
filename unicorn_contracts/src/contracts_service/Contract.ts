@@ -12,7 +12,7 @@
  * @property contract_created - The date the contract was created.
  * @property contract_last_modified_on - The date the contract was last modified.
  */
-export type ContractDBType = {
+export interface ContractDBType {
   address?: string;
   property_id: string;
   contract_id?: string;
@@ -20,7 +20,7 @@ export type ContractDBType = {
   contract_status: ContractStatusEnum;
   contract_created?: string;
   contract_last_modified_on?: string;
-};
+}
 
 /**
  * Enumerates the possible status values for a contract.
@@ -33,11 +33,11 @@ export type ContractDBType = {
  * @property EXPIRED - The contract has expired.
  */
 export enum ContractStatusEnum {
-  APPROVED = "APPROVED",
-  CANCELLED = "CANCELLED",
-  DRAFT = "DRAFT",
-  CLOSED = "CLOSED",
-  EXPIRED = "EXPIRED",
+  APPROVED = 'APPROVED',
+  CANCELLED = 'CANCELLED',
+  DRAFT = 'DRAFT',
+  CLOSED = 'CLOSED',
+  EXPIRED = 'EXPIRED',
 }
 
 /**

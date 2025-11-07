@@ -1,4 +1,10 @@
-**/.aws-sam
+### CDK-specific ignores ###
+*.swp
+cdk.context.json
+package-lock.json
+yarn.lock
+.cdk.staging
+cdk.out
 
 # Created by https://www.toptal.com/developers/gitignore/api/node
 # Edit at https://www.toptal.com/developers/gitignore?templates=node
@@ -226,6 +232,6 @@ dist
 **/*.lnk
 
 ### requirements.txt ###
-# We ignore Python's requirements.txt as we use Poetry instead
+# We ignore Python's requirements.txt as we use UV instead
 **/requirements.txt
 **/.aws-sam
