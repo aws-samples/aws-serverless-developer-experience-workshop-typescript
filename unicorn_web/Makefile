@@ -5,7 +5,7 @@ STAGE ?= local
 REGION ?= ap-southeast-2
 STACK_PREFIX = uni-prop-$(STAGE)
 
-.PHONY: help build deploy deploy-domain deploy-schema deploy-subscriptions deploy-service test lint clean delete
+.PHONY: help build deploy deploy-domain deploy-schema deploy-subscriptions deploy-service test unit-test integration-test lint clean delete
 
 help: ## Show available commands
 	@echo "Unicorn Web Service Infrastructure"
@@ -70,6 +70,14 @@ deploy: deploy-domain deploy-schema deploy-subscriptions deploy-service ## Deplo
 test: ## Run tests
 	@echo "Running tests..."
 	@npm test
+
+unit-test: ## Run unit tests only
+	@echo "Running unit tests..."
+	@npm run test -- --testPathPattern=tests/unit
+
+integration-test: ## Run integration tests only
+	@echo "Running integration tests..."
+	@npm run test -- --testPathPattern=tests/integration
 
 lint: ## Lint CloudFormation templates
 	@echo "Linting CloudFormation templates..."

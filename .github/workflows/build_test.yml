@@ -35,7 +35,7 @@ jobs:
       working-directory: unicorn_shared
       run: aws cloudformation update-stack --stack-name uni-prop-namespaces --template-body file://uni-prop-namespaces.yaml --capabilities CAPABILITY_AUTO_EXPAND
 
-  uniorn-service:
+  unicorn-service:
     needs: shared-infrastructure
     runs-on: ubuntu-latest
     continue-on-error: true
