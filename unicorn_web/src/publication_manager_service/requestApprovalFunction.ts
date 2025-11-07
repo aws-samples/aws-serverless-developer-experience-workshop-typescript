@@ -140,7 +140,7 @@ class RequestApprovalFunction implements LambdaInterface {
         description: property.description,
       };
 
-      await this.firePropertyEvent(eventDetail, 'unicorn.web');
+      await this.firePropertyEvent(eventDetail, 'unicorn-web');
     } catch (error) {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(`${error}`);

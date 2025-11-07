@@ -1,0 +1,17 @@
+{
+    "Records": [
+        {
+            "messageId": "b28d6431-f347-4044-bc07-c22b18bf91e4",
+            "receiptHandle": "AQEBB+zJwS8zlIoHEkx2CGpli6qUttEYoqoWkwfo6Ke6N3Xky7xPHMBJsTzonsr/OEfZIqax4eZeokh+ySkxTq7xdT4ZRxSP9QLfCR3ceWNO8IS4YYQpclPfhTj9NzcrH5U6caTvB63+BLNLwrTo/0y2xBQYnNKBgdJ5Jot4/2iWcLtIgtIeJ9WnnTNf7/8ITaE9OEHws+svh06OxaC6NO4o8orLhrdX2Bh4hSsrtlVxP1lypN2Uw0Cz/PONVTUK6XmRWbQTj/G/nkDaDNsnT7FRfqyy0YPGoE2NdQiFWp0sB4nVhH0/LSK/nzD1fYTBf6LjxdbDLakO2GUVfkjI8ZOlluAqg0crBCa6z6I6TcPA4VOE5aE0ImhP/DiagaJNDD+nquzgqfT0fh8vBDz/h6z5wTBhLShJ0sm/iFyN6ey8Iuo=",
+            "md5OfBody": "b886edd2bff032c4d10fed7606d17e8f",
+            "body": "{\n\"address\": {\n\"country\": \"USA\",\n\"city\": \"Anytown\",\n\"street\": \"Main Street\",\n\"number\": 444\n},\n\"seller_name\": \"John Doe\",\n\"property_id\": \"usa/anytown/main-street/444\"\n}",
+            "md5OfMessageAttributes": "b51fb21666798a04bb45833ff6dc08ad",
+            "messageAttributes": {
+                "HttpMethod": {
+                    "stringValue": "POST",
+                    "dataType": "String"
+                }
+            }
+        }
+    ]
+}

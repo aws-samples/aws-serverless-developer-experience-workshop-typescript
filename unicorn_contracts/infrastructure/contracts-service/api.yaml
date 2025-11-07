@@ -103,38 +103,38 @@ components:
   schemas:
     CreateContractModel:
       required:
-        - "property_id"
-        - "seller_name"
-        - "address"
+        - "PropertyId"
+        - "SellerName"
+        - "Address"
       type: "object"
       properties:
-        property_id:
+        PropertyId:
           type: "string"
-        seller_name:
+        SellerName:
           type: "string"
-        address:
+        Address:
           required:
-            - "city"
-            - "country"
-            - "number"
-            - "street"
+            - "City"
+            - "Country"
+            - "Number"
+            - "Street"
           type: "object"
           properties:
-            country:
+            Country:
               type: "string"
-            city:
+            City:
               type: "string"
-            street:
+            Street:
               type: "string"
-            number:
+            Number:
               type: "integer"
     UpdateContractModel:
       required:
-        - "property_id"
+        - "PropertyId"
       type: "object"
       properties:
         $ref: "#/components/schemas/CreateContractModel/properties"
-        # property_id:
+        # PropertyId:
         #   type: "string"
     Empty:
       title: "Empty Schema"

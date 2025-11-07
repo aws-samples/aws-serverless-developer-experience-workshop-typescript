@@ -4,7 +4,12 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform:
   - AWS::Serverless-2016-10-31
 Description: >
-  Unicorn Approvals Service. Validate the content, images and contract of property listings.
+  Unicorn Approvals Service - A serverless workflow orchestration service for automated 
+  property listing validation and approval. Features Step Functions workflows with AI-powered 
+  content analysis using Amazon Comprehend and Rekognition, event-driven coordination 
+  with external services, and DynamoDB-based state management. Implements the "wait for 
+  callback" pattern for human approval processes with comprehensive error handling and 
+  observability through AWS Powertools.
 
 Metadata:
   cfn-lint:
@@ -12,10 +17,10 @@ Metadata:
       ignore_checks:
         - ES4000 # Rule disabled because the CatchAll Rule doesn't need a DLQ
         - ES6000 # Rule disabled because SQS DLQs don't need a RedrivePolicy
-        - E0001  # Rule disabled because cfn-lint cannot parse SAM Policy templates without arguments (ComprehendBasicAccessPolicy, RekognitionDetectOnlyPolicy)
+        - E0001 # Rule disabled because cfn-lint cannot parse SAM Policy templates without arguments (ComprehendBasicAccessPolicy, RekognitionDetectOnlyPolicy)
         - WS2001 # Rule disabled because check does not support !ToJsonString transform
         - ES1001 # Rule disabled because our Lambda functions don't need DestinationConfig.OnFailure
-        - W3002  # Rule disabled as nested templates are being packaged
+        - W3002 # Rule disabled as nested templates are being packaged
 
 Parameters:
   Stage:
@@ -52,9 +57,8 @@ Globals:
     Environment:
       Variables:
         CONTRACT_STATUS_TABLE: !Ref ContractStatusTable
-        EVENT_BUS: !Ref UnicornApprovalsEventBus
+        EVENT_BUS: !Sub "{{resolve:ssm:/uni-prop/${Stage}/ApprovalsEventBus}}"
         SERVICE_NAMESPACE: "{{resolve:ssm:/uni-prop/UnicornApprovalsNamespace}}"
-        POWERTOOLS_LOGGER_CASE: PascalCase
         POWERTOOLS_SERVICE_NAME: "{{resolve:ssm:/uni-prop/UnicornApprovalsNamespace}}"
         POWERTOOLS_TRACE_DISABLED: "false" # Explicitly disables tracing, default
         POWERTOOLS_LOGGER_LOG_EVENT: !If [IsProd, "false", "true"] # Logs incoming event, default
@@ -69,44 +73,32 @@ Globals:
       namespace: "{{resolve:ssm:/uni-prop/UnicornApprovalsNamespace}}"
 
 Resources:
-  #### SSM PARAMETERS
-  # Services share their event bus name and arn
-  UnicornApprovalsEventBusNameParam:
-    Type: AWS::SSM::Parameter
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      Type: String
-      Name: !Sub /uni-prop/${Stage}/UnicornApprovalsEventBus
-      Value: !GetAtt UnicornApprovalsEventBus.Name
 
-  UnicornApprovalsEventBusArnParam:
-    Type: AWS::SSM::Parameter
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      Type: String
-      Name: !Sub /uni-prop/${Stage}/UnicornApprovalsEventBusArn
-      Value: !GetAtt UnicornApprovalsEventBus.Arn
-
+  #################################################################################################
   #### LAMBDA FUNCTIONS
-  # Listens to ContractStatusChanged events from EventBridge
+  #### These functions handle the core business logic for property approval workflows
+  #################################################################################################
+
+  # Event-driven function that processes contract status changes from the Contracts service
+  # Triggered by EventBridge when contracts are approved/rejected, updates local state
   ContractStatusChangedHandlerFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:  src/approvals_service
+      CodeUri: ../../src/approvals_service
       Handler: contractStatusChangedEventHandler.lambdaHandler
       Policies:
         - DynamoDBWritePolicy:
             TableName: !Ref ContractStatusTable
         - DynamoDBReadPolicy:
             TableName: !Ref ContractStatusTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt ApprovalsServiceDLQ.QueueName
       Events:
         StatusChangedEvent:
           Type: EventBridgeRule
           Properties:
-            RuleName: unicorn.approvals-ContractStatusChanged
-            EventBusName: !GetAtt UnicornApprovalsEventBus.Name
+            RuleName: unicorn-approvals-ContractStatusChanged
+            EventBusName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/ApprovalsEventBus}}"
             Pattern:
               source:
                 - "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
@@ -132,7 +124,7 @@ Resources:
         EntryPoints:
           - contractStatusChangedEventHandler.ts
 
-  # Log group for the ContractStatusChangedHandlerFunction
+  # CloudWatch log group for contract status handler with configurable retention based on environment
   ContractStatusChangedHandlerFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -141,11 +133,12 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${ContractStatusChangedHandlerFunction}"
       RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
-  # Listens to Contract status changes from ContractStatusTable to un-pause StepFunctions
+  # DynamoDB stream processor that resumes paused Step Functions executions
+  # Monitors ContractStatusTable changes and sends task success signals to waiting workflows
   PropertiesApprovalSyncFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/approvals_service
+      CodeUri: ../../src/approvals_service
       Handler: propertiesApprovalSyncFunction.lambdaHandler
       Policies:
         - DynamoDBReadPolicy:
@@ -188,7 +181,7 @@ Resources:
         EntryPoints:
           - propertiesApprovalSyncFunction.ts
 
-  # Log group for the PropertiesApprovalSyncFunction
+  # CloudWatch log group for the sync function that handles Step Functions resume operations
   PropertiesApprovalSyncFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -197,11 +190,12 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${PropertiesApprovalSyncFunction}"
       RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
-  # Part of the ApprovalStateMachine, pauses the workflow execution and stores token in ContractStatusTable until contract is approved
+  # Step Functions task that implements the "wait for approval" pattern
+  # Stores execution tokens in DynamoDB and pauses workflow until external approval is received
   WaitForContractApprovalFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: src/approvals_service
+      CodeUri: ../../src/approvals_service
       Handler: waitForContractApprovalFunction.lambdaHandler
       Policies:
         - DynamoDBCrudPolicy:
@@ -216,7 +210,7 @@ Resources:
         EntryPoints:
           - waitForContractApprovalFunction.ts
 
-  # Log group for the WaitForContractApprovalFunction
+  # CloudWatch log group for the contract approval wait function
   WaitForContractApprovalFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -225,14 +219,20 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${WaitForContractApprovalFunction}"
       RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
+  #################################################################################################
   #### STATE MACHINE
+  #### Orchestrates the property approval workflow using AWS Step Functions
+  #################################################################################################
+
+  # Main workflow that orchestrates property approval process including content validation,
+  # image analysis using Rekognition, text analysis using Comprehend, and contract approval
   ApprovalStateMachine:
     Type: AWS::Serverless::StateMachine
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
       Name: !Sub "${AWS::StackName}-ApprovalStateMachine"
-      DefinitionUri: state_machine/property_approval.asl.yaml
+      DefinitionUri: property_approval.asl.yaml
       Tracing:
         Enabled: true
       Policies:
@@ -246,7 +246,7 @@ Resources:
         - S3ReadPolicy:
             BucketName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/ImagesBucket}}"
         - EventBridgePutEventsPolicy:
-            EventBusName: !GetAtt UnicornApprovalsEventBus.Name
+            EventBusName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/ApprovalsEventBus}}"
         - Statement:
             - Effect: Allow
               Action:
@@ -270,8 +270,8 @@ Resources:
         PublicationApprovalRequestedEvent:
           Type: EventBridgeRule
           Properties:
-            RuleName: unicorn.approvals-PublicationApprovalRequested
-            EventBusName: !GetAtt UnicornApprovalsEventBus.Name
+            RuleName: unicorn-approvals-PublicationApprovalRequested
+            EventBusName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/ApprovalsEventBus}}"
             Pattern:
               source:
                 - "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}"
@@ -287,10 +287,10 @@ Resources:
         WaitForContractApprovalArn: !GetAtt WaitForContractApprovalFunction.Arn
         TableName: !Ref ContractStatusTable
         ImageUploadBucketName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/ImagesBucket}}"
-        EventBusName: !GetAtt UnicornApprovalsEventBus.Name
+        EventBusName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/ApprovalsEventBus}}"
         ServiceName: "{{resolve:ssm:/uni-prop/UnicornApprovalsNamespace}}"
 
-  # Store ApprovalStateMachineLogGroup workflow execution logs
+  # CloudWatch log group for Step Functions execution logs with detailed tracing enabled
   ApprovalStateMachineLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -299,15 +299,20 @@ Resources:
       LogGroupName: !Sub "/aws/states/${AWS::StackName}-ApprovalStateMachine"
       RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
-  #### DEAD LETTER QUEUES
-  # Store EventBridge events that failed to be DELIVERED to ContractStatusChangedHandlerFunction
+  #################################################################################################
+  #### MESSAGING & INTEGRATION
+  #### SQS queues and EventBridge components for reliable async processing and event publishing
+  #################################################################################################
+
+  # DLQ for EventBridge rule delivery failures - captures events that couldn't be delivered to targets
+  # Helps with debugging event routing issues and ensures no events are lost
   ApprovalsEventBusRuleDLQ:
     Type: AWS::SQS::Queue
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
       SqsManagedSseEnabled: true
-      MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
+      MessageRetentionPeriod: 604800 # 7 days
       Tags:
         - Key: project
           Value: !FindInMap [Constants, ProjectName, Value]
@@ -316,14 +321,15 @@ Resources:
         - Key: stage
           Value: !Ref Stage
 
-  # Store failed INVOCATIONS to each Lambda function in Unicorn Approvals Service
+  # DLQ for Lambda function invocation failures - captures failed executions for analysis
+  # Used by all Lambda functions in this service for consistent error handling
   ApprovalsServiceDLQ:
     Type: AWS::SQS::Queue
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Properties:
       SqsManagedSseEnabled: true
-      MessageRetentionPeriod: 1209600 # Maximum value, 1,209,600 (14days)
+      MessageRetentionPeriod: 604800 # 7 days
       Tags:
         - Key: project
           Value: !FindInMap [Constants, ProjectName, Value]
@@ -332,7 +338,13 @@ Resources:
         - Key: stage
           Value: !Ref Stage
 
+  #################################################################################################
   #### DYNAMODB TABLE
+  #### Data persistence for contract approval state and Step Functions coordination
+  #################################################################################################
+
+  # Central state store for contract approval status and Step Functions task tokens
+  # Enables coordination between async approval processes and workflow execution
   ContractStatusTable:
     Type: AWS::DynamoDB::Table
     UpdateReplacePolicy: Delete
@@ -355,36 +367,8 @@ Resources:
         - Key: stage
           Value: !Ref Stage
 
-  #### EVENT BUS
-  # Event bus for Unicorn Approvals Service, used to publish and consume events
-  UnicornApprovalsEventBus:
-    Type: AWS::Events::EventBus
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      Name: !Sub UnicornApprovalsBus-${Stage}
-
-  # Event bus policy to restrict who can publish events (should only be services from UnicornApprovalsNamespace)
-  UnicornApprovalsEventsBusPublishPolicy:
-    Type: AWS::Events::EventBusPolicy
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      EventBusName: !Ref UnicornApprovalsEventBus
-      StatementId: !Sub OnlyApprovalsServiceCanPublishToEventBus-${Stage}
-      Statement:
-        Effect: Allow
-        Principal:
-          AWS:
-            - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
-        Action: events:PutEvents
-        Resource: !GetAtt UnicornApprovalsEventBus.Arn
-        Condition:
-          StringEquals:
-            events:source:
-              - "{{resolve:ssm:/uni-prop/UnicornApprovalsNamespace}}"
-
-  # Catchall rule used for development purposes. Logs all events matching any of the services to CloudWatch Logs
+  # Development and debugging rule that captures all events from related services
+  # Useful for monitoring event flow and troubleshooting integration issues
   UnicornApprovalsCatchAllRule:
     Type: AWS::Events::Rule
     DeletionPolicy: Delete
@@ -392,20 +376,19 @@ Resources:
     Properties:
       Name: approvals.catchall
       Description: Catchall rule used for development purposes.
-      EventBusName: !Ref UnicornApprovalsEventBus
+      EventBusName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/ApprovalsEventBus}}"
       EventPattern:
         account:
           - !Ref AWS::AccountId
         source:
           - "{{resolve:ssm:/uni-prop/UnicornContractsNamespace}}"
-          - "{{resolve:ssm:/uni-prop/UnicornApprovalsNamespace}}"
           - "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}"
       State: ENABLED #You may want to disable this rule in production
       Targets:
         - Arn: !GetAtt UnicornApprovalsCatchAllLogGroup.Arn
           Id: !Sub UnicornApprovalsCatchAllLogGroupTarget-${Stage}
 
-  # CloudWatch log group used to catch all events
+  # CloudWatch log group for the catchall rule - stores all events for debugging
   UnicornApprovalsCatchAllLogGroup:
     Type: AWS::Logs::LogGroup
     UpdateReplacePolicy: Delete
@@ -417,7 +400,8 @@ Resources:
           NS: "{{resolve:ssm:/uni-prop/UnicornApprovalsNamespace}}"
       RetentionInDays: !FindInMap [LogsRetentionPeriodMap, !Ref Stage, Days]
 
-  # Permissions to allow EventBridge to send logs to CloudWatch
+  # Resource policy that grants EventBridge permission to write to CloudWatch Logs
+  # Required for the catchall rule to function properly
   EventBridgeCloudWatchLogGroupPolicy:
     Type: AWS::Logs::ResourcePolicy
     Properties:
@@ -446,41 +430,6 @@ Resources:
           ]
         }
 
-  #### CLOUDFORMATION NESTED STACKS
-  # CloudFormation Stack with the Approvals Service Event Registry and Schemas
-  EventSchemasStack:
-    Type: AWS::Serverless::Application
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-    Properties:
-      Location: "integration/event-schemas.yaml"
-      Parameters:
-        Stage: !Ref Stage
-
-  # CloudFormation Stack with the Cross-service EventBus policy for Approvals Service
-  SubscriberPoliciesStack:
-    Type: AWS::Serverless::Application
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-    DependsOn:
-      - UnicornApprovalsEventBusNameParam
-    Properties:
-      Location: "integration/subscriber-policies.yaml"
-      Parameters:
-        Stage: !Ref Stage
-
-  # CloudFormation Stack with the Cross-service EventBus Rules for Approvals Service
-  SubscriptionsStack:
-    Type: AWS::Serverless::Application
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-    DependsOn:
-      - UnicornApprovalsEventBusArnParam
-    Properties:
-      Location: "integration/subscriptions.yaml"
-      Parameters:
-        Stage: !Ref Stage
-
 Outputs:
   #### DYNAMODB OUTPUTS
   ContractStatusTableName:
@@ -508,10 +457,6 @@ Outputs:
     Value: !GetAtt ApprovalStateMachine.Name
   ApprovalStateMachineArn:
     Value: !Ref ApprovalStateMachine
-
-  #### EVENT BRIDGE OUTPUTS
-  UnicornApprovalsEventBusName:
-    Value: !GetAtt UnicornApprovalsEventBus.Name
 
   #### CLOUDWATCH LOGS OUTPUTS
   UnicornApprovalsCatchAllLogGroupArn:

@@ -1,68 +1,99 @@
-#### Global Variables
-stackName		:= $(shell yq -oy '.default.global.parameters.stack_name' samconfig.toml)
+# Makefile for Unicorn Web Service Infrastructure
 
+# Variables
+STAGE ?= local
+REGION ?= ap-southeast-2
+STACK_PREFIX = uni-prop-$(STAGE)
 
-#### Build/Deploy Tasks
-ci: deps build deploy
-deps:
-	pnpm i
+.PHONY: help build deploy deploy-domain deploy-schema deploy-subscriptions deploy-service test lint clean delete
 
-build:
-	sam build -c $(DOCKER_OPTS)
+help: ## Show available commands
+	@echo "Unicorn Web Service Infrastructure"
+	@echo ""
+	@echo "Usage: make [target] [STAGE=local|dev|prod] [REGION=ap-southeast-2]"
+	@echo ""
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-15s %s\n", $$1, $$2}'
 
-deploy: deps build
-	sam deploy --no-confirm-changeset
+build: ## Build the application
+	@echo "Building TypeScript application..."
+	@npm install
+	@sam build --template-file infrastructure/web-service/template.yaml
 
+deploy-domain: ## Deploy domain resources (EventBridge, Schema Registry)
+	@echo "Deploying domain resources..."
+	@sam deploy \
+		--template-file infrastructure/domain.yaml \
+		--stack-name $(STACK_PREFIX)-web-domain \
+		--parameter-overrides Stage=$(STAGE) \
+		--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+		--region $(REGION) \
+		--resolve-s3 \
+		--no-confirm-changeset \
+		--no-fail-on-empty-changeset
 
+deploy-schema: ## Deploy event schema
+	@echo "Deploying event schema..."
+	@sam deploy \
+		--template-file infrastructure/schema-registry/PublicationApprovalRequested-schema.yaml \
+		--stack-name $(STACK_PREFIX)-web-schema-PublicationApprovalRequested \
+		--parameter-overrides Stage=$(STAGE) \
+		--region $(REGION) \
+		--resolve-s3 \
+		--no-confirm-changeset \
+		--no-fail-on-empty-changeset
 
-#### Test Variables
-apiUrl			= $(call cf_output,$(stackName),ApiUrl)
+deploy-subscriptions: ## Deploy event subscriptions
+	@echo "Deploying event subscriptions..."
+	@sam deploy \
+		--template-file infrastructure/subscriptions/unicorn-approvals-subscriptions.yaml \
+		--stack-name $(STACK_PREFIX)-web-subscriptions-approvals \
+		--parameter-overrides Stage=$(STAGE) \
+		--region $(REGION) \
+		--resolve-s3 \
+		--no-confirm-changeset \
+		--no-fail-on-empty-changeset
 
+deploy-service: build ## Deploy web service
+	@echo "Deploying web service..."
+	@sam deploy \
+		--template-file infrastructure/web-service/template.yaml \
+		--stack-name $(STACK_PREFIX)-web-service \
+		--parameter-overrides Stage=$(STAGE) \
+		--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
+		--region $(REGION) \
+		--resolve-s3 \
+		--no-confirm-changeset \
+		--no-fail-on-empty-changeset
 
-#### Tests
-test: unit-test integration-test
+deploy: deploy-domain deploy-schema deploy-subscriptions deploy-service ## Deploy all infrastructure and application
 
-unit-test:
-	pnpm test --  tests/unit/ --passWithNoTests
+test: ## Run tests
+	@echo "Running tests..."
+	@npm test
 
-integration-test: 
-	pnpm test --  tests/integration/
+lint: ## Lint CloudFormation templates
+	@echo "Linting CloudFormation templates..."
+	@cfn-lint infrastructure/web-service.yaml -a cfn_lint_serverless.rules
+	@cfn-lint infrastructure/domain.yaml
+	@cfn-lint infrastructure/schema-registry/PublicationApprovalRequested-schema.yaml
+	@cfn-lint infrastructure/subscriptions/unicorn-approvals-subscriptions.yaml
 
-curl-test:
-	$(call mcurl,GET,search/usa/anytown)
-	$(call mcurl,GET,search/usa/anytown/main-street)
-	$(call mcurl,GET,properties/usa/anytown/main-street/111)
-	@echo "[DONE]"
+clean: ## Clean build artifacts
+	@echo "Cleaning build artifacts..."
+	@rm -rf .aws-sam/
+	@rm -rf node_modules/
+	@rm -rf dist/
 
-
-#### Utilities
-sync:
-	sam sync --stack-name $(stackName) --watch
-
-logs:
-	sam logs --stack-name $(stackName) -t
-
-clean:
-	find . -type d -name __pycache__ -exec rm -rf {} \; 2>/dev/null || true
-	find . -type f -name requirements.txt -exec rm -f {} \; 2>/dev/null || true
-	pnpm exec jest --clearCache
-	rm -rf .node_modules/ .aws-sam/ htmlcov/ .coverage || true
-
-delete:
-	sam delete --no-prompts --region "$$(aws configure get region)"
-
-ci_init:
-	npm ci
-
-
-#### Helper Functions
-define mcurl
-	curl -s -X $(1) -H "Content-type: application/json" $(apiUrl)$(2) | jq
-endef
-
-define cf_output
-	$(shell aws cloudformation describe-stacks \
-		--output text \
-		--stack-name $(1) \
-		--query 'Stacks[0].Outputs[?OutputKey==`$(2)`].OutputValue')
-endef
+delete: ## Delete all stacks
+	@echo "Deleting stacks in reverse order..."
+	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-web-service --region $(REGION) || true
+	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-web-subscriptions-approvals --region $(REGION) || true
+	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-web-schema-PublicationApprovalRequested --region $(REGION) || true
+	@echo "Waiting for service, subscriptions, and schema stacks to be deleted..."
+	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-web-service --region $(REGION) || true
+	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-web-subscriptions-approvals --region $(REGION) || true
+	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-web-schema-PublicationApprovalRequested --region $(REGION) || true
+	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-web-domain --region $(REGION) || true
+	@echo "Waiting for domain stack to be deleted..."
+	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-web-domain --region $(REGION) || true
+	@echo "All stacks deleted"
