@@ -55,7 +55,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
             await this.createContract(contract);
           } catch (error) {
             tracer.addErrorAsMetadata(error as Error);
-            logger.error('Error during DDB PUT', error as Error);
+            logger.error('DynamoDB PutItem API call unsuccessful. Unable to create contract ', error as Error);
             throw error;
           }
           break;
@@ -66,7 +66,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
             await this.updateContract(contract);
           } catch (error) {
             tracer.addErrorAsMetadata(error as Error);
-            logger.error('Error during DDB UPDATE', error as Error);
+            logger.error('DynamoDB UpdateItem API call unsuccessful. Unable to update contract', error as Error);
             throw error;
           }
           break;
