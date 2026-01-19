@@ -44,7 +44,7 @@ Globals:
   Api:
     OpenApiVersion: 3.0.1
   Function:
-    Runtime: nodejs22.x
+    Runtime: nodejs24.x
     MemorySize: 512
     Timeout: 10
     Tracing: Active
@@ -88,7 +88,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: !If [IsProd, true, false] # Minify in prod
-        Target: "es2020"
+        Target: "es2022"
         Sourcemap: !If [IsProd, false, true] # Enable sourcemaps for debugging in non-prod stages
         EntryPoints: 
           - propertySearchFunction.ts
@@ -126,7 +126,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: !If [IsProd, true, false] # Minify in prod
-        Target: "es2020"
+        Target: "es2022"
         Sourcemap: !If [IsProd, false, true] # Enable sourcemaps for debugging in non-prod stages
         EntryPoints: 
           - requestApprovalFunction.ts
@@ -169,7 +169,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: !If [IsProd, true, false] # Minify in prod
-        Target: "es2020"
+        Target: "es2022"
         Sourcemap: !If [IsProd, false, true] # Enable sourcemaps for debugging in non-prod stages
         EntryPoints: 
           - publicationEvaluationEventHandler.ts
@@ -361,6 +361,69 @@ Resources:
         - Key: stage
           Value: !Ref Stage
 
+  # Development and debugging rule that captures all contract domain events
+  # Useful for monitoring event flow and troubleshooting integration issues
+  UnicornWebCatchAllRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}-CatchAllEvents"
+      Description: Catch all events published by the Web service.
+      EventBusName: !Sub "{{resolve:ssm:/uni-prop/${Stage}/WebEventBus}}"
+      EventPattern:
+        account:
+          - !Ref AWS::AccountId
+        source:
+          - "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}"
+      State: ENABLED #You may want to disable this rule in production
+      Targets:
+        - Arn: !GetAtt UnicornWebCatchAllLogGroup.Arn
+          Id: !Sub UnicornWebCatchAllLogGroupTarget-${Stage}
+
+  # CloudWatch log group for the catchall rule - stores all contract events for debugging
+  UnicornWebCatchAllLogGroup:
+    Type: AWS::Logs::LogGroup
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Properties:
+      LogGroupName: !Sub
+        - "/aws/events/${Stage}/${NS}-catchall"
+        - Stage: !Ref Stage
+          NS: "{{resolve:ssm:/uni-prop/UnicornWebNamespace}}"
+      RetentionInDays: !FindInMap
+        - LogsRetentionPeriodMap
+        - !Ref Stage
+        - Days
+
+  # Resource policy that grants EventBridge permission to write to CloudWatch Logs
+  # Required for the catchall rule to function properly
+  EventBridgeCloudWatchLogGroupPolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: !Sub EvBToCWLogs-${AWS::StackName}
+      # Note: PolicyDocument has to be established this way. See https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-resourcepolicy.html#cfn-logs-resourcepolicy-policydocument
+      PolicyDocument: !Sub |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "delivery.logs.amazonaws.com",
+                  "events.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ],
+              "Resource": [
+                "${UnicornWebCatchAllLogGroup.Arn}"
+              ]
+            }
+          ]
+        }
+
 Outputs:
   #### API GATEWAY OUTPUTS
   BaseUrl:
@@ -404,4 +467,9 @@ Outputs:
   PublicationEvaluationEventHandlerFunctionArn:
     Description: Publication evaluation event handler function ARN
     Value: "PublicationEvaluationEventHandlerFunction"
+  
+  #### CLOUDWATCH LOGS OUTPUTS
+  UnicornWebCatchAllLogGroupName:
+    Description: CloudWatch Log Group for catching EventBridge events
+    Value: !Ref UnicornWebCatchAllLogGroup
     

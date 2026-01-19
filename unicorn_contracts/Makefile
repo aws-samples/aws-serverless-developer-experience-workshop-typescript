@@ -16,7 +16,7 @@ help: ## Show available commands
 
 build: ## Build the application
 	@echo "Building TypeScript application..."
-	@npm install
+	@pnpm install
 	@sam build --template-file infrastructure/contracts-service/template.yaml
 
 deploy-domain: ## Deploy domain resources (EventBridge, Schema Registry)
@@ -46,7 +46,7 @@ deploy-service: build ## Deploy service resources (Lambda, API Gateway, DynamoDB
 	@echo "Deploying service resources..."
 	@sam deploy \
 		--template-file infrastructure/contracts-service/template.yaml \
-		--stack-name $(STACK_PREFIX)-contracts-contracts-service \
+		--stack-name $(STACK_PREFIX)-contracts \
 		--parameter-overrides Stage=$(STAGE) \
 		--capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND \
 		--region $(REGION) \
@@ -58,15 +58,15 @@ deploy: deploy-domain deploy-schema deploy-service ## Deploy all infrastructure 
 
 test: ## Run tests
 	@echo "Running tests..."
-	@npm test
+	@pnpm test
 
 unit-test: ## Run unit tests only
 	@echo "Running unit tests..."
-	@npm run test -- --testPathPattern=tests/unit
+	@pnpm run test -- --testPathPattern=tests/unit
 
 integration-test: ## Run integration tests only
 	@echo "Running integration tests..."
-	@npm run test -- --testPathPattern=tests/integration
+	@pnpm run test -- --testPathPattern=tests/integration
 
 lint: ## Lint CloudFormation templates
 	@echo "Linting CloudFormation templates..."

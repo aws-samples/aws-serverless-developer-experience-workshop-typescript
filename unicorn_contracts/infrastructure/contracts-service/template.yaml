@@ -48,7 +48,7 @@ Globals:
   Api:
     OpenApiVersion: 3.0.1
   Function:
-    Runtime: nodejs22.x
+    Runtime: nodejs24.x
     MemorySize: 512
     Timeout: 15
     Tracing: Active
@@ -102,7 +102,7 @@ Resources:
       BuildMethod: esbuild
       BuildProperties:
         Minify: !If [IsProd, true, false] # Minify in prod
-        Target: "es2020"
+        Target: "es2022"
         Sourcemap: !If [IsProd, false, true] # Enable sourcemaps for debugging in non-prod stages
         EntryPoints: 
           - contractEventHandler.ts
