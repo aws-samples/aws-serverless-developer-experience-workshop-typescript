@@ -64,9 +64,14 @@ export async function* getCloudWatchLogsValues(
   // Filter log events that match the required `propertyId`
   for (const response of responses) {
     for (const event of response.events || []) {
-      const ev = JSON.parse(event.message || '{}');
-      if (ev.detail?.property_id === propertyId) {
-        yield ev;
+      try {
+        const ev = JSON.parse(event.message || '{}');
+        if (ev.detail?.property_id === propertyId) {
+          yield ev;
+        }
+      } catch (error) {
+        // Skip malformed JSON entries
+        continue;
       }
     }
   }

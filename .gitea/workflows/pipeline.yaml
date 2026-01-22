@@ -73,7 +73,7 @@ jobs:
     env:
       SERVICE_FOLDER: "unicorn_contracts"
       PYTHON_VERSION: "3.12"
-      NODE_VERSION: "22.x"
+      NODE_VERSION: "24.x"
     steps:
       - uses: actions/checkout@v5
 
@@ -113,7 +113,7 @@ jobs:
     env:
       SERVICE_FOLDER: "unicorn_approvals"
       PYTHON_VERSION: "3.12"
-      NODE_VERSION: "22.x"
+      NODE_VERSION: "24.x"
     steps:
       - uses: actions/checkout@v5
 
@@ -153,7 +153,7 @@ jobs:
     env:
       SERVICE_FOLDER: "unicorn_web"
       PYTHON_VERSION: "3.12"
-      NODE_VERSION: "22.x"
+      NODE_VERSION: "24.x"
     steps:
       - uses: actions/checkout@v5
 
@@ -194,7 +194,7 @@ jobs:
     env:
       SERVICE_FOLDER: "unicorn_contracts"
       PYTHON_VERSION: "3.12"
-      NODE_VERSION: "22.x"
+      NODE_VERSION: "24.x"
     steps:
       - uses: actions/checkout@v5
 
@@ -299,7 +299,7 @@ jobs:
     env:
       SERVICE_FOLDER: "unicorn_approvals"
       PYTHON_VERSION: "3.12"
-      NODE_VERSION: "22.x"
+      NODE_VERSION: "24.x"
     steps:
       - uses: actions/checkout@v5
 
@@ -448,7 +448,7 @@ jobs:
     env:
       SERVICE_FOLDER: "unicorn_web"
       PYTHON_VERSION: "3.12"
-      NODE_VERSION: "22.x"
+      NODE_VERSION: "24.x"
     steps:
       - uses: actions/checkout@v5
 
