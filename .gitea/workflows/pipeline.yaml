@@ -23,7 +23,7 @@ jobs:
       unicorn_web_schema_publicationapprovalrequested: ${{ steps.filter.outputs.unicorn_web_schema_publicationapprovalrequested }}
       unicorn_web_subscriptions-approvals: ${{ steps.filter.outputs.unicorn_web_subscriptions-approvals }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -72,10 +72,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SERVICE_FOLDER: "unicorn_contracts"
-      PYTHON_VERSION: "3.12"
+      PYTHON_VERSION: "3.13"
       NODE_VERSION: "24.x"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Configure build environment (composite action)
         uses: ./.gitea/actions/configure
@@ -112,10 +112,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SERVICE_FOLDER: "unicorn_approvals"
-      PYTHON_VERSION: "3.12"
+      PYTHON_VERSION: "3.13"
       NODE_VERSION: "24.x"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Configure build environment (composite action)
         uses: ./.gitea/actions/configure
@@ -152,10 +152,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SERVICE_FOLDER: "unicorn_web"
-      PYTHON_VERSION: "3.12"
+      PYTHON_VERSION: "3.13"
       NODE_VERSION: "24.x"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Configure build environment (composite action)
         uses: ./.gitea/actions/configure
@@ -193,10 +193,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SERVICE_FOLDER: "unicorn_contracts"
-      PYTHON_VERSION: "3.12"
+      PYTHON_VERSION: "3.13"
       NODE_VERSION: "24.x"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Configure build environment (composite action)
         uses: ./.gitea/actions/configure
@@ -298,10 +298,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SERVICE_FOLDER: "unicorn_approvals"
-      PYTHON_VERSION: "3.12"
+      PYTHON_VERSION: "3.13"
       NODE_VERSION: "24.x"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Configure build environment (composite action)
         uses: ./.gitea/actions/configure
@@ -447,10 +447,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SERVICE_FOLDER: "unicorn_web"
-      PYTHON_VERSION: "3.12"
+      PYTHON_VERSION: "3.13"
       NODE_VERSION: "24.x"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Configure build environment (composite action)
         uses: ./.gitea/actions/configure
