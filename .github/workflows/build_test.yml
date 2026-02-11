@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     env:
-      PYTHON_VERSION: "3.12"
+      PYTHON_VERSION: "3.13"
       NODE_VERSION: "24.x"
 
     strategy:
@@ -33,7 +33,7 @@ jobs:
           service_template_path: unicorn_web/infrastructure/web-service
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - run: echo "**** Setup Python ****"
     - name: Setup Python
@@ -48,7 +48,7 @@ jobs:
 
     - run: echo "**** Setup NodeJS ****"
     - name: Setup NodeJS
-      uses: actions/setup-node@v5
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ env.NODE_VERSION }}
     - run: 'echo "NodeJS version: $(node --version)"'
