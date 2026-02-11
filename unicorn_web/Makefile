@@ -73,7 +73,7 @@ test: ## Run tests
 
 unit-test: ## Run unit tests only
 	@echo "Running unit tests..."
-	@pnpm run test -- --testPathPattern=tests/unit
+	@pnpm run unit
 
 integration-test: ## Run integration tests only
 	@echo "Running integration tests..."
