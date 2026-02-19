@@ -6,9 +6,6 @@ on:
     types:
       - completed
 
-permissions:
-  pull-requests: write
-
 jobs:
   get_pr_details:
     # Guardrails to only ever run if PR recording workflow was indeed
@@ -23,6 +20,8 @@ jobs:
   label_pr:
     needs: get_pr_details
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
