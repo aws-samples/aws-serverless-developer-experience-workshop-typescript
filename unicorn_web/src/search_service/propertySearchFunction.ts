@@ -205,11 +205,11 @@ class PropertySearchFunction implements LambdaInterface {
     const city = event.pathParameters?.city;
     const street = event.pathParameters?.street;
     const number = event.pathParameters?.number;
-    console.log(`Country: ${country}`);
-    console.log(`City: ${city}`);
-    console.log(`street: ${street}`);
-    console.log(`number: ${number}`);
-    console.log(`PROJECT PROPS: ${PROJECTION_PROPERTIES}`);
+    logger.info(`Country: ${country}`);
+    logger.info(`City: ${city}`);
+    logger.info(`street: ${street}`);
+    logger.info(`number: ${number}`);
+    logger.info(`PROJECT PROPS: ${PROJECTION_PROPERTIES}`);
 
     logger.info(
       `Get property details for: country = ${country}; city = ${city}; street = ${street}; number = ${number}`
