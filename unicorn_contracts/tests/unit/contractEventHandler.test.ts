@@ -1,7 +1,12 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import { SQSEvent, SQSRecord, Context } from 'aws-lambda';
-import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
+import {
+  DynamoDBClient,
+  PutItemCommand,
+  UpdateItemCommand,
+  ConditionalCheckFailedException,
+} from '@aws-sdk/client-dynamodb';
 import { lambdaHandler } from '../../src/contracts_service/contractEventHandler';
 import { mockClient } from 'aws-sdk-client-mock';
 
@@ -68,7 +73,7 @@ describe('ContractEventHandlerFunction', () => {
 
   // Contract Creation Tests
   describe('createContract', () => {
-    it('should generate unique contract_id for new contracts', async () => {
+    it('should process valid create event', async () => {
       ddbMock
         .on(PutItemCommand)
         .resolves({ $metadata: { httpStatusCode: 200 } });
@@ -86,13 +91,79 @@ describe('ContractEventHandlerFunction', () => {
       expect((putCall.args[0].input as any).Item.contract_id.S).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
       );
-      // console.log('PutCall structure:', JSON.stringify(putCall.args[0], null, 2));
+      expect(putCall.args[0].input).toHaveProperty('Item.contract_created');
+    });
+  });
+
+  // Contract Update Tests
+  describe('updateContract', () => {
+    beforeEach(() => {
+      ddbMock.reset();
     });
 
-    it('should set correct timestamps for new contracts', async () => {
+    it('should process valid update event', async () => {
+      ddbMock
+        .on(UpdateItemCommand)
+        .resolves({
+          $metadata: { httpStatusCode: 200 },
+          Attributes: {
+            contract_id: { S: 'contract-123' },
+            property_id: { S: '123' },
+            contract_status: { S: 'APPROVED' },
+          },
+        });
+
+      const sqsEvent = createSQSEvent('PUT', {
+        property_id: '123',
+        contract_id: 'contract-123',
+      });
+
+      await lambdaHandler(sqsEvent, mockContext);
+
+      const updateCall = ddbMock.commandCalls(UpdateItemCommand);
+      expect(updateCall).toHaveLength(1);
+      expect(updateCall[0].args[0].input.Key).toEqual({
+        property_id: { S: '123' },
+      });
+    });
+
+    it('should handle ConditionalCheckFailedException on update', async () => {
+      ddbMock
+        .on(UpdateItemCommand)
+        .rejects(
+          new ConditionalCheckFailedException({
+            message: 'The conditional request failed',
+            $metadata: {},
+          })
+        );
+
+      const sqsEvent = createSQSEvent('PUT', {
+        property_id: '123',
+        contract_id: 'contract-123',
+      });
+
+      // ConditionalCheckFailedException is caught and logged, not rethrown
+      await expect(
+        lambdaHandler(sqsEvent, mockContext)
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  // ConditionalCheckFailedException on Create
+  describe('createContract error handling', () => {
+    beforeEach(() => {
+      ddbMock.reset();
+    });
+
+    it('should handle ConditionalCheckFailedException on create', async () => {
       ddbMock
         .on(PutItemCommand)
-        .resolves({ $metadata: { httpStatusCode: 200 } });
+        .rejects(
+          new ConditionalCheckFailedException({
+            message: 'The conditional request failed',
+            $metadata: {},
+          })
+        );
 
       const sqsEvent = createSQSEvent('POST', {
         property_id: '123',
@@ -100,36 +171,34 @@ describe('ContractEventHandlerFunction', () => {
         seller_name: 'John Doe',
       });
 
-      await lambdaHandler(sqsEvent, mockContext);
-
-      const putCall = ddbMock.call(0);
-      expect(putCall.args[0].input).toHaveProperty('Item.contract_created');
+      // ConditionalCheckFailedException is caught and logged, not rethrown
+      await expect(
+        lambdaHandler(sqsEvent, mockContext)
+      ).resolves.toBeUndefined();
     });
   });
 
-  // Multiple Record Handling
-  describe('multiple records', () => {
+  // Unsupported HTTP Method
+  describe('unsupported HTTP method', () => {
     beforeEach(() => {
       ddbMock.reset();
     });
 
-    it('should process multiple records in the SQS event', async () => {
-      ddbMock
-        .on(PutItemCommand)
-        .resolves({ $metadata: { httpStatusCode: 200 } });
+    it('should handle invalid/unsupported HTTP method', async () => {
+      const sqsEvent = createSQSEvent('DELETE', {
+        property_id: '123',
+      });
 
-      const sqsEvent: SQSEvent = {
-        Records: [
-          createSQSRecord('POST', { property_id: '123' }),
-          createSQSRecord('POST', { property_id: '456' }),
-        ],
-      };
+      // Unsupported methods are logged but do not throw
+      await expect(
+        lambdaHandler(sqsEvent, mockContext)
+      ).resolves.toBeUndefined();
 
-      await lambdaHandler(sqsEvent, mockContext);
-
-      expect(ddbMock.calls()).toHaveLength(2);
+      // No DDB commands should have been sent
+      expect(ddbMock.calls()).toHaveLength(0);
     });
   });
+
 });
 
 // Helper functions

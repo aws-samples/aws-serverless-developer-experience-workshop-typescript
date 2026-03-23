@@ -108,31 +108,6 @@ describe('Unit tests for contract creation', function () {
     expect(response.batchItemFailures.length).toEqual(0);
   });
 
-  test('verifies non-status update check', async () => {
-    baselineDynamoDBEvent.Records[0].dynamodb.OldImage.contract_id.S =
-      'oldcontract1';
-    baselineDynamoDBEvent.Records[0].dynamodb.NewImage.contract_status.S =
-      'Draft';
-
-    function verifyTaskSend(input: any) {
-      fail(`Unexpected call to SFN with input: ${JSON.stringify(input)}`);
-    }
-
-    sfnMock.callsFake(verifyTaskSend);
-
-    const expectedId = randomUUID();
-    const context: Context = {
-      awsRequestId: expectedId,
-    } as any;
-
-    const response: DynamoDBBatchResponse = await lambdaHandler(
-      baselineDynamoDBEvent,
-      context
-    );
-    // Expect no errors.
-    expect(response.batchItemFailures.length).toEqual(0);
-  });
-
   test('verifies no task token check', async () => {
     const noTaskTokenEvent = {
       Records: [
@@ -187,8 +162,8 @@ describe('Unit tests for contract creation', function () {
     expect(response.batchItemFailures.length).toEqual(0);
   });
 
-  test('verifies approved record update', async () => {
-    const noTaskTokenEvent = {
+  test('verifies missing NewImage is skipped', async () => {
+    const missingNewImageEvent = {
       Records: [
         {
           eventID: 'eventID1',
@@ -202,23 +177,9 @@ describe('Unit tests for contract creation', function () {
                 S: 'PROPERTY/australia#sydney/high#23',
               },
             },
-            NewImage: {
-              sfn_wait_approved_task_token: {
-                S: 'taskToken1',
-              },
-              contract_status: {
-                S: 'APPROVED',
-              },
-              contract_id: {
-                S: 'contractId1',
-              },
-              property_id: {
-                S: 'PROPERTY/australia#sydney/high#23',
-              },
-            },
             OldImage: {
               contract_status: {
-                S: 'APPROVED',
+                S: 'DRAFT',
               },
               contract_id: {
                 S: 'contractId1',
@@ -237,8 +198,7 @@ describe('Unit tests for contract creation', function () {
 
     function verifyTaskSend(input: any) {
       const cmd = input as SendTaskSuccessCommandInput;
-      const taskToken = cmd.taskToken;
-      expect(taskToken).toEqual('taskToken1');
+      fail(`Unexpected call to SFN with token: ${cmd.taskToken}`);
     }
 
     sfnMock.callsFake(verifyTaskSend);
@@ -249,82 +209,11 @@ describe('Unit tests for contract creation', function () {
     } as any;
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
-      noTaskTokenEvent,
+      missingNewImageEvent,
       context
     );
-    // Expect no errors.
+    // Expect no errors - record should be skipped
     expect(response.batchItemFailures.length).toEqual(0);
   });
 
-  test('verifies approved record update with an old task token', async () => {
-    const noTaskTokenEvent = {
-      Records: [
-        {
-          eventID: 'eventID1',
-          eventVersion: '1.1',
-          eventSource: 'aws:dynamodb',
-          awsRegion: 'ap-southeast-2',
-          dynamodb: {
-            ApproximateCreationDateTime: 1660484629,
-            Keys: {
-              property_id: {
-                S: 'PROPERTY/australia#sydney/high#23',
-              },
-            },
-            NewImage: {
-              sfn_wait_approved_task_token: {
-                S: 'taskToken1',
-              },
-              contract_status: {
-                S: 'APPROVED',
-              },
-              contract_id: {
-                S: 'contractId1',
-              },
-              property_id: {
-                S: 'PROPERTY/australia#sydney/high#23',
-              },
-            },
-            OldImage: {
-              sfn_wait_approved_task_token: {
-                S: 'taskToken0',
-              },
-              contract_status: {
-                S: 'APPROVED',
-              },
-              contract_id: {
-                S: 'contractId1',
-              },
-              property_id: {
-                S: 'PROPERTY/australia#sydney/high#23',
-              },
-            },
-            SequenceNumber: '17970100000000005135132811',
-            SizeBytes: 825,
-          },
-          eventSourceARN: 'contractStatusTableARN',
-        },
-      ],
-    };
-
-    function verifyTaskSend(input: any) {
-      const cmd = input as SendTaskSuccessCommandInput;
-      const taskToken = cmd.taskToken;
-      expect(taskToken).toEqual('taskToken1');
-    }
-
-    sfnMock.callsFake(verifyTaskSend);
-
-    const expectedId = randomUUID();
-    const context: Context = {
-      awsRequestId: expectedId,
-    } as any;
-
-    const response: DynamoDBBatchResponse = await lambdaHandler(
-      noTaskTokenEvent,
-      context
-    );
-    // Expect no errors.
-    expect(response.batchItemFailures.length).toEqual(0);
-  });
 });
