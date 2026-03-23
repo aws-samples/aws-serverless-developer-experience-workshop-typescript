@@ -14,14 +14,17 @@ const primitives = [
   'any',
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const enumsMap: Record<string, any> = {};
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const typeMap: Record<string, any> = {
   AWSEvent: AWSEvent,
   PublicationEvaluationCompleted: PublicationEvaluationCompleted,
 };
 
 export class Marshaller {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public static marshall(data: any, type: string) {
     if (data == undefined) {
       return data;
@@ -31,6 +34,7 @@ export class Marshaller {
       // string.startsWith pre es6
       let subType: string = type.replace('Array<', ''); // Array<Type> => Type>
       subType = subType.substring(0, subType.length - 1); // Type> => Type
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const transformedData: any[] = [];
       for (const index in data) {
         const date = data[index];
@@ -50,6 +54,7 @@ export class Marshaller {
 
       // get the map for the correct type.
       const attributeTypes = typeMap[type].getAttributeTypeMap();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const instance: Record<string, any> = {};
       for (const index in attributeTypes) {
         const attributeType = attributeTypes[index];
@@ -62,11 +67,13 @@ export class Marshaller {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public static unmarshalEvent(data: any, detailType: any) {
     typeMap['AWSEvent'].updateAttributeTypeMapDetail(detailType.name);
     return this.unmarshal(data, 'AWSEvent');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public static unmarshal(data: any, type: string) {
     // polymorphism may change the actual type.
     type = Marshaller.findCorrectType(data, type);
@@ -78,6 +85,7 @@ export class Marshaller {
       // string.startsWith pre es6
       let subType: string = type.replace('Array<', ''); // Array<Type> => Type>
       subType = subType.substring(0, subType.length - 1); // Type> => Type
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const transformedData: any[] = [];
       for (const index in data) {
         const date = data[index];
@@ -109,6 +117,7 @@ export class Marshaller {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static findCorrectType(data: any, expectedType: string) {
     if (data == undefined) {
       return expectedType;

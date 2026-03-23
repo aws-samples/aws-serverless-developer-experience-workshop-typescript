@@ -34,7 +34,9 @@ describe('Unit tests for contract status checking', function () {
     ddbMock.reset();
   });
 
+  // T004-01: Contract approved — returns 200 with property data
   test('verifies approved check', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function verifyGet(input: any) {
       const cmd = (input as GetItemCommandInput) ?? {};
       const key = cmd['Key'] ?? {};
@@ -51,6 +53,7 @@ describe('Unit tests for contract status checking', function () {
       };
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function verifyUpdate(input: any) {
       try {
         const cmd = input as UpdateItemCommandInput;
@@ -65,6 +68,7 @@ describe('Unit tests for contract status checking', function () {
             httpStatusCode: 200,
           },
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         fail(error);
       }
@@ -75,6 +79,7 @@ describe('Unit tests for contract status checking', function () {
     const expectedId = randomUUID();
     const context: Context = {
       awsRequestId: expectedId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     const response = await lambdaHandler(baselineStepFunctionEvent, context);
@@ -95,7 +100,9 @@ describe('Unit tests for contract status checking', function () {
     expect(response.statusCode).toEqual(200);
   });
 
+  // T004-02: Contract unapproved (DRAFT) — returns 200 with property data
   test('verifies unapproved check', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function verifyGet(input: any) {
       try {
         const cmd = (input as GetItemCommandInput) ?? {};
@@ -113,11 +120,13 @@ describe('Unit tests for contract status checking', function () {
             contract_status: { S: 'DRAFT' },
           },
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         fail(error);
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function verifyUpdate(input: any) {
       try {
         const cmd = input as UpdateItemCommandInput;
@@ -132,6 +141,7 @@ describe('Unit tests for contract status checking', function () {
             httpStatusCode: 200,
           },
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         fail(error);
       }
@@ -141,6 +151,7 @@ describe('Unit tests for contract status checking', function () {
     const expectedId = randomUUID();
     const context: Context = {
       awsRequestId: expectedId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     const response = await lambdaHandler(baselineStepFunctionEvent, context);
@@ -161,7 +172,9 @@ describe('Unit tests for contract status checking', function () {
     expect(response.statusCode).toEqual(200);
   });
 
+  // T004-03: No contract found — returns 200 with property data
   test('verifies no contract check', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function verifyGet(input: any) {
       try {
         const cmd = (input as GetItemCommandInput) ?? {};
@@ -174,11 +187,13 @@ describe('Unit tests for contract status checking', function () {
             httpStatusCode: 200,
           },
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         fail(error);
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function verifyUpdate(input: any) {
       try {
         const cmd = input as UpdateItemCommandInput;
@@ -193,6 +208,7 @@ describe('Unit tests for contract status checking', function () {
             httpStatusCode: 200,
           },
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         fail(error);
       }
@@ -202,6 +218,7 @@ describe('Unit tests for contract status checking', function () {
     const expectedId = randomUUID();
     const context: Context = {
       awsRequestId: expectedId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     const response = await lambdaHandler(baselineStepFunctionEvent, context);
@@ -220,5 +237,51 @@ describe('Unit tests for contract status checking', function () {
     });
     expect(response.body).toEqual(expectedBody);
     expect(response.statusCode).toEqual(200);
+  });
+
+  // T004-04: DDB UpdateItem failure (non-200)
+  test('should return 500 when UpdateItem returns non-200', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function getSuccess(_input: any) {
+      return {
+        $metadata: { httpStatusCode: 200 },
+        Item: {
+          contract_id: { S: 'contract1' },
+          property_id: { S: 'PROPERTY/australia#sydney/low#23' },
+          contract_status: { S: 'APPROVED' },
+        },
+      };
+    }
+
+    function updateFail() {
+      return {
+        $metadata: { httpStatusCode: 500 },
+      };
+    }
+
+    ddbMock.callsFakeOnce(getSuccess).callsFakeOnce(updateFail);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const context: Context = { awsRequestId: randomUUID() } as any;
+    const response = await lambdaHandler(baselineStepFunctionEvent, context);
+
+    expect(response.statusCode).toEqual(500);
+  });
+
+  // T004-05: Missing property_id in event input
+  test('should return 500 when property_id is missing', async () => {
+    const eventWithoutPropertyId = {
+      Input: {
+        country: 'Australia',
+        city: 'Sydney',
+      },
+      TaskToken: 'tasktoken1',
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const context: Context = { awsRequestId: randomUUID() } as any;
+    const response = await lambdaHandler(eventWithoutPropertyId, context);
+
+    expect(response.statusCode).toEqual(500);
   });
 });

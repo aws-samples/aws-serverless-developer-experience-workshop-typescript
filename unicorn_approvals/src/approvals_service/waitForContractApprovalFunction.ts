@@ -12,14 +12,18 @@ import {
   UpdateItemCommandOutput,
 } from '@aws-sdk/client-dynamodb';
 import { unmarshall } from '@aws-sdk/util-dynamodb';
-// import { SFNClient } from '@aws-sdk/client-sfn';
 
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
 const DDB_TABLE = process.env.CONTRACT_STATUS_TABLE ?? 'ContractStatusTable';
 
-// Empty configuration for SFN
-// const sfnClient = new SFNClient({});
+export interface StepFunctionsTaskEvent {
+  Input: {
+    property_id?: string;
+    [key: string]: unknown;
+  };
+  TaskToken: string;
+}
 
 export interface StepFunctionsResponse {
   statusCode: number;
@@ -36,6 +40,7 @@ export interface ContractStatus {
 export interface ContractStatusError extends Error {
   property_id: string;
   name: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   object: any;
 }
 
@@ -50,6 +55,7 @@ class ContractStatusCheckerFunction implements LambdaInterface {
   @metrics.logMetrics({ captureColdStartMetric: true })
   @logger.injectLambdaContext({ logEvent: true })
   public async handler(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     event: any,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     context: Context
@@ -60,6 +66,10 @@ class ContractStatusCheckerFunction implements LambdaInterface {
       const input = event.Input;
       const propertyId = input.property_id;
       const taskToken = event.TaskToken;
+
+      if (!propertyId) {
+        throw new Error('property_id is required in event Input');
+      }
 
       logger.info(`Input: ${JSON.stringify(input)}`);
       logger.info(`Task Token: ${taskToken}`);
@@ -83,8 +93,10 @@ class ContractStatusCheckerFunction implements LambdaInterface {
       await this.updateTaskToken(status);
       logger.info(`Contract status updated`);
       return { statusCode: 200, body: JSON.stringify(input) };
-    } catch (error: any) {
-      tracer.addErrorAsMetadata(error as Error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        tracer.addErrorAsMetadata(error);
+      }
       logger.error(
         `Error during Contract Status Check: ${JSON.stringify(error)}`
       );
@@ -155,6 +167,7 @@ class ContractStatusCheckerFunction implements LambdaInterface {
 
 const myFunction = new ContractStatusCheckerFunction();
 export const lambdaHandler = async (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   event: any,
   context: Context
 ): Promise<StepFunctionsResponse> => {

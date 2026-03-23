@@ -20,6 +20,7 @@ import { unmarshall } from '@aws-sdk/util-dynamodb';
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
 const DDB_TABLE = process.env.DYNAMODB_TABLE;
+if (!DDB_TABLE) throw new Error('DYNAMODB_TABLE not set');
 
 const PROJECTION_PROPERTIES =
   'country, city, street, contract, #num, description, listprice, currency, #status';
@@ -126,8 +127,10 @@ class PropertySearchFunction implements LambdaInterface {
    * Check the output before returning an array of results.
    * @param data The output data from the DynamoDB query
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private consolidateResults(data: QueryCommandOutput): any[] {
     const results: PropertyDBType[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const item of data.Items as any[]) {
       const obj: PropertyDBType = unmarshall(item) as PropertyDBType;
       if (obj.status == 'APPROVED') {

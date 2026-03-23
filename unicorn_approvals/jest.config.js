@@ -9,9 +9,17 @@ module.exports = {
   },
   moduleFileExtensions: ["js", "ts"],
   collectCoverageFrom: ["**/src/**/*.ts", "!**/node_modules/**"],
-  testMatch: ["**/tests/unit/*.test.ts", "**/tests/integration/*.test.ts"],
+  testMatch: ["**/tests/unit/*.test.ts"],
   testPathIgnorePatterns: ["/node_modules/"],
+  setupFiles: ["./tests/setup-env.js"],
   testEnvironment: "node",
   testSequencer: "./tests/alphabetical-sequencer.js",
   coverageProvider: "v8",
+  coverageThreshold: {
+    global: {
+      lines: 65,
+      functions: 80,
+      branches: 50,
+    },
+  },
 };

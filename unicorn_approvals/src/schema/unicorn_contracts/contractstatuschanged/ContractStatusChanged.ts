@@ -1,7 +1,14 @@
+export type ContractStatus =
+  | 'APPROVED'
+  | 'CANCELLED'
+  | 'DRAFT'
+  | 'CLOSED'
+  | 'EXPIRED';
+
 export class ContractStatusChanged {
   'contractId': string;
   'contractLastModifiedOn': string;
-  'contractStatus': string;
+  'contractStatus': ContractStatus;
   'propertyId': string;
 
   private static discriminator: string | undefined = undefined;

@@ -22,10 +22,12 @@ import { MetricUnit } from '@aws-lambda-powertools/metrics';
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
 const DDB_TABLE = process.env.DYNAMODB_TABLE;
+if (!DDB_TABLE) throw new Error('DYNAMODB_TABLE not set');
 
 // Empty configuration for EventBridge
 const eventsClient = new EventBridgeClient({});
 const EVENT_BUS = process.env.EVENT_BUS;
+if (!EVENT_BUS) throw new Error('EVENT_BUS not set');
 
 interface PropertyDBType {
   PK: string;
@@ -117,7 +119,7 @@ class RequestApprovalFunction implements LambdaInterface {
       const property: PropertyDBType = await this.getPropertyFor(PK, SK);
 
       // If property is already being approved or approved already
-      if (property.status in ['APPROVED']) {
+      if (property.status === 'APPROVED') {
         logger.info(
           `Property already in status ${property.status}; no action taken`
         );

@@ -2,12 +2,19 @@
 	"scripts": {
 		"prepare": "husky"
 	},
+	"lint-staged": {
+		"*.ts": [
+			"eslint --max-warnings 0",
+			"prettier --check"
+		]
+	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.2",
 		"eslint": "^9.39.2",
 		"eslint-config-prettier": "^10.1.8",
 		"globals": "^17.3.0",
 		"husky": "^9.1.7",
+		"lint-staged": "^16.1.0",
 		"prettier": "^3.8.1",
 		"typescript-eslint": "^8.55.0"
 	}

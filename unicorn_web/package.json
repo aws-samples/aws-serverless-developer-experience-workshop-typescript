@@ -8,11 +8,13 @@
   "main": "app.js",
   "scripts": {
     "build": "sam build",
-    "compile": "tsc",
+    "typecheck": "tsc",
     "deploy": "sam build && sam deploy --no-confirm-changeset",
     "format": "prettier --write '**/*.ts'",
-    "lint": "eslint --ext .ts --quiet --fix",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --runInBand",
+    "format:check": "prettier --check '**/*.ts'",
+    "lint": "eslint '**/*.ts' --max-warnings 0",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --runInBand --coverage",
+    "test:integration": "NODE_OPTIONS='--experimental-vm-modules' jest --runInBand tests/integration",
     "unit": "jest --runInBand tests/unit"
   },
   "dependencies": {

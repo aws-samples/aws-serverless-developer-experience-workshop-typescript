@@ -134,6 +134,7 @@ class PropertiesApprovalSyncFunction implements LambdaInterface {
    * @param taskToken
    */
   @tracer.captureMethod()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async sendTaskSuccess(taskToken: any): Promise<void> {
     const cmdInput: SendTaskSuccessCommandInput = {
       taskToken: taskToken,

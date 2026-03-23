@@ -1,5 +1,5 @@
 {
-	"name": "properties",
+	"name": "approvals",
 	"version": "1.0.0",
 	"description": "Properties Module for Serverless Developer Experience Reference Architecture - Node",
 	"repository": "https://github.com/aws-samples/aws-serverless-developer-experience-workshop-typescript/tree/develop",
@@ -8,11 +8,12 @@
 	"main": "app.js",
 	"scripts": {
 		"build": "sam build",
-		"compile": "tsc",
+		"typecheck": "tsc",
 		"deploy": "sam build && sam deploy --no-confirm-changeset",
 		"format": "prettier --write '**/*.ts'",
-		"lint": "eslint --ext .ts --quiet --fix",
-		"test": "NODE_OPTIONS='--experimental-vm-modules' jest --runInBand",
+		"format:check": "prettier --check '**/*.ts'",
+		"lint": "eslint '**/*.ts' --max-warnings 0",
+		"test": "NODE_OPTIONS='--experimental-vm-modules' jest --runInBand --coverage",
 		"unit": "jest --runInBand tests/unit"
 	},
 	"dependencies": {

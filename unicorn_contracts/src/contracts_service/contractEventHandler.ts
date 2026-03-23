@@ -22,6 +22,7 @@ import { logger, metrics, tracer } from './powertools';
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
 const DDB_TABLE = process.env.DYNAMODB_TABLE;
+if (!DDB_TABLE) throw new Error('DYNAMODB_TABLE not set');
 
 class ContractEventHandlerFunction implements LambdaInterface {
   /**
@@ -46,7 +47,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
     for (const sqsRecord of event.Records) {
       const contract = this.parseRecord(sqsRecord);
       tracer.putMetadata('Contract', contract);
-      const httpMethod = sqsRecord.messageAttributes.HttpMethod.stringValue
+      const httpMethod = sqsRecord.messageAttributes.HttpMethod.stringValue;
       switch (httpMethod) {
         case 'POST':
           logger.info('Creating a contract', { contract });
@@ -55,7 +56,10 @@ class ContractEventHandlerFunction implements LambdaInterface {
             await this.createContract(contract);
           } catch (error) {
             tracer.addErrorAsMetadata(error as Error);
-            logger.error('DynamoDB PutItem API call unsuccessful. Unable to create contract ', error as Error);
+            logger.error(
+              'DynamoDB PutItem API call unsuccessful. Unable to create contract ',
+              error as Error
+            );
             throw error;
           }
           break;
@@ -66,12 +70,17 @@ class ContractEventHandlerFunction implements LambdaInterface {
             await this.updateContract(contract);
           } catch (error) {
             tracer.addErrorAsMetadata(error as Error);
-            logger.error('DynamoDB UpdateItem API call unsuccessful. Unable to update contract', error as Error);
+            logger.error(
+              'DynamoDB UpdateItem API call unsuccessful. Unable to update contract',
+              error as Error
+            );
             throw error;
           }
           break;
         default:
-          tracer.addErrorAsMetadata(Error(`Unsupported HTTP method: ${httpMethod}`));
+          tracer.addErrorAsMetadata(
+            Error(`Unsupported HTTP method: ${httpMethod}`)
+          );
           logger.error(`Unsupported HTTP method: ${httpMethod}`);
       }
     }
@@ -165,7 +174,8 @@ class ContractEventHandlerFunction implements LambdaInterface {
     const ddbUpdateCommandInput: UpdateItemCommandInput = {
       TableName: DDB_TABLE,
       Key: { property_id: { S: dbEntry.property_id } },
-      UpdateExpression: 'set contract_status = :t, contract_last_modified_on = :m',
+      UpdateExpression:
+        'set contract_status = :t, contract_last_modified_on = :m',
       ConditionExpression:
         'attribute_exists(property_id) AND contract_status = :DRAFT',
       ExpressionAttributeValues: {

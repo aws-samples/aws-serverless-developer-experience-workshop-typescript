@@ -71,6 +71,7 @@ describe('Tests that failed workflow', () => {
       const sfnHistory = await sfn.send(getExecutionHistory);
       // filter through sfnHistory looking for an event with "type": "FailStateEntered" and stateEnteredEventDetails.name set to "NotFound"
       const failStateEvent = sfnHistory.events?.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (event: any) =>
           event.type === 'FailStateEntered' &&
           event.stateEnteredEventDetails?.name === 'NotFound'
@@ -114,6 +115,7 @@ describe('Tests that failed workflow', () => {
       });
       const sfnHistory = await sfn.send(getExecutionHistory);
       const failStateEvent = sfnHistory.events?.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (event: any) =>
           event.type === 'SucceedStateEntered' &&
           event.stateEnteredEventDetails?.name === 'Declined'
@@ -157,6 +159,7 @@ describe('Tests that failed workflow', () => {
       });
       const sfnHistory = await sfn.send(getExecutionHistory);
       const failStateEvent = sfnHistory.events?.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (event: any) =>
           event.type === 'SucceedStateEntered' &&
           event.stateEnteredEventDetails?.name === 'Declined'

@@ -50,6 +50,7 @@ export enum ContractStatusEnum {
  */
 export interface ContractError extends Error {
   propertyId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   object?: any;
 }
 
@@ -62,5 +63,6 @@ export interface ContractError extends Error {
  */
 export interface ContractResponse {
   propertyId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: any;
 }

@@ -26,6 +26,7 @@ export const sleep = async (ms: number) =>
 
 export async function* getCloudWatchLogsValues(
   propertyId: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): AsyncGenerator<any, void, unknown> {
   const groupName = await findOutputValue(
     'uni-prop-local-web',
@@ -69,7 +70,7 @@ export async function* getCloudWatchLogsValues(
         if (ev.detail?.property_id === propertyId) {
           yield ev;
         }
-      } catch (error) {
+      } catch (_error) {
         // Skip malformed JSON entries
         continue;
       }
@@ -99,6 +100,7 @@ export async function clearDatabase() {
     // Create an array of DeleteRequest objects for batch delete
     const deleteRequests: BatchWriteCommandInput = {
       RequestItems: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         [tableName]: itemsToDelete.map((item: any) => ({
           DeleteRequest: {
             Key: {

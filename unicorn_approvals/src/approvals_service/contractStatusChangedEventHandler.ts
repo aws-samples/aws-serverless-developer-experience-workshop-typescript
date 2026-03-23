@@ -20,6 +20,7 @@ const DDB_TABLE = process.env.CONTRACT_STATUS_TABLE ?? 'ContractStatusTable';
 export interface ContractStatusError extends Error {
   contract_id: string;
   name: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   object: any;
 }
 
@@ -50,8 +51,10 @@ class ContractStatusChangedFunction implements LambdaInterface {
 
       // Call saveContractStatus with the entry
       await this.saveContractStatus(statusEntry);
-    } catch (error: any) {
-      tracer.addErrorAsMetadata(error as Error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        tracer.addErrorAsMetadata(error);
+      }
       logger.error(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
     }
     metrics.addMetric('ContractStatusChanged', MetricUnit.Count, 1);

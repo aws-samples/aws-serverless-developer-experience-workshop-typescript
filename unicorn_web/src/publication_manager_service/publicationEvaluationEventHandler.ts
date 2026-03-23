@@ -15,6 +15,7 @@ import { Marshaller } from '../schema/unicorn_approvals/publicationevaluationcom
 // Empty configuration for DynamoDB
 const ddbClient = new DynamoDBClient({});
 const DDB_TABLE = process.env.DYNAMODB_TABLE;
+if (!DDB_TABLE) throw new Error('DYNAMODB_TABLE not set');
 
 class PublicationEvaluationEventHandler implements LambdaInterface {
   /**
@@ -39,8 +40,10 @@ class PublicationEvaluationEventHandler implements LambdaInterface {
 
     try {
       await this.publicationApproved(propertyEvaluation);
-    } catch (error: any) {
-      tracer.addErrorAsMetadata(error as Error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        tracer.addErrorAsMetadata(error);
+      }
       logger.error(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
     }
     metrics.addMetric('PropertiesApproved', MetricUnit.Count, 1);
@@ -64,8 +67,12 @@ class PublicationEvaluationEventHandler implements LambdaInterface {
     );
     const propertyId = propertyEvaluation.propertyId;
     const validResults = ['APPROVED', 'DECLINED'];
-    if (!validResults.includes(propertyEvaluation.evaluationResult?.toUpperCase())) {
-      logger.warn(`Unknown evaluationResult '${propertyEvaluation.evaluationResult}'; skipping DynamoDB update`);
+    if (
+      !validResults.includes(propertyEvaluation.evaluationResult?.toUpperCase())
+    ) {
+      logger.warn(
+        `Unknown evaluationResult '${propertyEvaluation.evaluationResult}'; skipping DynamoDB update`
+      );
       return;
     }
     const { PK, SK } = this.getDynamoDBKeys(propertyId);

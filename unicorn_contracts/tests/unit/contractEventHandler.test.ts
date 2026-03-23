@@ -1,7 +1,12 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 import { SQSEvent, SQSRecord, Context } from 'aws-lambda';
-import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
+import {
+  DynamoDBClient,
+  PutItemCommand,
+  UpdateItemCommand,
+  ConditionalCheckFailedException,
+} from '@aws-sdk/client-dynamodb';
 import { lambdaHandler } from '../../src/contracts_service/contractEventHandler';
 import { mockClient } from 'aws-sdk-client-mock';
 
@@ -42,8 +47,13 @@ const defaultSQSRecord: SQSRecord = {
 };
 
 describe('ContractEventHandlerFunction', () => {
+  beforeEach(() => {
+    ddbMock.reset();
+  });
+
   // Input Validation Tests
   describe('parseRecord', () => {
+    // T001-05: Invalid JSON body
     it('should throw error when SQS message body is invalid JSON', async () => {
       const sqsEvent: SQSEvent = {
         Records: [
@@ -68,6 +78,7 @@ describe('ContractEventHandlerFunction', () => {
 
   // Contract Creation Tests
   describe('createContract', () => {
+    // T001-01: Create contract — unique ID generation
     it('should generate unique contract_id for new contracts', async () => {
       ddbMock
         .on(PutItemCommand)
@@ -83,12 +94,14 @@ describe('ContractEventHandlerFunction', () => {
 
       const putCall = ddbMock.call(0);
       expect(putCall.args[0].input).toHaveProperty('Item.contract_id');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((putCall.args[0].input as any).Item.contract_id.S).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
       );
       // console.log('PutCall structure:', JSON.stringify(putCall.args[0], null, 2));
     });
 
+    // T001-01: Create contract — correct timestamps
     it('should set correct timestamps for new contracts', async () => {
       ddbMock
         .on(PutItemCommand)
@@ -109,10 +122,7 @@ describe('ContractEventHandlerFunction', () => {
 
   // Multiple Record Handling
   describe('multiple records', () => {
-    beforeEach(() => {
-      ddbMock.reset();
-    });
-
+    // T001-07: Multiple SQS records
     it('should process multiple records in the SQS event', async () => {
       ddbMock
         .on(PutItemCommand)
@@ -130,15 +140,86 @@ describe('ContractEventHandlerFunction', () => {
       expect(ddbMock.calls()).toHaveLength(2);
     });
   });
+
+  // T001-03: Update contract — valid DRAFT
+  describe('updateContract', () => {
+    it('should call UpdateItem with contract_status APPROVED for PUT', async () => {
+      ddbMock.on(UpdateItemCommand).resolves({
+        Attributes: { contract_id: { S: 'abc-123' } },
+        $metadata: { httpStatusCode: 200 },
+      });
+
+      const sqsEvent = createSQSEvent('PUT', {
+        property_id: '123',
+        contract_id: 'abc-123',
+      });
+
+      await lambdaHandler(sqsEvent, mockContext);
+
+      expect(ddbMock.commandCalls(UpdateItemCommand)).toHaveLength(1);
+      const input = ddbMock.commandCalls(UpdateItemCommand)[0].args[0].input;
+      expect(input.ExpressionAttributeValues![':t']).toEqual({ S: 'APPROVED' });
+    });
+
+    // T001-04: Update contract — not in DRAFT (ConditionalCheckFailedException)
+    it('should not throw when update fails with ConditionalCheckFailedException', async () => {
+      ddbMock.on(UpdateItemCommand).rejects(
+        new ConditionalCheckFailedException({
+          $metadata: {},
+          message: 'Condition not met',
+        })
+      );
+
+      const sqsEvent = createSQSEvent('PUT', {
+        property_id: '123',
+        contract_id: 'abc-123',
+      });
+
+      await expect(
+        lambdaHandler(sqsEvent, mockContext)
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  // T001-06: Unsupported HTTP method
+  describe('unsupported HTTP method', () => {
+    it('should not call DDB and not throw for unsupported method', async () => {
+      const sqsEvent = createSQSEvent('DELETE', { property_id: '123' });
+
+      await expect(
+        lambdaHandler(sqsEvent, mockContext)
+      ).resolves.toBeUndefined();
+      expect(ddbMock.calls()).toHaveLength(0);
+    });
+  });
+
+  // T001-08: DDB failure on create — generic error
+  describe('DDB generic error on create', () => {
+    it('should not throw when create fails with a generic DDB error', async () => {
+      ddbMock.on(PutItemCommand).rejects(new Error('Internal Server Error'));
+
+      const sqsEvent = createSQSEvent('POST', {
+        property_id: '123',
+        address: '123 Main St',
+        seller_name: 'John Doe',
+      });
+
+      await expect(
+        lambdaHandler(sqsEvent, mockContext)
+      ).resolves.toBeUndefined();
+    });
+  });
 });
 
 // Helper functions
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createSQSEvent(httpMethod: string, body: any): SQSEvent {
   return {
     Records: [createSQSRecord(httpMethod, body)],
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createSQSRecord(httpMethod: string, body: any): SQSRecord {
   return {
     messageId: '1',

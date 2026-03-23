@@ -63,7 +63,9 @@ describe('Unit tests for contract creation', function () {
     sfnMock.reset();
   });
 
+  // T003-01: Approved status change — sends task success
   test('verifies Approved check', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function verifyTaskSend(input: any) {
       const cmd = input as SendTaskSuccessCommandInput;
       const taskToken = cmd.taskToken;
@@ -75,6 +77,7 @@ describe('Unit tests for contract creation', function () {
     const expectedId = randomUUID();
     const context: Context = {
       awsRequestId: expectedId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
@@ -84,10 +87,12 @@ describe('Unit tests for contract creation', function () {
     expect(response.batchItemFailures.length).toEqual(0);
   });
 
+  // T003-02: Unapproved status — no SFN call
   test('verifies Unapproved check', async () => {
     baselineDynamoDBEvent.Records[0].dynamodb.NewImage.contract_status.S =
       'New';
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function verifyTaskSend(input: any) {
       const cmd = input as SendTaskSuccessCommandInput;
       fail(`Unexpected call to SFN with token: ${cmd.taskToken}`);
@@ -98,6 +103,7 @@ describe('Unit tests for contract creation', function () {
     const expectedId = randomUUID();
     const context: Context = {
       awsRequestId: expectedId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
@@ -108,12 +114,14 @@ describe('Unit tests for contract creation', function () {
     expect(response.batchItemFailures.length).toEqual(0);
   });
 
+  // T003-03: Non-status field update — no SFN call
   test('verifies non-status update check', async () => {
     baselineDynamoDBEvent.Records[0].dynamodb.OldImage.contract_id.S =
       'oldcontract1';
     baselineDynamoDBEvent.Records[0].dynamodb.NewImage.contract_status.S =
       'Draft';
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function verifyTaskSend(input: any) {
       fail(`Unexpected call to SFN with input: ${JSON.stringify(input)}`);
     }
@@ -123,6 +131,7 @@ describe('Unit tests for contract creation', function () {
     const expectedId = randomUUID();
     const context: Context = {
       awsRequestId: expectedId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
@@ -133,6 +142,7 @@ describe('Unit tests for contract creation', function () {
     expect(response.batchItemFailures.length).toEqual(0);
   });
 
+  // T003-04: No task token — no SFN call
   test('verifies no task token check', async () => {
     const noTaskTokenEvent = {
       Records: [
@@ -167,6 +177,7 @@ describe('Unit tests for contract creation', function () {
       ],
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function verifyTaskSend(input: any) {
       const cmd = input as SendTaskSuccessCommandInput;
       fail(`Unexpected call to SFN with token: ${cmd.taskToken}`);
@@ -177,6 +188,7 @@ describe('Unit tests for contract creation', function () {
     const expectedId = randomUUID();
     const context: Context = {
       awsRequestId: expectedId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
@@ -187,6 +199,7 @@ describe('Unit tests for contract creation', function () {
     expect(response.batchItemFailures.length).toEqual(0);
   });
 
+  // T003-05: Approved record update — sends task success
   test('verifies approved record update', async () => {
     const noTaskTokenEvent = {
       Records: [
@@ -235,6 +248,7 @@ describe('Unit tests for contract creation', function () {
       ],
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function verifyTaskSend(input: any) {
       const cmd = input as SendTaskSuccessCommandInput;
       const taskToken = cmd.taskToken;
@@ -246,6 +260,7 @@ describe('Unit tests for contract creation', function () {
     const expectedId = randomUUID();
     const context: Context = {
       awsRequestId: expectedId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
@@ -256,6 +271,7 @@ describe('Unit tests for contract creation', function () {
     expect(response.batchItemFailures.length).toEqual(0);
   });
 
+  // T003-06: Approved record update with old task token — sends task success
   test('verifies approved record update with an old task token', async () => {
     const noTaskTokenEvent = {
       Records: [
@@ -307,6 +323,7 @@ describe('Unit tests for contract creation', function () {
       ],
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function verifyTaskSend(input: any) {
       const cmd = input as SendTaskSuccessCommandInput;
       const taskToken = cmd.taskToken;
@@ -318,6 +335,7 @@ describe('Unit tests for contract creation', function () {
     const expectedId = randomUUID();
     const context: Context = {
       awsRequestId: expectedId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
 
     const response: DynamoDBBatchResponse = await lambdaHandler(
