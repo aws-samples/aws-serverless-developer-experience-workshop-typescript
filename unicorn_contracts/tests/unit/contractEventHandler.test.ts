@@ -1,5 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
+import * as fs from 'fs';
+import * as path from 'path';
 import { SQSEvent, SQSRecord, Context } from 'aws-lambda';
 import {
   DynamoDBClient,
@@ -54,7 +56,7 @@ describe('ContractEventHandlerFunction', () => {
         Records: [
           {
             ...defaultSQSRecord,
-            body: 'invalid json',
+            body: 'this is not valid json {{{',
             messageAttributes: {
               HttpMethod: {
                 stringValue: 'POST',
@@ -78,11 +80,8 @@ describe('ContractEventHandlerFunction', () => {
         .on(PutItemCommand)
         .resolves({ $metadata: { httpStatusCode: 200 } });
 
-      const sqsEvent = createSQSEvent('POST', {
-        property_id: '123',
-        address: '123 Main St',
-        seller_name: 'John Doe',
-      });
+      const payload = loadEvent('create_contract_valid_1');
+      const sqsEvent = createSQSEvent('POST', payload);
 
       await lambdaHandler(sqsEvent, mockContext);
 
@@ -113,17 +112,15 @@ describe('ContractEventHandlerFunction', () => {
           },
         });
 
-      const sqsEvent = createSQSEvent('PUT', {
-        property_id: '123',
-        contract_id: 'contract-123',
-      });
+      const payload = loadEvent('update_contract_valid_1');
+      const sqsEvent = createSQSEvent('PUT', payload);
 
       await lambdaHandler(sqsEvent, mockContext);
 
       const updateCall = ddbMock.commandCalls(UpdateItemCommand);
       expect(updateCall).toHaveLength(1);
       expect(updateCall[0].args[0].input.Key).toEqual({
-        property_id: { S: '123' },
+        property_id: { S: 'usa/anytown/main-street/111' },
       });
     });
 
@@ -137,10 +134,8 @@ describe('ContractEventHandlerFunction', () => {
           })
         );
 
-      const sqsEvent = createSQSEvent('PUT', {
-        property_id: '123',
-        contract_id: 'contract-123',
-      });
+      const payload = loadEvent('update_contract_valid_1');
+      const sqsEvent = createSQSEvent('PUT', payload);
 
       // ConditionalCheckFailedException is caught and logged, not rethrown
       await expect(
@@ -165,11 +160,8 @@ describe('ContractEventHandlerFunction', () => {
           })
         );
 
-      const sqsEvent = createSQSEvent('POST', {
-        property_id: '123',
-        address: '123 Main St',
-        seller_name: 'John Doe',
-      });
+      const payload = loadEvent('create_contract_valid_1');
+      const sqsEvent = createSQSEvent('POST', payload);
 
       // ConditionalCheckFailedException is caught and logged, not rethrown
       await expect(
@@ -185,9 +177,8 @@ describe('ContractEventHandlerFunction', () => {
     });
 
     it('should handle invalid/unsupported HTTP method', async () => {
-      const sqsEvent = createSQSEvent('DELETE', {
-        property_id: '123',
-      });
+      const payload = loadEvent('create_contract_valid_1');
+      const sqsEvent = createSQSEvent('DELETE', payload);
 
       // Unsupported methods are logged but do not throw
       await expect(
@@ -202,17 +193,22 @@ describe('ContractEventHandlerFunction', () => {
 });
 
 // Helper functions
-function createSQSEvent(httpMethod: string, body: any): SQSEvent {
+function loadEvent(name: string): string {
+  const filePath = path.join(__dirname, 'events', `${name}.json`);
+  return fs.readFileSync(filePath, 'utf-8');
+}
+
+function createSQSEvent(httpMethod: string, body: string): SQSEvent {
   return {
     Records: [createSQSRecord(httpMethod, body)],
   };
 }
 
-function createSQSRecord(httpMethod: string, body: any): SQSRecord {
+function createSQSRecord(httpMethod: string, body: string): SQSRecord {
   return {
     messageId: '1',
     receiptHandle: 'handle',
-    body: JSON.stringify(body),
+    body: body,
     attributes: {
       ApproximateReceiveCount: '1',
       SentTimestamp: '1',
