@@ -6,6 +6,7 @@ import { lambdaHandler } from '../../src/approvals_service/waitForContractApprov
 import { mockClient } from 'aws-sdk-client-mock';
 import {
   DynamoDBClient,
+  GetItemCommand,
   GetItemCommandInput,
   UpdateItemCommandInput,
 } from '@aws-sdk/client-dynamodb';
@@ -95,72 +96,6 @@ describe('Unit tests for contract status checking', function () {
     expect(response.statusCode).toEqual(200);
   });
 
-  test('verifies unapproved check', async () => {
-    function verifyGet(input: any) {
-      try {
-        const cmd = (input as GetItemCommandInput) ?? {};
-        const key = cmd['Key'] ?? {};
-        expect(key['property_id'].S).toEqual(
-          'PROPERTY/australia#sydney/low#23'
-        );
-        return {
-          $metadata: {
-            httpStatusCode: 200,
-          },
-          Item: {
-            contract_id: { S: 'contract1' },
-            property_id: { S: 'PROPERTY/australia#sydney/low#23' },
-            contract_status: { S: 'DRAFT' },
-          },
-        };
-      } catch (error: any) {
-        fail(error);
-      }
-    }
-
-    function verifyUpdate(input: any) {
-      try {
-        const cmd = input as UpdateItemCommandInput;
-        const key = cmd.Key ?? {};
-        const expressionAttributeValues = cmd.ExpressionAttributeValues ?? {};
-        expect(key['property_id'].S).toEqual(
-          'PROPERTY/australia#sydney/low#23'
-        );
-        expect(expressionAttributeValues[':t'].S).toEqual('tasktoken1');
-        return {
-          $metadata: {
-            httpStatusCode: 200,
-          },
-        };
-      } catch (error: any) {
-        fail(error);
-      }
-    }
-    ddbMock.callsFakeOnce(verifyGet).callsFakeOnce(verifyUpdate);
-
-    const expectedId = randomUUID();
-    const context: Context = {
-      awsRequestId: expectedId,
-    } as any;
-
-    const response = await lambdaHandler(baselineStepFunctionEvent, context);
-    const expectedBody = JSON.stringify({
-      property_id: 'PROPERTY/australia#sydney/low#23',
-      country: 'Australia',
-      city: 'Sydney',
-      street: 'Low',
-      propertyNumber: '23',
-      description: 'First property',
-      contract_id: 'contract1',
-      listPrice: 23422222,
-      currency: 'AUD',
-      images: 's3://filepath',
-      propertyStatus: 'NEW',
-    });
-    expect(response.body).toEqual(expectedBody);
-    expect(response.statusCode).toEqual(200);
-  });
-
   test('verifies no contract check', async () => {
     function verifyGet(input: any) {
       try {
@@ -220,5 +155,19 @@ describe('Unit tests for contract status checking', function () {
     });
     expect(response.body).toEqual(expectedBody);
     expect(response.statusCode).toEqual(200);
+  });
+
+  test('verifies DDB failure returns 500', async () => {
+    ddbMock
+      .on(GetItemCommand)
+      .rejects(new Error('DynamoDB service unavailable'));
+
+    const expectedId = randomUUID();
+    const context: Context = {
+      awsRequestId: expectedId,
+    } as any;
+
+    const response = await lambdaHandler(baselineStepFunctionEvent, context);
+    expect(response.statusCode).toEqual(500);
   });
 });

@@ -14,4 +14,9 @@ module.exports = {
   testEnvironment: "node",
   testSequencer: "./tests/alphabetical-sequencer.js",
   coverageProvider: "v8",
+  coverageThreshold: {
+    global: {
+      lines: 80,
+    },
+  },
 };
