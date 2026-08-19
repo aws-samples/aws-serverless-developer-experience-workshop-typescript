@@ -464,7 +464,7 @@ Outputs:
     Value: !GetAtt RequestApprovalFunction.Arn
   PublicationEvaluationEventHandlerFunctionArn:
     Description: Publication evaluation event handler function ARN
-    Value: "PublicationEvaluationEventHandlerFunction"
+    Value: !GetAtt PublicationEvaluationEventHandlerFunction.Arn
   
   #### CLOUDWATCH LOGS OUTPUTS
   UnicornWebCatchAllLogGroupName:
