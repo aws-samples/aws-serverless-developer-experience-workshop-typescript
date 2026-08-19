@@ -91,7 +91,8 @@ class PropertySearchFunction implements LambdaInterface {
       `List properties by city: country = ${country}; city = ${city}`
     );
 
-    const PK = `PROPERTY#${country}#${city}`;
+    const pkDetails = `${country}#${city}`.replace(' ', '-').toLowerCase();
+    const PK = `PROPERTY#${pkDetails}`;
 
     const queryCommandInput: QueryCommandInput = {
       KeyConditionExpression: `PK = :pk`,
@@ -157,8 +158,9 @@ class PropertySearchFunction implements LambdaInterface {
       `List properties by street: country = ${country}; city = ${city}; street = ${street}`
     );
 
-    const PK = `PROPERTY#${country}#${city}`;
-    const SK = `${street}`;
+    const pkDetails = `${country}#${city}`.replace(' ', '-').toLowerCase();
+    const PK = `PROPERTY#${pkDetails}`;
+    const SK = `${street}`.replace(' ', '-').toLowerCase();
 
     const queryCommandInput: QueryCommandInput = {
       KeyConditionExpression: `PK = :pk and begins_with(SK, :sk)`,
@@ -215,8 +217,9 @@ class PropertySearchFunction implements LambdaInterface {
       `Get property details for: country = ${country}; city = ${city}; street = ${street}; number = ${number}`
     );
 
-    const PK = `PROPERTY#${country}#${city}`;
-    const SK = `${street}#${number}`;
+    const pkDetails = `${country}#${city}`.replace(' ', '-').toLowerCase();
+    const PK = `PROPERTY#${pkDetails}`;
+    const SK = `${street}#${number}`.replace(' ', '-').toLowerCase();
 
     const getItemCommandInput: GetItemCommandInput = {
       Key: {

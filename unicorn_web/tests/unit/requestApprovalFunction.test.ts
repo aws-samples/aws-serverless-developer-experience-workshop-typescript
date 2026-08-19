@@ -102,12 +102,9 @@ describe('RequestApprovalFunction', () => {
   });
 
   it('should skip already APPROVED property', async () => {
-    // NOTE: The source code uses `property.status in ['APPROVED']` which is the
-    // JavaScript `in` operator. This checks whether the value is a *key* (index)
-    // of the array, NOT a member. Because the only key of ['APPROVED'] is '0',
-    // the condition `'APPROVED' in ['APPROVED']` evaluates to false. As a result,
-    // the guard never triggers and the handler proceeds to publish the EventBridge
-    // event even for APPROVED properties. This test documents the actual behaviour.
+    // The publish guard uses ['APPROVED'].includes(property.status), correctly
+    // checking membership. Already-approved properties should be skipped: no
+    // duplicate EventBridge event is published.
     const approvedProperty = {
       ...PROPERTY_DB_ITEM,
       status: 'APPROVED',
@@ -132,9 +129,8 @@ describe('RequestApprovalFunction', () => {
 
     // DynamoDB was queried
     expect(ddbMock.calls()).toHaveLength(1);
-    // Due to the `in` operator bug, the APPROVED guard does not trigger.
-    // EventBridge IS called even for APPROVED properties.
-    expect(eventBridgeMock.calls()).toHaveLength(1);
+    // Already-APPROVED property is skipped; no duplicate event is published.
+    expect(eventBridgeMock.calls()).toHaveLength(0);
   });
 
   it('should handle property not found in DynamoDB', async () => {
