@@ -80,7 +80,7 @@ integration-test: ## Run integration tests only
 
 lint: ## Lint CloudFormation templates
 	@echo "Linting CloudFormation templates..."
-	@cfn-lint infrastructure/web-service.yaml -a cfn_lint_serverless.rules
+	@cfn-lint infrastructure/web-service/template.yaml -a cfn_lint_serverless.rules
 	@cfn-lint infrastructure/domain.yaml
 	@cfn-lint infrastructure/schema-registry/PublicationApprovalRequested-schema.yaml
 	@cfn-lint infrastructure/subscriptions/unicorn-approvals-subscriptions.yaml
@@ -93,11 +93,11 @@ clean: ## Clean build artifacts
 
 delete: ## Delete all stacks
 	@echo "Deleting stacks in reverse order..."
-	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-web-service --region $(REGION) || true
+	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-web --region $(REGION) || true
 	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-web-subscriptions-approvals --region $(REGION) || true
 	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-web-schema-PublicationApprovalRequested --region $(REGION) || true
 	@echo "Waiting for service, subscriptions, and schema stacks to be deleted..."
-	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-web-service --region $(REGION) || true
+	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-web --region $(REGION) || true
 	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-web-subscriptions-approvals --region $(REGION) || true
 	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-web-schema-PublicationApprovalRequested --region $(REGION) || true
 	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-web-domain --region $(REGION) || true

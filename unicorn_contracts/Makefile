@@ -69,7 +69,7 @@ integration-test: ## Run integration tests only
 
 lint: ## Lint CloudFormation templates
 	@echo "Linting CloudFormation templates..."
-	@cfn-lint infrastructure/contracts-service.yaml -a cfn_lint_serverless.rules
+	@cfn-lint infrastructure/contracts-service/template.yaml -a cfn_lint_serverless.rules
 	@cfn-lint infrastructure/domain.yaml
 	@cfn-lint infrastructure/schema-registry/ContractStatusChanged-schema.yaml
 
@@ -81,10 +81,10 @@ clean: ## Clean build artifacts
 
 delete: ## Delete all stacks
 	@echo "Deleting stacks in reverse order..."
-	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-contracts-contracts-service --region $(REGION) || true
+	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-contracts --region $(REGION) || true
 	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-contracts-schema-ContractStatusChanged --region $(REGION) || true
 	@echo "Waiting for service and schema stacks to be deleted..."
-	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-contracts-contracts-service --region $(REGION) || true
+	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-contracts --region $(REGION) || true
 	@aws cloudformation wait stack-delete-complete --stack-name $(STACK_PREFIX)-contracts-schema-ContractStatusChanged --region $(REGION) || true
 	@aws cloudformation delete-stack --stack-name $(STACK_PREFIX)-contracts-domain --region $(REGION) || true
 	@echo "All stacks deleted"
