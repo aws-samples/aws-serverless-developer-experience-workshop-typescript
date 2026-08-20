@@ -33,11 +33,8 @@ interface PropertyDBType {
   country: string;
   city: string;
   street: string;
-  contract?: string;
   number: string;
   description: string;
-  listprice?: number;
-  currency: string;
   status: string;
   images?: string[];
 }
@@ -51,7 +48,6 @@ interface PropertyDetailsEvent {
     number: string;
   };
   status: 'PENDING';
-  listprice?: number;
   images?: string[];
   description: string;
 }
@@ -135,7 +131,6 @@ class RequestApprovalFunction implements LambdaInterface {
           number: property.number,
         },
         status: 'PENDING',
-        listprice: property.listprice,
         images: property.images,
         description: property.description,
       };
