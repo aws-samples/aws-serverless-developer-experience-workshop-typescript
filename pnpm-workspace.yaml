@@ -3,3 +3,14 @@ packages:
   - unicorn_contracts
   - unicorn_approvals
   - unicorn_web
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@aws-sdk/client-cloudformation@3.1114.0'
+  - '@aws-sdk/client-cloudwatch-logs@3.1114.0'
+  - '@aws-sdk/client-dynamodb@3.1114.0'
+  - '@aws-sdk/client-eventbridge@3.1114.0'
+  - '@aws-sdk/client-sfn@3.1114.0'
+  - '@aws-sdk/client-sqs@3.1114.0'
+  - '@aws-sdk/lib-dynamodb@3.1114.0'
