@@ -16,16 +16,16 @@
     "unit": "jest --runInBand tests/unit"
   },
   "dependencies": {
-    "@aws-lambda-powertools/commons": "^2.33.1",
-    "@aws-lambda-powertools/logger": "^2.33.1",
-    "@aws-lambda-powertools/metrics": "^2.33.1",
-    "@aws-lambda-powertools/tracer": "^2.33.1",
-    "@aws-sdk/client-cloudformation": "^3.1078.0",
-    "@aws-sdk/client-cloudwatch-logs": "^3.1078.0",
-    "@aws-sdk/client-dynamodb": "^3.1078.0",
-    "@aws-sdk/client-eventbridge": "^3.1078.0",
-    "@aws-sdk/lib-dynamodb": "^3.1078.0",
-    "@aws-sdk/util-dynamodb": "^3.996.5"
+    "@aws-lambda-powertools/commons": "^2.35.0",
+    "@aws-lambda-powertools/logger": "^2.35.0",
+    "@aws-lambda-powertools/metrics": "^2.35.0",
+    "@aws-lambda-powertools/tracer": "^2.35.0",
+    "@aws-sdk/client-cloudformation": "^3.1114.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.1114.0",
+    "@aws-sdk/client-dynamodb": "^3.1114.0",
+    "@aws-sdk/client-eventbridge": "^3.1114.0",
+    "@aws-sdk/lib-dynamodb": "^3.1114.0",
+    "@aws-sdk/util-dynamodb": "^3.996.9"
   },
   "devDependencies": {
     "@jest/test-sequencer": "^30.4.1",
@@ -34,15 +34,15 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.13.2",
     "aws-sdk-client-mock": "^4.1.0",
-    "esbuild": "^0.27.7",
-    "eslint": "^9.39.4",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
-    "globals": "^17.7.0",
+    "globals": "^17.11.0",
     "jest": "^30.4.2",
-    "prettier": "^3.9.4",
+    "prettier": "^3.9.6",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.62.1"
+    "typescript-eslint": "^8.67.0"
   }
 }
