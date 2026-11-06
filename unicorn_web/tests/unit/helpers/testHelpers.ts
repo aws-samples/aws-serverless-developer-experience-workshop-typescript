@@ -101,7 +101,7 @@ export function createAPIGatewayProxyEvent(
     multiValueHeaders: overrides.multiValueHeaders ?? {},
     multiValueQueryStringParameters:
       overrides.multiValueQueryStringParameters ?? null,
-    stageVariable: null,
+    stageVariables: null,
     isBase64Encoded: false,
     body: overrides.body ?? null,
     requestContext: {

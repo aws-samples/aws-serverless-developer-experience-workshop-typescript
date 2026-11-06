@@ -4,6 +4,7 @@ packages:
   - unicorn_approvals
   - unicorn_web
 allowBuilds:
+  '@parcel/watcher': false
   esbuild: true
   unrs-resolver: true
 minimumReleaseAgeExclude:
