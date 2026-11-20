@@ -23,9 +23,9 @@ export function createLambdaContext(overrides?: Partial<Context>): Context {
     logGroupName: '/aws/lambda/test-function',
     logStreamName: '2024/01/01/[$LATEST]123456789',
     getRemainingTimeInMillis: () => 1000,
-    done: () => {},
-    fail: () => {},
-    succeed: () => {},
+    done: () => undefined,
+    fail: () => undefined,
+    succeed: () => undefined,
     ...overrides,
   };
 }

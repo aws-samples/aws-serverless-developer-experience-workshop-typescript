@@ -223,7 +223,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
     } catch (error) {
       tracer.addErrorAsMetadata(error as Error);
       logger.error('Error parsing SQS Record', error as Error);
-      throw new Error('Error parsing SQS Record');
+      throw new Error('Error parsing SQS Record', { cause: error });
     }
     logger.debug('Returning contract', { contract });
     return contract;
