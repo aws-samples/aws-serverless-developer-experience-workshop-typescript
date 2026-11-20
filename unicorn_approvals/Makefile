@@ -5,7 +5,7 @@ STAGE ?= local
 REGION ?= ap-southeast-2
 STACK_PREFIX = uni-prop-$(STAGE)
 
-.PHONY: help build deploy deploy-domain deploy-service deploy-schema deploy-subscriptions deploy-contracts-subscriptions deploy-web-subscriptions test unit-test integration-test lint clean delete
+.PHONY: help build deploy deploy-domain deploy-service deploy-schema deploy-subscriptions deploy-contracts-subscriptions deploy-web-subscriptions test unit-test integration-test lint clean delete install ci
 
 help: ## Show available commands
 	@echo "Unicorn Approvals Service Infrastructure"
@@ -14,9 +14,12 @@ help: ## Show available commands
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-15s %s\n", $$1, $$2}'
 
+install: ## Install dependencies for the pnpm workspace
+	@pnpm install $(PNPM_INSTALL_FLAGS)
+
 build: ## Build the application
 	@echo "Building TypeScript application..."
-	@pnpm install
+	@pnpm install $(PNPM_INSTALL_FLAGS)
 	@sam build --template-file infrastructure/approvals-service/template.yaml
 
 deploy-domain: ## Deploy domain resources (EventBridge, Schema Registry)
@@ -108,13 +111,24 @@ integration-test: ## Run integration tests only
 	@echo "Running integration tests..."
 	@pnpm run test -- --testPathPattern=tests/integration
 
-lint: ## Lint CloudFormation templates
+lint: ## Lint TypeScript code and CloudFormation templates
+	@echo "Linting TypeScript code..."
+	@pnpm exec eslint --quiet .
 	@echo "Linting CloudFormation templates..."
 	@cfn-lint infrastructure/approvals-service/template.yaml -a cfn_lint_serverless.rules
 	@cfn-lint infrastructure/domain.yaml
 	@cfn-lint infrastructure/schema-registry/PublicationEvaluationCompleted-schema.yaml
 	@cfn-lint infrastructure/subscriptions/unicorn-contracts-subscriptions.yaml
 	@cfn-lint infrastructure/subscriptions/unicorn-web-subscriptions.yaml
+
+# The AWS SDK clients need a region even in unit tests; credentials are never needed.
+# A frozen lockfile makes pnpm fail if pnpm-lock.yaml is out of date with package.json.
+ci: export AWS_REGION ?= $(REGION)
+ci: export AWS_DEFAULT_REGION ?= $(REGION)
+ci: PNPM_INSTALL_FLAGS = --frozen-lockfile
+# sam build bundles with esbuild; use the locked devDependency rather than a global install.
+ci: export PATH := $(CURDIR)/node_modules/.bin:$(PATH)
+ci: install lint unit-test build ## Run the same checks as CI (lint, unit tests, build); needs no AWS credentials
 
 clean: ## Clean build artifacts
 	@echo "Cleaning build artifacts..."

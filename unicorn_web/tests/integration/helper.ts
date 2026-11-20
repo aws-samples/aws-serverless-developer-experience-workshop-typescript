@@ -69,7 +69,7 @@ export async function* getCloudWatchLogsValues(
         if (ev.detail?.property_id === propertyId) {
           yield ev;
         }
-      } catch (error) {
+      } catch {
         // Skip malformed JSON entries
         continue;
       }

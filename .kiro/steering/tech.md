@@ -39,12 +39,18 @@ make deploy-service         # Lambda, API Gateway, DynamoDB (service template)
 make test                   # Run all tests
 make unit-test              # Unit tests only
 make integration-test       # Integration tests only (deployed stack required)
-make lint                   # cfn-lint all infrastructure templates
+make install                # pnpm install for the workspace
+make lint                   # ESLint (report only) + cfn-lint all infrastructure templates
+make ci                     # Everything CI runs: install, lint, unit-test, build (no AWS credentials)
 make clean                  # Remove .aws-sam/, node_modules/, dist/
 make delete                 # Delete stacks in reverse dependency order
 ```
 
 `unicorn_shared/` has its own targets: `deploy-namespaces`, `deploy-images`, `delete-namespaces`, `delete-images`, `list-parameters`. Deploy shared namespaces before any service.
+
+### Before you open a pull request
+
+Run `make ci` in every service directory you changed. It runs exactly the checks the `Build` GitHub Actions workflow runs for that service: a frozen-lockfile `pnpm install`, ESLint (reporting only), cfn-lint, the Jest unit tests, then `sam build`. It needs no AWS credentials or AWS access. The `Build / <service>` check on the pull request runs the same command.
 
 ### Runtime Commands
 
@@ -54,7 +60,7 @@ Inside a service directory, the make targets invoke pnpm scripts you can also ru
 pnpm install          # Install dependencies
 pnpm test             # Jest (all tests, --runInBand)
 pnpm run unit         # Jest unit tests only
-pnpm run lint         # ESLint with --fix
+pnpm run lint         # ESLint with --fix (make lint reports without fixing)
 pnpm run format       # Prettier over **/*.ts
 pnpm run compile      # Type-check with tsc
 ```
