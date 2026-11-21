@@ -57,7 +57,7 @@ describe('PropertySearchFunction', () => {
 
     const result = await lambdaHandler(event, mockContext);
 
-    expect(result.statusCode).toBe(418);
+    expect(result.statusCode).toBe(200);
     const body = JSON.parse(result.body);
     expect(body).toHaveLength(1);
     expect(body[0].city).toBe('anytown');
