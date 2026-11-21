@@ -129,7 +129,7 @@ export async function initializeDatabase() {
   const putItemRequest: PutCommandInput = {
     TableName: tableName,
     Item: {
-      contract_last_modified_on: { S: '10/08/2022 19:56:30' },
+      contract_last_modified_on: { S: '2022-08-10T19:56:30Z' },
       contract_id: { S: '9183453b-d284-4466-a2d9-f00b1d569ad7' },
       property_id: { S: 'usa/anytown/main-street/444' },
       contract_status: { S: 'DRAFT' },
