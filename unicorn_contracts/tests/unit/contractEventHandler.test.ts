@@ -11,8 +11,12 @@ import {
 } from '@aws-sdk/client-dynamodb';
 import { lambdaHandler } from '../../src/contracts_service/contractEventHandler';
 import { mockClient } from 'aws-sdk-client-mock';
+import { formatTimestamp } from '../../src/contracts_service/contractTimestamp';
 
 const ddbMock = mockClient(DynamoDBClient);
+
+// yyyy-MM-ddTHH:mm:ssZ: UTC, whole seconds, literal Z (20 characters)
+const TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 
 const mockContext: Context = {
   callbackWaitsForEmptyEventLoop: true,
@@ -90,7 +94,11 @@ describe('ContractEventHandlerFunction', () => {
       expect((putCall.args[0].input as any).Item.contract_id.S).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
       );
-      expect(putCall.args[0].input).toHaveProperty('Item.contract_created');
+      // Both timestamps are in the stored format, and a new contract has one creation instant
+      const item = (putCall.args[0].input as any).Item;
+      expect(item.contract_created.S).toMatch(TIMESTAMP_PATTERN);
+      expect(item.contract_last_modified_on.S).toMatch(TIMESTAMP_PATTERN);
+      expect(item.contract_created.S).toEqual(item.contract_last_modified_on.S);
     });
   });
 
@@ -122,6 +130,9 @@ describe('ContractEventHandlerFunction', () => {
       expect(updateCall[0].args[0].input.Key).toEqual({
         property_id: { S: 'usa/anytown/main-street/111' },
       });
+      expect(
+        updateCall[0].args[0].input.ExpressionAttributeValues?.[':m'].S
+      ).toMatch(TIMESTAMP_PATTERN);
     });
 
     it('should handle ConditionalCheckFailedException on update', async () => {
@@ -227,3 +238,23 @@ function createSQSRecord(httpMethod: string, body: string): SQSRecord {
     awsRegion: 'us-east-1',
   };
 }
+
+describe('formatTimestamp', () => {
+  it('truncates the fraction instead of rounding', () => {
+    expect(formatTimestamp(new Date('2026-11-21T02:42:30.987Z'))).toEqual(
+      '2026-11-21T02:42:30Z'
+    );
+  });
+
+  it('keeps the same width when the fraction is zero', () => {
+    const value = formatTimestamp(new Date('2026-11-21T02:42:30.000Z'));
+    expect(value).toEqual('2026-11-21T02:42:30Z');
+    expect(value).toHaveLength(20);
+  });
+
+  it('is UTC regardless of the offset the date was written with', () => {
+    expect(formatTimestamp(new Date('2026-11-21T13:42:30.987+11:00'))).toEqual(
+      '2026-11-21T02:42:30Z'
+    );
+  });
+});

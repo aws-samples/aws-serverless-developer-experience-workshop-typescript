@@ -7,9 +7,9 @@
             "number": 111,
             "street": "Main Street"
         },
-        "contract_created": "2023-11-19T02:24:11.480Z",
+        "contract_created": "2023-11-19T02:24:11Z",
         "contract_id": "21265809-bc6e-4d01-8ab8-2c22939f16d7",
-        "contract_last_modified_on": "2023-11-19T02:24:11.480Z",
+        "contract_last_modified_on": "2023-11-19T02:24:11Z",
         "contract_status": "DRAFT",
         "seller_name": "John Doe"
     }

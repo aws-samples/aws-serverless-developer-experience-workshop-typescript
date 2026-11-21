@@ -20,16 +20,15 @@ describe('Unit tests for contract creation', function () {
   test('verifies successful response', async () => {
     let cmd: any;
 
-    const dateToCheck = new Date();
+    // A fixed literal: the handler must store this exact string, whatever the host clock or time zone
+    const dateToCheck = '2022-08-25T01:44:02Z';
 
     async function verifyInput(input: any) {
       cmd = input as UpdateItemCommandInput;
       expect(cmd['Key']['property_id'].S).toEqual('property1');
       expect(cmd['ExpressionAttributeValues'][':c'].S).toEqual('contract1');
       expect(cmd['ExpressionAttributeValues'][':t'].S).toEqual('APPROVED');
-      expect(cmd['ExpressionAttributeValues'][':m'].S).toEqual(
-        dateToCheck.toISOString()
-      );
+      expect(cmd['ExpressionAttributeValues'][':m'].S).toEqual(dateToCheck);
       return {
         $metadata: {
           httpStatusCode: 200,
@@ -55,7 +54,7 @@ describe('Unit tests for contract creation', function () {
         contract_id: 'contract1',
         property_id: 'property1',
         contract_status: 'APPROVED',
-        contract_last_modified_on: dateToCheck.toISOString(),
+        contract_last_modified_on: dateToCheck,
       },
       'detail-type': 'ContractStatusChanged',
     };
@@ -95,7 +94,8 @@ describe('Unit tests for contract creation', function () {
       .on(UpdateItemCommand)
       .rejects(new Error('DynamoDB service unavailable'));
 
-    const dateToCheck = new Date();
+    // A fixed literal: the handler must store this exact string, whatever the host clock or time zone
+    const dateToCheck = '2022-08-25T01:44:02Z';
     const expectedId = randomUUID();
     const context: Context = {
       awsRequestId: expectedId,
@@ -112,7 +112,7 @@ describe('Unit tests for contract creation', function () {
         contract_id: 'contract1',
         property_id: 'property1',
         contract_status: 'APPROVED',
-        contract_last_modified_on: dateToCheck.toISOString(),
+        contract_last_modified_on: dateToCheck,
       },
       'detail-type': 'ContractStatusChanged',
     };
