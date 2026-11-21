@@ -3,6 +3,7 @@
 import { Context, SQSEvent, SQSRecord } from 'aws-lambda';
 import { marshall } from '@aws-sdk/util-dynamodb';
 import { ContractDBType, ContractStatusEnum } from './Contract';
+import { nowTimestamp } from './contractTimestamp';
 import {
   DynamoDBClient,
   UpdateItemCommand,
@@ -90,12 +91,13 @@ class ContractEventHandlerFunction implements LambdaInterface {
   @tracer.captureMethod()
   private async createContract(contract: ContractDBType): Promise<void> {
     // Construct the DDB Table record
-    const createDate = new Date();
+    // One clock reading, so a new contract's two timestamps are identical
+    const createDate = nowTimestamp();
     const contractId = randomUUID();
     const dbEntry: ContractDBType = {
       property_id: contract['property_id'],
-      contract_created: createDate.toISOString(),
-      contract_last_modified_on: createDate.toISOString(),
+      contract_created: createDate,
+      contract_last_modified_on: createDate,
       contract_id: contractId,
       address: contract['address'],
       seller_name: contract['seller_name'],
@@ -154,12 +156,12 @@ class ContractEventHandlerFunction implements LambdaInterface {
    */
   @tracer.captureMethod()
   private async updateContract(contract: ContractDBType): Promise<void> {
-    const modifiedDate = new Date();
+    const modifiedDate = nowTimestamp();
     const dbEntry: ContractDBType = {
       contract_id: contract.contract_id,
       property_id: contract.property_id,
       contract_status: ContractStatusEnum.APPROVED,
-      contract_last_modified_on: modifiedDate.toISOString(),
+      contract_last_modified_on: modifiedDate,
     };
     logger.debug('Record to update', { dbEntry });
     const ddbUpdateCommandInput: UpdateItemCommandInput = {
