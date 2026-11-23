@@ -41,6 +41,7 @@ make unit-test              # Unit tests only
 make integration-test       # Integration tests only (deployed stack required)
 make install                # pnpm install for the workspace
 make lint                   # ESLint (report only) + cfn-lint all infrastructure templates
+make format                 # Prettier --write (TypeScript)
 make ci                     # Everything CI runs: install, lint, unit-test, build (no AWS credentials)
 make clean                  # Remove .aws-sam/, node_modules/, dist/
 make delete                 # Delete stacks in reverse dependency order

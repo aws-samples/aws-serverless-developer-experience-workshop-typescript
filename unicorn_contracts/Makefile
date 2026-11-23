@@ -5,7 +5,7 @@ STAGE ?= local
 REGION ?= ap-southeast-2
 STACK_PREFIX = uni-prop-$(STAGE)
 
-.PHONY: help build deploy deploy-domain deploy-schema deploy-service test unit-test integration-test lint clean delete install ci
+.PHONY: help build deploy deploy-domain deploy-schema deploy-service test unit-test integration-test lint format clean delete install ci
 
 help: ## Show available commands
 	@echo "Unicorn Contracts Service Infrastructure"
@@ -77,6 +77,10 @@ lint: ## Lint TypeScript code and CloudFormation templates
 	@cfn-lint infrastructure/contracts-service/template.yaml -a cfn_lint_serverless.rules
 	@cfn-lint infrastructure/domain.yaml
 	@cfn-lint infrastructure/schema-registry/ContractStatusChanged-schema.yaml
+
+format: ## Format TypeScript code (Prettier)
+	@echo "Formatting TypeScript code..."
+	@pnpm run format
 
 # The AWS SDK clients need a region even in unit tests; credentials are never needed.
 # A frozen lockfile makes pnpm fail if pnpm-lock.yaml is out of date with package.json.
