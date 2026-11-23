@@ -32,7 +32,7 @@
 		"@jest/test-sequencer": "^30.5.2",
 		"@types/aws-lambda": "^8.10.164",
 		"@types/jest": "^30.0.0",
-		"@types/node": "^24.19.2",
+		"@types/node": "^26.6.6",
 		"aws-sdk-client-mock": "^4.1.0",
 		"esbuild": "^0.28.2",
 		"eslint": "^10.15.0",
