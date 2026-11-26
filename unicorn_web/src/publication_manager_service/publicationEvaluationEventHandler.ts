@@ -43,7 +43,7 @@ class PublicationEvaluationEventHandler implements LambdaInterface {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(`Error during DDB UPDATE: ${JSON.stringify(error)}`);
     }
-    metrics.addMetric('ContractUpdated', MetricUnit.Count, 1);
+    metrics.addMetric('PropertiesApproved', MetricUnit.Count, 1);
   }
 
   /**
@@ -63,6 +63,11 @@ class PublicationEvaluationEventHandler implements LambdaInterface {
       `Updating status: ${propertyEvaluation.evaluationResult} for ${propertyEvaluation.propertyId}`
     );
     const propertyId = propertyEvaluation.propertyId;
+    const validResults = ['APPROVED', 'DECLINED'];
+    if (!validResults.includes(propertyEvaluation.evaluationResult?.toUpperCase())) {
+      logger.warn(`Unknown evaluationResult '${propertyEvaluation.evaluationResult}'; skipping DynamoDB update`);
+      return;
+    }
     const { PK, SK } = this.getDynamoDBKeys(propertyId);
     const updateItemCommandInput: UpdateItemCommandInput = {
       Key: { PK: { S: PK }, SK: { S: SK } },

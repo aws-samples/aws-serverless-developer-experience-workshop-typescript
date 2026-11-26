@@ -91,7 +91,8 @@ class PropertySearchFunction implements LambdaInterface {
       `List properties by city: country = ${country}; city = ${city}`
     );
 
-    const PK = `PROPERTY#${country}#${city}`;
+    const pkDetails = `${country}#${city}`.replace(' ', '-').toLowerCase();
+    const PK = `PROPERTY#${pkDetails}`;
 
     const queryCommandInput: QueryCommandInput = {
       KeyConditionExpression: `PK = :pk`,
@@ -157,8 +158,9 @@ class PropertySearchFunction implements LambdaInterface {
       `List properties by street: country = ${country}; city = ${city}; street = ${street}`
     );
 
-    const PK = `PROPERTY#${country}#${city}`;
-    const SK = `${street}`;
+    const pkDetails = `${country}#${city}`.replace(' ', '-').toLowerCase();
+    const PK = `PROPERTY#${pkDetails}`;
+    const SK = `${street}`.replace(' ', '-').toLowerCase();
 
     const queryCommandInput: QueryCommandInput = {
       KeyConditionExpression: `PK = :pk and begins_with(SK, :sk)`,
@@ -205,18 +207,19 @@ class PropertySearchFunction implements LambdaInterface {
     const city = event.pathParameters?.city;
     const street = event.pathParameters?.street;
     const number = event.pathParameters?.number;
-    console.log(`Country: ${country}`);
-    console.log(`City: ${city}`);
-    console.log(`street: ${street}`);
-    console.log(`number: ${number}`);
-    console.log(`PROJECT PROPS: ${PROJECTION_PROPERTIES}`);
+    logger.info(`Country: ${country}`);
+    logger.info(`City: ${city}`);
+    logger.info(`street: ${street}`);
+    logger.info(`number: ${number}`);
+    logger.info(`PROJECT PROPS: ${PROJECTION_PROPERTIES}`);
 
     logger.info(
       `Get property details for: country = ${country}; city = ${city}; street = ${street}; number = ${number}`
     );
 
-    const PK = `PROPERTY#${country}#${city}`;
-    const SK = `${street}#${number}`;
+    const pkDetails = `${country}#${city}`.replace(' ', '-').toLowerCase();
+    const PK = `PROPERTY#${pkDetails}`;
+    const SK = `${street}#${number}`.replace(' ', '-').toLowerCase();
 
     const getItemCommandInput: GetItemCommandInput = {
       Key: {

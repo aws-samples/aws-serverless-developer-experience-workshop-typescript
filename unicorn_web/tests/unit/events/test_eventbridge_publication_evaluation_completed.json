@@ -1,0 +1,14 @@
+{
+  "id": "12345678-1234-1234-1234-123456789012",
+  "account": "123456789012",
+  "version": "0",
+  "time": "2024-01-01T00:00:00Z",
+  "region": "us-east-1",
+  "source": "unicorn-approvals",
+  "resources": [],
+  "detail": {
+    "property_id": "usa/anytown/main-street/111",
+    "evaluation_result": "APPROVED"
+  },
+  "detail-type": "PublicationEvaluationCompleted"
+}

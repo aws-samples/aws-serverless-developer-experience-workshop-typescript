@@ -33,11 +33,8 @@ interface PropertyDBType {
   country: string;
   city: string;
   street: string;
-  contract?: string;
   number: string;
   description: string;
-  listprice?: number;
-  currency: string;
   status: string;
   images?: string[];
 }
@@ -51,7 +48,6 @@ interface PropertyDetailsEvent {
     number: string;
   };
   status: 'PENDING';
-  listprice?: number;
   images?: string[];
   description: string;
 }
@@ -117,7 +113,7 @@ class RequestApprovalFunction implements LambdaInterface {
       const property: PropertyDBType = await this.getPropertyFor(PK, SK);
 
       // If property is already being approved or approved already
-      if (property.status in ['APPROVED']) {
+      if (['APPROVED'].includes(property.status)) {
         logger.info(
           `Property already in status ${property.status}; no action taken`
         );
@@ -135,12 +131,11 @@ class RequestApprovalFunction implements LambdaInterface {
           number: property.number,
         },
         status: 'PENDING',
-        listprice: property.listprice,
         images: property.images,
         description: property.description,
       };
 
-      await this.firePropertyEvent(eventDetail, 'unicorn.web');
+      await this.firePropertyEvent(eventDetail);
     } catch (error) {
       tracer.addErrorAsMetadata(error as Error);
       logger.error(`${error}`);
@@ -181,8 +176,7 @@ class RequestApprovalFunction implements LambdaInterface {
    * @param source
    */
   private async firePropertyEvent(
-    eventDetail: PropertyDetailsEvent,
-    source: string
+    eventDetail: PropertyDetailsEvent
   ): Promise<void> {
     const propertyId = eventDetail.property_id;
 
@@ -190,7 +184,7 @@ class RequestApprovalFunction implements LambdaInterface {
     const eventsPutEventsCommandInputEntry: PutEventsRequestEntry = {
       EventBusName: EVENT_BUS,
       Time: new Date(),
-      Source: source,
+      Source: process.env.SERVICE_NAMESPACE ?? 'unicorn-web',
       DetailType: 'PublicationApprovalRequested',
       Detail: JSON.stringify(eventDetail),
     };

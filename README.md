@@ -1,4 +1,4 @@
-[![Build & Test Workflow](https://github.com/aws-samples/aws-serverless-developer-experience-workshop-typescript/actions/workflows/build_test.yml/badge.svg)](https://github.com/aws-samples/aws-serverless-developer-experience-workshop-typescript/actions/workflows/build_test.yml)
+[![Build & Test Workflow](https://github.com/aws-samples/aws-serverless-developer-experience-workshop-typescript/actions/workflows/build.yml/badge.svg)](https://github.com/aws-samples/aws-serverless-developer-experience-workshop-typescript/actions/workflows/build.yml)
 
 # AWS Serverless Developer Experience workshop reference architecture (Typescript)
 

@@ -1,0 +1,32 @@
+{
+  "httpMethod": "GET",
+  "path": "/search/usa/anytown",
+  "resource": "/search/{country}/{city}",
+  "pathParameters": {
+    "country": "usa",
+    "city": "anytown"
+  },
+  "queryStringParameters": null,
+  "headers": {},
+  "multiValueHeaders": {},
+  "multiValueQueryStringParameters": null,
+  "isBase64Encoded": false,
+  "body": null,
+  "requestContext": {
+    "accountId": "123456789012",
+    "apiId": "testapi",
+    "authorizer": {},
+    "protocol": "HTTP/1.1",
+    "httpMethod": "GET",
+    "identity": {
+      "sourceIp": "127.0.0.1",
+      "userAgent": "test-agent"
+    },
+    "path": "/search/usa/anytown",
+    "stage": "test",
+    "requestId": "12345678-1234-1234-1234-123456789012",
+    "requestTimeEpoch": 1672531200000,
+    "resourceId": "testresource",
+    "resourcePath": "/search/{country}/{city}"
+  }
+}

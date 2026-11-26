@@ -3,6 +3,7 @@
 import { Context, SQSEvent, SQSRecord } from 'aws-lambda';
 import { marshall } from '@aws-sdk/util-dynamodb';
 import { ContractDBType, ContractStatusEnum } from './Contract';
+import { nowTimestamp } from './contractTimestamp';
 import {
   DynamoDBClient,
   UpdateItemCommand,
@@ -55,7 +56,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
             await this.createContract(contract);
           } catch (error) {
             tracer.addErrorAsMetadata(error as Error);
-            logger.error('Error during DDB PUT', error as Error);
+            logger.error('DynamoDB PutItem API call unsuccessful. Unable to create contract ', error as Error);
             throw error;
           }
           break;
@@ -66,7 +67,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
             await this.updateContract(contract);
           } catch (error) {
             tracer.addErrorAsMetadata(error as Error);
-            logger.error('Error during DDB UPDATE', error as Error);
+            logger.error('DynamoDB UpdateItem API call unsuccessful. Unable to update contract', error as Error);
             throw error;
           }
           break;
@@ -90,12 +91,13 @@ class ContractEventHandlerFunction implements LambdaInterface {
   @tracer.captureMethod()
   private async createContract(contract: ContractDBType): Promise<void> {
     // Construct the DDB Table record
-    const createDate = new Date();
+    // One clock reading, so a new contract's two timestamps are identical
+    const createDate = nowTimestamp();
     const contractId = randomUUID();
     const dbEntry: ContractDBType = {
       property_id: contract['property_id'],
-      contract_created: createDate.toISOString(),
-      contract_last_modified_on: createDate.toISOString(),
+      contract_created: createDate,
+      contract_last_modified_on: createDate,
       contract_id: contractId,
       address: contract['address'],
       seller_name: contract['seller_name'],
@@ -154,18 +156,18 @@ class ContractEventHandlerFunction implements LambdaInterface {
    */
   @tracer.captureMethod()
   private async updateContract(contract: ContractDBType): Promise<void> {
-    const modifiedDate = new Date();
+    const modifiedDate = nowTimestamp();
     const dbEntry: ContractDBType = {
       contract_id: contract.contract_id,
       property_id: contract.property_id,
       contract_status: ContractStatusEnum.APPROVED,
-      contract_last_modified_on: modifiedDate.toISOString(),
+      contract_last_modified_on: modifiedDate,
     };
     logger.debug('Record to update', { dbEntry });
     const ddbUpdateCommandInput: UpdateItemCommandInput = {
       TableName: DDB_TABLE,
       Key: { property_id: { S: dbEntry.property_id } },
-      UpdateExpression: 'set contract_status = :t, modified_date = :m',
+      UpdateExpression: 'set contract_status = :t, contract_last_modified_on = :m',
       ConditionExpression:
         'attribute_exists(property_id) AND contract_status = :DRAFT',
       ExpressionAttributeValues: {
@@ -223,7 +225,7 @@ class ContractEventHandlerFunction implements LambdaInterface {
     } catch (error) {
       tracer.addErrorAsMetadata(error as Error);
       logger.error('Error parsing SQS Record', error as Error);
-      throw new Error('Error parsing SQS Record');
+      throw new Error('Error parsing SQS Record', { cause: error });
     }
     logger.debug('Returning contract', { contract });
     return contract;

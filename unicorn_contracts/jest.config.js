@@ -13,5 +13,10 @@ module.exports = {
   testPathIgnorePatterns: ["/node_modules/"],
   testEnvironment: "node",
   testSequencer: "./tests/alphabetical-sequencer.js",
-  coverageProvider: "v8"
+  coverageProvider: "v8",
+  coverageThreshold: {
+    global: {
+      lines: 80,
+    },
+  },
 };

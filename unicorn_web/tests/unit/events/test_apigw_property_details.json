@@ -1,0 +1,34 @@
+{
+  "httpMethod": "GET",
+  "path": "/properties/usa/anytown/main-street/111",
+  "resource": "/properties/{country}/{city}/{street}/{number}",
+  "pathParameters": {
+    "country": "usa",
+    "city": "anytown",
+    "street": "main-street",
+    "number": "111"
+  },
+  "queryStringParameters": null,
+  "headers": {},
+  "multiValueHeaders": {},
+  "multiValueQueryStringParameters": null,
+  "isBase64Encoded": false,
+  "body": null,
+  "requestContext": {
+    "accountId": "123456789012",
+    "apiId": "testapi",
+    "authorizer": {},
+    "protocol": "HTTP/1.1",
+    "httpMethod": "GET",
+    "identity": {
+      "sourceIp": "127.0.0.1",
+      "userAgent": "test-agent"
+    },
+    "path": "/properties/usa/anytown/main-street/111",
+    "stage": "test",
+    "requestId": "12345678-1234-1234-1234-123456789012",
+    "requestTimeEpoch": 1672531200000,
+    "resourceId": "testresource",
+    "resourcePath": "/properties/{country}/{city}/{street}/{number}"
+  }
+}
